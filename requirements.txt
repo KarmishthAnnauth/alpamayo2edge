@@ -1,0 +1,14 @@
+torch>=2.4
+numpy
+pyyaml
+opencv-python-headless
+transformers>=4.46
+peft
+einops
+scipy
+pandas
+pyarrow
+hydra-core
+huggingface_hub
+# Local sibling repos (clone next to this repo, then):
+#   pip install -e ../alpamayo2 -e ../physical_ai_av

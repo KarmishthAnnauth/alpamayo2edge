@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Data / model artifacts
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+data/
+outputs/
+checkpoints/
+wandb/
+
+# Editors
+.idea/
+.vscode/
