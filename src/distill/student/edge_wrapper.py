@@ -28,9 +28,12 @@ Requires the cosmos-framework environment (uv sync per its README).
 Blocks marked # VALIDATE-ON-GPU are written against the real APIs but unrun.
 """
 from __future__ import annotations
+import contextlib
 import re
 import torch
 import torch.nn as nn
+
+from . import lora, prompt as prompt_mod
 
 # Tower split by parameter name (D-015): gen tower = `_moe_gen` suffix plus the
 # VFM network's generation-side modules; AR tower = language-model params
@@ -49,6 +52,7 @@ class EdgeStudent(nn.Module):
 
         self.cfg = cfg
         ckpt = snapshot_download(cfg.paths.student_repo)
+        self._ckpt_dir = ckpt
         self.model = Cosmos3OmniModel.from_pretrained_dcp(ckpt).to(device)
         # OmniMoTModel -> Cosmos3VFMNetwork -> unified-MoT language model
         self.omni = self.model.model
@@ -62,29 +66,137 @@ class EdgeStudent(nn.Module):
         self.raw_action_dim = 2          # (accel, curvature), D-002
         self.n_action_tokens = 64        # waypoints @ 10 Hz
         self.max_action_dim = self.net.config.action_dim  # 64 on Edge
+        self._device = torch.device(device)
+        self._mask_handles: list = []   # gradient row-masks, cleared per stage
+        self.lora_stats: dict = {}
 
     # ---------------- vocab ----------------
 
     def extend_trajectory_vocab(self, traj_tok_spec: dict) -> None:
-        """Append the teacher's trajectory vocabulary verbatim (plan Step 2.1).
+        """Append the teacher's trajectory vocabulary and structural tokens.
 
         traj_tok_spec comes from TeacherWrapper.probe_trajectory_tokenizer().
-        Cache/loss trajectory ids are REGION-RELATIVE bins [0, 3000) (D-014);
-        student vocab id = new_token_range[0] + bin.
-        New embedding rows init: mean of existing embeddings + N(0, 0.02).
+        Layout of the appended block, mirroring the teacher's own (D-029):
+
+            [old_n,               old_n + 3000)   FUTURE bins  (region-relative)
+            [old_n + 3000,        old_n + 4000)   HISTORY bins (ego motion)
+            [old_n + 4000,        old_n + 4009)   the 9 structural specials
+
+        The history region is here because ego motion is DISCRETE: A1.5 fills the
+        48 `<|traj_history|>` slots with DeltaTrajectoryTokenizer bins rather than
+        with a continuous projection, so the student needs those rows too.
+
+        BOTH tables are resized by hand. `Nemotron3DenseVLTextForCausalLM`
+        (unified_mot.py:2510) sets `_tied_weights_keys = []` and defines no
+        `get_output_embeddings`, so HF's `resize_token_embeddings` resizes the
+        INPUT embedding and silently leaves `lm_head` at the old vocab — the
+        appended ids would have no logits at all, and every stage-1 trajectory
+        loss would be taken over rows that cannot be produced.
+
+        New rows init: mean of the existing rows + N(0, 0.02).
         """
         emb = self.lm.get_input_embeddings()
         old_n, dim = emb.weight.shape
-        n_new = traj_tok_spec["vocab_size"]
-        new = nn.Embedding(old_n + n_new, dim)
+        n_future = int(traj_tok_spec["vocab_size"])                    # 3000
+        n_hist = int(traj_tok_spec.get("hist_vocab_size", 0))          # 1000
+        n_bins = int(traj_tok_spec.get("total_bins", n_future + n_hist))
+        if n_bins != n_future + n_hist:
+            raise ValueError(
+                f"trajectory regions do not tile the vocabulary: {n_future} future "
+                f"+ {n_hist} history != {n_bins} total")
+        specials = list(prompt_mod.SPECIAL_TOKENS)
+        n_new = n_bins + len(specials)
+        new_n = old_n + n_new
+        ekw = {"device": emb.weight.device, "dtype": emb.weight.dtype}
+
+        new_emb = nn.Embedding(new_n, dim, **ekw)
         with torch.no_grad():
-            new.weight[:old_n] = emb.weight
-            mean = emb.weight.mean(dim=0, keepdim=True)
-            new.weight[old_n:] = mean + 0.02 * torch.randn(n_new, dim)
-        self.lm.set_input_embeddings(new)
-        self.lm.resize_token_embeddings(old_n + n_new)  # ties lm_head if tied
-        self.new_token_range = (old_n, old_n + n_new)
+            new_emb.weight[:old_n] = emb.weight
+            new_emb.weight[old_n:] = (emb.weight.mean(dim=0, keepdim=True)
+                                      + 0.02 * torch.randn(n_new, dim, **ekw))
+        self.lm.set_input_embeddings(new_emb)
+
+        head = self.lm.lm_head
+        hkw = {"device": head.weight.device, "dtype": head.weight.dtype}
+        new_head = nn.Linear(dim, new_n, bias=head.bias is not None, **hkw)
+        with torch.no_grad():
+            new_head.weight[:old_n] = head.weight
+            new_head.weight[old_n:] = (head.weight.mean(dim=0, keepdim=True)
+                                       + 0.02 * torch.randn(n_new, dim, **hkw))
+            if head.bias is not None:
+                new_head.bias[:old_n] = head.bias
+                new_head.bias[old_n:] = head.bias.mean()
+        self.lm.lm_head = new_head
+
+        # Keep the advertised vocab in sync, or `generate` builds its logit
+        # processors over the old range and the new ids are unreachable.
+        self.lm.vocab_size = new_n
+        seen = set()
+        for c in (getattr(self.lm, "config", None),
+                  getattr(getattr(self.lm, "config", None), "text_config", None),
+                  getattr(getattr(self.lm, "model", None), "config", None)):
+            if c is None or id(c) in seen:
+                continue
+            seen.add(id(c))
+            if getattr(c, "vocab_size", None) is not None:
+                c.vocab_size = new_n
+
+        self.new_token_range = (old_n, new_n)
+        self.future_base = old_n
+        self.n_future_bins = n_future
+        self.hist_base = old_n + n_future
+        self.n_hist_bins = n_hist
+        self.special_ids = {t: old_n + n_bins + i for i, t in enumerate(specials)}
         self.traj_detokenize = traj_tok_spec["detokenizer_fn"]
+        self.hist_tokenize = traj_tok_spec.get("hist_tokenize_fn")
+
+    # ---------------- context assembly (D-028/D-029) ----------------
+
+    def future_bin_id(self, b: int) -> int:
+        return self.future_base + int(b)
+
+    def hist_bin_id(self, b: int) -> int:
+        return self.hist_base + int(b)
+
+    def special_token_id(self, token: str) -> int:
+        return self.special_ids[token]
+
+    def context_builder(self, image_processor=None, cameras=None, n_frames=None):
+        """A picklable assembler for this student's context format (D-028).
+
+        Built here because the vocabulary offsets and special-token ids are the
+        student's, but handed out as a standalone object because DataLoader
+        workers need it and this module owns 9GB of CUDA weights.
+        """
+        from .context import ContextBuilder, load_image_processor
+
+        if not hasattr(self, "new_token_range"):
+            raise RuntimeError("call extend_trajectory_vocab() first")
+        if image_processor is None:
+            image_processor = load_image_processor(self._ckpt_dir)
+        self.lm._ensure_vision_tower()   # plumbs config.image_token_id
+        merge = getattr(getattr(self.lm, "config", None), "spatial_merge_size", 1)
+        return ContextBuilder(
+            tokenizer=self.tokenizer,
+            image_processor=image_processor,
+            cameras=list(cameras or self.cfg.data.raw["cameras"]),
+            n_frames=int(n_frames or self.cfg.data.context_frames),
+            future_base=self.future_base,
+            hist_base=self.hist_base,
+            special_ids=dict(self.special_ids),
+            image_token_id=self._image_token_id,
+            hist_tokenize=self.hist_tokenize,
+            merge_size=int(merge or 1),
+        )
+
+    @property
+    def _image_token_id(self) -> int:
+        tid = getattr(self.lm.config, "image_token_id", None)
+        if tid is None:
+            raise RuntimeError(
+                "config.image_token_id is unset — it is plumbed by "
+                "_ensure_vision_tower(), so touch the vision tower first")
+        return int(tid)
 
     # ---------------- parameter groups ----------------
 
@@ -94,64 +206,220 @@ class EdgeStudent(nn.Module):
     def _is_ar(self, name: str) -> bool:
         return AR_TOWER_PAT.search(name) is not None and not self._is_diff(name)
 
+    # D-024: both stages adapt through LoRA. What stays full-rank is what has
+    # no pretrained weights to preserve — the appended trajectory rows and our
+    # embodiment row of the action head — and those are gradient-masked so the
+    # pretrained rows sharing the same tensor stay put (TRAINING_STRATEGY §2).
+
+    def _decoder_layers(self) -> nn.Module:
+        """The decoder-layer stack: BOTH towers' weights and nothing else.
+
+        Injection scope for both stages. The causal LM is the wrong root: its
+        SigLIP2 vision tower (lazily attached at `language_model.visual` by
+        `_ensure_vision_tower`) names its attention leaves `q_proj`/`k_proj`/
+        `v_proj` too, and the framework's plain-leaf matching would adapt it.
+        Within this subtree the `_moe_gen` suffix separates the towers (D-015).
+        """
+        return self.lm.model.layers
+
+    def _reset_trainable(self) -> None:
+        for h in self._mask_handles:
+            h.remove()
+        self._mask_handles.clear()
+        for p in self.model.parameters():
+            p.requires_grad_(False)
+
+    def _enable_new_vocab_rows(self) -> list[nn.Parameter]:
+        """Appended trajectory rows of embed_tokens + lm_head, masked so the
+        pretrained rows below `new_token_range[0]` get no gradient."""
+        if not hasattr(self, "new_token_range"):
+            raise RuntimeError(
+                "call extend_trajectory_vocab() before param_groups_stage1()")
+        old_n, _ = self.new_token_range
+        out = []
+        for p in (self.lm.get_input_embeddings().weight, self.lm.lm_head.weight):
+            p.requires_grad_(True)
+            self._mask_handles.append(lora.mask_rows_below_(p, old_n))
+            out.append(p)
+        return out
+
+    def _enable_action_domain_rows(self) -> list[nn.Parameter]:
+        """Our embodiment row of action2llm/llm2action; the other 31 stay put.
+
+        DomainAwareLinear keeps per-domain parameters in nn.Embedding tables
+        (`fc`: [num_domains, out*in], `bias`: [num_domains, out]), so "our row
+        only" is a dim-0 row mask on both (domain_aware_linear.py:41).
+        """
+        out = []
+        for proj in (self.net.action2llm, self.net.llm2action):
+            for p in (proj.fc.weight, proj.bias.weight):
+                p.requires_grad_(True)
+                self._mask_handles.append(
+                    lora.mask_rows_except_(p, self.action_domain_id))
+                out.append(p)
+        return out
+
+    def _enable_shared_action_embeds(self) -> list[nn.Parameter]:
+        """`action_modality_embed` + `time_embedder`: shared by ALL 32
+        embodiments, so training them is a forgetting channel no row mask can
+        cover. Off by default; the domain rows already give the teacher's
+        action space its own affine interface (D-017)."""
+        ps = [self.net.action_modality_embed] + list(self.net.time_embedder.parameters())
+        for p in ps:
+            p.requires_grad_(True)
+        return ps
+
     def param_groups_stage1(self):
-        """AR tower + new embeddings trainable; entire gen tower frozen."""
-        for n, p in self.model.named_parameters():
-            if self._is_diff(n):
-                p.requires_grad_(not self.cfg.student.freeze.diffusion_tower_stage1)
-        base, boosted = [], []
-        for n, p in self.model.named_parameters():
-            if not p.requires_grad:
-                continue
-            if "embed" in n or "lm_head" in n:
-                boosted.append(p)  # includes new trajectory rows
-            else:
-                base.append(p)
-        mult = self.cfg.student.new_token_lr_mult
-        return [{"params": base, "lr_mult": 1.0},
-                {"params": boosted, "lr_mult": mult}]
+        """AR tower via LoRA + the appended trajectory rows; gen tower untouched.
+
+        Returns AdamW-ready groups carrying an `lr_mult` the trainer applies to
+        `stage1.lr`.
+        """
+        lcfg = self.cfg.student.lora.stage1
+        self._reset_trainable()
+        if lcfg.get("enabled", True):
+            self.lora_stats = self._inject(lcfg, lora.AR_ATTN_TARGETS)
+            adapted = lora.lora_parameters(self._decoder_layers())
+        else:
+            # Full-FT ablation (TRAINING_STRATEGY §2, "the one real cost").
+            # ~2.48B trainable = 43.5GB of states before activations: this does
+            # NOT fit the 48GB box — it is the 500-clip diagnostic, run elsewhere.
+            adapted = [p for n, p in self.lm.model.named_parameters()
+                       if not self._is_diff(n) and "embed" not in n]
+            for p in adapted:
+                p.requires_grad_(True)
+            self.lora_stats = {"wrapped": 0, "full_ft": True}
+        boosted = self._enable_new_vocab_rows()
+        return [{"params": adapted, "lr_mult": 1.0},
+                {"params": boosted, "lr_mult": self.cfg.student.new_token_lr_mult}]
 
     def param_groups_stage2(self):
-        """Gen tower (incl. action-domain rows) trainable; AR tower frozen."""
-        for n, p in self.model.named_parameters():
-            if self._is_ar(n) or "embed" in n or "lm_head" in n:
-                p.requires_grad_(False)
-        if self.cfg.student.freeze.ar_tower_stage2_lora:
-            self._attach_lora(rank=self.cfg.student.freeze.lora_rank)
-        for n, p in self.model.named_parameters():
-            if self._is_diff(n):
-                p.requires_grad_(True)
-        return [{"params": [p for p in self.model.parameters() if p.requires_grad],
-                 "lr_mult": 1.0}]
+        """Gen tower via LoRA + our action-head row; AR tower frozen (D-015).
 
-    def _attach_lora(self, rank: int) -> None:
-        # cosmos-framework has native LoRA injection (OmniMoTModel.add_lora,
-        # injected pre-FSDP on meta device); route through it rather than peft.
-        # VALIDATE-ON-GPU: confirm target module list for the AR-tower q/k/v/o.
-        self.omni.add_lora(rank=rank, alpha=self.cfg.student.get("lora_alpha", 32))
+        Stage 1's adapters are already folded into the base weights by the time
+        this runs (see distill/checkpoint.py), so there is no stage-1 LoRA left
+        to keep training here.
+        """
+        lcfg = self.cfg.student.lora.stage2
+        self._reset_trainable()
+        if lcfg.get("enabled", True):
+            self.lora_stats = self._inject(lcfg, lora.GEN_ATTN_TARGETS)
+            adapted = lora.lora_parameters(self._decoder_layers())
+        else:
+            adapted = [p for n, p in self.lm.model.named_parameters() if self._is_diff(n)]
+            for p in adapted:
+                p.requires_grad_(True)
+            self.lora_stats = {"wrapped": 0, "full_ft": True}
+        new_iface = self._enable_action_domain_rows()
+        if self.cfg.student.lora.get("train_shared_action_embeds", False):
+            new_iface += self._enable_shared_action_embeds()
+        return [{"params": adapted, "lr_mult": 1.0},
+                {"params": new_iface, "lr_mult": self.cfg.student.new_token_lr_mult}]
+
+    def _inject(self, lcfg, default_targets: list[str]) -> dict:
+        targets = list(lcfg.get("targets", default_targets))
+        lora.inject(self._decoder_layers(), targets=targets,
+                    rank=lcfg.rank, alpha=lcfg.alpha, device=self._device)
+        return lora.describe(self._decoder_layers())
+
+    def trainable_parameters(self) -> list[nn.Parameter]:
+        """Everything with a gradient — what the trainer clips."""
+        return [p for p in self.model.parameters() if p.requires_grad]
+
+    def merged_state_dict(self) -> dict:
+        """LoRA-folded weights for checkpointing; does not disturb training."""
+        return lora.merged_state_dict(self.model)
 
     # ---------------- forward APIs used by the trainers ----------------
 
-    def ar_forward(self, batch) -> dict:
-        """Teacher-forced AR pass under the deployment context format:
-        [cameras, egomotion, short CoC, trajectory tokens].
-        Returns {"logits": (B, L, V), "hidden": {student_layer: (B, L, D_s)},
-        "kv_cache": ...}.
+    def ar_forward(self, batch, capture_layers=None) -> dict:
+        """Teacher-forced reasoner pass over the deployment context (D-027/D-028).
 
-        VALIDATE-ON-GPU: uses the reasoner (und) pathway of the unified MoT via
-        the standard HF causal-LM interface; input assembly happens in the
-        stage-1 collator once the Edge chat template for the deployment context
-        is frozen (open design note in README).
+        Runs the REASONER-TOWER api, not the HF causal-LM interface: the causal
+        LM's own `forward` takes a `SequencePack` (unified_mot.py:2563) and would
+        reject `input_ids=` outright. The AR text path is
+        `model.reasoner_forward(...) -> [B, T, hidden]` (final post-norm) plus a
+        separate `lm_head`.
+
+        Batching note: `reasoner_forward` takes NO attention mask — the tower is
+        causal by construction. Right-padding is therefore safe (real tokens
+        never attend to padding that follows them) and left-padding is NOT. The
+        collator right-pads; the losses mask.
+
+        Returns {"logits": (B,L,V), "hidden": {student_layer: (B,L,D)},
+                 "final_hidden": (B,L,D)}.
         """
-        out = self.lm(
-            input_ids=batch["input_ids"],
-            attention_mask=batch.get("attention_mask"),
-            output_hidden_states=True,
-            use_cache=True,
+        fwd, _ = self._reasoner_inputs(batch)
+        with self._capture_layers(capture_layers) as hidden:
+            h = self.lm.model.reasoner_forward(cache=None, **fwd)
+        return {"logits": self.lm.lm_head(h), "hidden": hidden, "final_hidden": h}
+
+    def _reasoner_inputs(self, batch) -> tuple[dict, torch.Tensor | None]:
+        """Prefill kwargs for `reasoner_forward`, plus the mrope deltas.
+
+        Text-only prompts pass `input_ids` straight through. With cameras, the
+        images have to be encoded and scattered into `inputs_embeds` first — that
+        is what `prepare_multimodal_reasoner_inputs` does, and it also returns the
+        mrope `position_ids` the prefill needs and the per-sample deltas the
+        decode loop needs.
+        """
+        pixel_values = batch.get("pixel_values")
+        if pixel_values is None:
+            return dict(input_ids=batch["input_ids"]), None
+        from cosmos_framework.model.generator.reasoner.nemotron_3_dense_vl import (
+            reasoner_multimodal_utils as mm,
         )
-        hidden = {i: h for i, h in enumerate(out.hidden_states[1:])}
-        return {"logits": out.logits, "hidden": hidden,
-                "kv_cache": out.past_key_values}
+        self.lm._ensure_vision_tower()
+        embeds, vis_mask, deepstack, pos_ids, deltas = mm.prepare_multimodal_reasoner_inputs(
+            self.lm,
+            input_ids=batch["input_ids"],
+            pixel_values=pixel_values,
+            image_grid_thw=batch["image_grid_thw"],
+            attention_mask=batch.get("attention_mask"),
+        )
+        return (dict(input_ids=None, inputs_embeds=embeds, position_ids=pos_ids,
+                     visual_pos_masks=vis_mask, deepstack_visual_embeds=deepstack),
+                deltas)
+
+    @contextlib.contextmanager
+    def _capture_layers(self, layers=None):
+        """Collect per-layer reasoner outputs for feature KD (D-008).
+
+        `_impl_reasoner_forward` calls `decoder_layer.reasoner_forward(...)`
+        DIRECTLY rather than through `__call__`, so `register_forward_hook` never
+        fires (D-027). We shadow the bound method on the instance for the
+        duration and restore the instance `__dict__` exactly as we found it.
+
+        The captured tensors are activations autograd already retains, so this
+        stores references, not copies.
+        """
+        stack = self._decoder_layers()
+        wanted = set(range(len(stack))) if layers is None else {int(i) for i in layers}
+        out: dict[int, torch.Tensor] = {}
+        patched = []
+        for i, layer in enumerate(stack):
+            if i not in wanted:
+                continue
+            original = layer.reasoner_forward
+            had_own = "reasoner_forward" in layer.__dict__
+
+            def _wrap(idx, fn):
+                def inner(*a, **kw):
+                    h = fn(*a, **kw)
+                    out[idx] = h
+                    return h
+                return inner
+
+            layer.reasoner_forward = _wrap(i, original)
+            patched.append((layer, original, had_own))
+        try:
+            yield out
+        finally:
+            for layer, original, had_own in patched:
+                if had_own:
+                    layer.reasoner_forward = original
+                else:
+                    del layer.__dict__["reasoner_forward"]
 
     def flow_forward(self, batch, a_t, t, context_kv=None) -> torch.Tensor:
         """Gen-tower velocity prediction at cached teacher points, returned in
@@ -174,8 +442,7 @@ class EdgeStudent(nn.Module):
         # packing of action tokens). VALIDATE-ON-GPU: timestep scale/shift must
         # match net.config.timestep_scale exactly.
         emb = self.net.action2llm(x, domain)               # (N, 64, hidden)
-        ts = self.net.time_embedder(sigma / self.net.timestep_scale
-                                    if self.net.timestep_scale != 1.0 else sigma)
+        ts = self.net.time_embedder(self._embedder_timesteps(sigma))
         emb = emb + ts.unsqueeze(1) + self.net.action_modality_embed
 
         # Joint two-way attention against the frozen AR context KV: gen-pathway
@@ -191,6 +458,31 @@ class EdgeStudent(nn.Module):
         v_student = v_student[..., : self.raw_action_dim]  # (N, 64, 2)
         return -v_student  # student target = noise - data; teacher = data - noise
 
+    def _embedder_timesteps(self, sigma: torch.Tensor) -> torch.Tensor:
+        """Normalized student noise level -> what `time_embedder` expects.
+
+        Cosmos3VFMNetwork embeds `action.timesteps * net.timestep_scale`
+        (cosmos3_vfm_network.py:788), where `action.timesteps` are DISCRETE
+        scheduler steps in [0, num_train_timesteps) and
+        `timestep_scale = timestep_range / num_train_timesteps`
+        (omni_mot_model.py:264). The embedder's own input range is therefore
+        [0, timestep_range), and `timestep_range` is 1.0 for Edge
+        (edge_model_config.py:63) — so a sigma already in [0, 1] is passed
+        THROUGH. The previous code divided by `timestep_scale`, inflating the
+        embedder input by 1000x at the shipped 0.001 scale.
+        """
+        return sigma * self._timestep_range
+
+    @property
+    def _timestep_range(self) -> float:
+        cfg = getattr(self.omni, "config", None)
+        rng = getattr(getattr(cfg, "diffusion_expert_config", None), "timestep_range", None)
+        if rng is None:  # derive it back out of the scale the net was built with
+            n = getattr(getattr(cfg, "rectified_flow_inference_config", None),
+                        "num_train_timesteps", None)
+            rng = float(self.net.timestep_scale) * float(n) if n else 1.0
+        return float(rng)
+
     def _gen_pathway_forward(self, gen_embeds, context_kv):
         """Run the MoT gen pathway over action-token embeds with und-context KV.
         VALIDATE-ON-GPU: wire through unified_mot's packed forward
@@ -200,15 +492,55 @@ class EdgeStudent(nn.Module):
             "cosmos_framework.model.generator.mot.unified_mot (see D-015).")
 
     @torch.no_grad()
-    def generate_traj_tokens(self, batch) -> torch.Tensor:
-        """Student-sampled discrete trajectory tokens (scheduled sampling, 4.2).
-        Restricted to the appended trajectory vocab rows, mirroring the
-        teacher-side Phase-B restriction (D-014)."""
-        lo, hi = self.new_token_range
-        out = self.lm.generate(
-            input_ids=batch["input_ids"],
-            attention_mask=batch.get("attention_mask"),
-            max_new_tokens=128, min_new_tokens=128, do_sample=True,
-            suppress_tokens=list(range(0, lo)),  # only trajectory rows allowed
+    def generate_traj_tokens(self, batch, n_tokens: int | None = None) -> torch.Tensor:
+        """Student-sampled trajectory tokens, restricted to the future-bin rows.
+
+        Mirrors the teacher's Phase-B restriction (D-014): only the 3000 appended
+        future-bin ids may be emitted. `generate_reasoner_text` cannot express
+        that — it has temperature/top-k/top-p but no `suppress_tokens` (D-027) —
+        so this is the framework's own decode loop with a per-step logit mask.
+        Prefill, cache handling and mrope decode positions follow
+        `_impl_generate_reasoner_text` exactly; sampling reuses the framework's
+        `_sample_next_token` rather than a second top-p implementation.
+
+        Returns REGION-RELATIVE bins (B, n_tokens), the convention the cache and
+        losses use.
+        """
+        from cosmos_framework.model.generator.mot.unified_mot import (
+            ReasonerKVCache, _sample_next_token,
         )
-        return out[:, batch["input_ids"].shape[1]:] - lo  # region-relative bins
+
+        model = self.lm.model
+        n = int(n_tokens if n_tokens is not None else prompt_mod.N_FUTURE_TOKENS)
+        cache = ReasonerKVCache.empty(num_layers=len(model.layers))
+
+        fwd, deltas = self._reasoner_inputs(batch)
+        h = model.reasoner_forward(cache=cache, **fwd)
+        base_mrope = (deltas.to(dtype=torch.long).unsqueeze(0).expand(3, -1, -1)
+                      if deltas is not None else None)
+
+        gcfg = self.cfg.teacher   # same decode settings the teacher labeled with
+        temperature = float(gcfg.get("gen_temperature", 1.0))
+        top_p = float(gcfg.get("gen_top_p", 1.0))
+
+        emitted = []
+        logits = self.lm.lm_head(h[:, -1, :])
+        for step in range(n):
+            tok = _sample_next_token(
+                self._restrict_to_future_bins(logits),
+                do_sample=True, temperature=temperature, top_k=None, top_p=top_p)
+            emitted.append(tok)
+            if step == n - 1:
+                break
+            position_ids = None if base_mrope is None else base_mrope + cache.seq_len
+            h = model.reasoner_forward(tok.unsqueeze(1), cache=cache,
+                                       position_ids=position_ids)
+            logits = self.lm.lm_head(h[:, -1, :])
+        return torch.stack(emitted, dim=1) - self.future_base
+
+    def _restrict_to_future_bins(self, logits: torch.Tensor) -> torch.Tensor:
+        """-inf everywhere outside [future_base, future_base + 3000)."""
+        lo, hi = self.future_base, self.future_base + self.n_future_bins
+        out = torch.full_like(logits, float("-inf"))
+        out[..., lo:hi] = logits[..., lo:hi]
+        return out

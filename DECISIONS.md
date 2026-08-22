@@ -72,7 +72,7 @@ Convention: **[VERIFIED]** = confirmed from primary source (config/code/model ca
 
 - CoC text: **sequence-level KD** (teacher generations retokenized by Edge's Nemotron tokenizer, plain CE). Forced by cross-tokenizer mismatch; ULD/MinED machinery not worth it when generations are cached anyway.
 - Trajectory tokens: **exact-vocab token-level logit KD** (top-k tail-bucket KL). Well-posed only because of the shared discretizer (D-003). Soft distribution carries the multimodal mode structure a hard argmax sequence would discard.
-- Flow field: **capacity distillation of the velocity field** via cached supervised regression (D-007). NOT step/consistency distillation — that's a latency optimization, orthogonal, can stack later if 10 Euler steps are too slow on the RTX PRO 6000.
+- Flow field: **capacity distillation of the velocity field** via cached supervised regression (D-007). NOT step/consistency distillation — that's a latency optimization, orthogonal, can stack later if 10 Euler steps are too slow on the target GPU (RTX 6000 Ada 48GB).
 - Feature-level KD: optional, projector-based, CKA-matched (D-008); dispensable.
 - Cross-family (Qwen→Nemotron) is normal in VLA distillation (cf. MiniVLA: OpenVLA/Llama-2 → Qwen2.5-0.5B via sequence-level KD); same-family prune-then-distill (Minitron) is the convenient case, unavailable here since Edge is a fixed artifact.
 
@@ -105,7 +105,7 @@ Convention: **[VERIFIED]** = confirmed from primary source (config/code/model ca
 
 - **Source:** local clones `../cosmos` (NVIDIA/cosmos cookbooks) and `../cosmos-framework` (github.com/NVIDIA/cosmos-framework, shallow-cloned 2026-08-17 — this is where the model code lives; the cookbook repo only documents it).
 - **Model classes:** the HF-Transformers `Cosmos3EdgeForConditionalGeneration` (transformers@main, no PyPI release yet) loads the **reasoner tower only** — sufficient for Stage 1. The full model (both towers + action head) loads via `cosmos_framework.inference.model.Cosmos3OmniModel.from_pretrained_dcp(<snapshot of nvidia/Cosmos3-Edge>)` → `OmniMoTModel` → `Cosmos3VFMNetwork(language_model=Nemotron3DenseVL unified MoT)`.
-- **Tower split is per-parameter-name:** every generation-tower weight carries the **`_moe_gen` suffix** (`q/k/v/o_proj_moe_gen`, `mlp_moe_gen`, `input/post_attention_layernorm_moe_gen`, final `norm_moe_gen`); the reasoner tower is every language-model weight *without* the suffix (source comments state this split explicitly, `unified_mot.py:1518`). Joint attention `two_way`. This directly instantiates the freeze schedule: Stage 1 trains non-`_moe_gen`, Stage 2 trains `_moe_gen` + action projections.
+- **Tower split is per-parameter-name:** every generation-tower weight carries the **`_moe_gen` suffix** (`q/k/v/o_proj_moe_gen`, `mlp_moe_gen`, `input/post_attention_layernorm_moe_gen`, final `norm_moe_gen`); the reasoner tower is every language-model weight *without* the suffix (source comments state this split explicitly, `unified_mot.py:1518`). Joint attention `two_way`. This instantiates the **tower split** used by the freeze schedule: Stage 1 touches non-`_moe_gen`, Stage 2 touches `_moe_gen` + action projections. (The *regime* — full FT vs LoRA — is set by D-024, not here.)
 - **Action interface (from `cosmos3_vfm_network.py` + `domain_aware_linear.py`):** actions are per-frame tokens `[T_i, action_dim]` entering via `action2llm` (DomainAwareLinear: action_dim → hidden) and exiting via `llm2action` (hidden → action_dim), each with **per-embodiment weight rows** (`num_embodiment_domains: 32`; Edge `max_action_dim: 64`), plus a learned `action_modality_embed` and per-token timestep embedding. AV native embodiment = 9D ego-pose deltas, 60 frames @ 10 FPS (cookbook action README). Renewed (2026-07-16) Cosmos3-Edge checkpoint ships trained action-head weights (`action_gen: true`); pre-renewal ones lacked them.
 - **Student diffusion objective is also rectified flow** (`RectifiedFlow` per modality; `rectified_flow_action` with its own train-time distribution and `independent_action_schedule` support; inference `flow_shift` default 10, timestep shift `sigma = shift·t/(1+(shift−1)t)`).
 
@@ -121,7 +121,7 @@ Convention: **[VERIFIED]** = confirmed from primary source (config/code/model ca
 
 - **Decision:** register UnicycleAccelCurvature (64 waypoints × 2 dims, D-002) as a new embodiment domain in Edge's `DomainAwareLinear` action projections: 64 action tokens of raw dim 2, zero-padded into the 64-wide `max_action_dim` interface, `raw_action_dim = 2`, a fresh `domain_id` (config `student.action_domain_id`, default 31; verify the slot is unused in the shipped checkpoint's domain registry at integration).
 - **Why this beats both original options:** it *is* option (i)'s bolt-on head, but through the model's designed extension mechanism — per-domain weights are embedding rows, so the new head trains without touching other domains or any architecture surgery, keeps 1:1 correspondence with the cached teacher velocities (no 9D translation error, option (ii)'s flaw), and stays checkpoint-compatible with Edge tooling.
-- Trained in Stage 2 together with the `_moe_gen` tower; the new domain rows are exactly the "action head" parameters.
+- Trained in Stage 2 together with the `_moe_gen` tower; the new domain rows are exactly the "action head" parameters. **Full-rank** even under D-024 (they are new parameters), with the other 31 domains' rows gradient-masked.
 - Native-9D remains available later as a *deployment* conversion (kinematic rollout of accel/curvature → poses is deterministic, D-002), not a training-time remap.
 
 ---
@@ -133,3 +133,466 @@ Convention: **[VERIFIED]** = confirmed from primary source (config/code/model ca
 3. ~~Labeling pipeline: teacher expert forwards per sampled (x_t, t); MRoPE offset + mask handling.~~ (D-006, D-007, D-014)
 4. ~~Layer mapping: `mode: cka` default, `uniform` demoted.~~ (D-008)
 5. ~~Teacher-side `# INTEGRATE:` stubs filled from the local alpamayo2 clone~~ (D-004–006, D-012–014). ~~Student-side stubs blocked on D-009~~ — resolved 2026-08-17 (D-015–017): `edge_wrapper.py` integrated against `../cosmos-framework` (load path, `_moe_gen` tower split, domain-aware action head, convention conversion). One remaining `# VALIDATE-ON-GPU` gap: the packed gen-pathway forward (`_gen_pathway_forward`) must be wired against `unified_mot.py`'s packed und/gen sequence utilities on the GPU box.
+
+---
+
+## D-018 [DECIDED] Teacher switched: Alpamayo 2 Super -> Alpamayo 1.5 (memory constraint)
+
+- **Trigger:** Alpamayo 2 Super (34B: 32B reasoner + 2.3B expert, ~68 GB bf16 weights before KV
+  cache and expert-batch activations) does not fit the available RTX GPU. Alpamayo 1.5 is
+  **11.08B params / 22.16 GB bf16** (`model.safetensors.index.json` metadata), ~24 GB for
+  single-sample inference and ~40 GB at 16 trajectory samples per NVIDIA's table.
+- **Decision:** re-target the teacher side of the pipeline at `nvidia/Alpamayo-1.5-10B`
+  (local clone `../alpamayo1.5`). Student side (Cosmos 3 Edge) is untouched.
+- **What this costs:** the reasoner compression ratio drops from 32B -> 4B to **8B -> 4B**.
+  The *expert* compression is unchanged (see D-019: A1.5's expert is ~2.28B, the same capacity
+  as A2 Super's 2.3B expert), so **Stage 2's teacher-flow distillation (D-007) is unaffected**;
+  only Stage 1's reasoner-capacity gap shrinks. **Settled by D-025:** under a
+  capability-transfer framing the ratio is largely irrelevant, so this cost is minor.
+- **What this buys, besides memory:** A1.5 is RL post-trained for reasoning/trajectory
+  consistency, so cached CoC traces should be better aligned with the cached trajectory than
+  A2 Super's. It also adds navigation conditioning and VQA (unused; see D-023).
+
+## D-019 [VERIFIED] Alpamayo 1.5 checkpoint architecture (from config.json + safetensors index)
+
+Source: `../alpamayo1.5/{config.json, model.safetensors.index.json}` (HF snapshot, read 2026-08-18).
+
+- **Backbone:** `vlm_name_or_path: nvidia/Cosmos-Reason2-8B`, `vlm_backend: qwenvl3` (loaded via
+  `Qwen3VLConfig`, `base_model.py:376`). **36 language-model layers** + a 27-block ViT.
+  Still cross-family vs the student's Nemotron-based Edge -> **D-008 (CKA layer mapping primary)
+  stands**; only the layer count changes, 64 -> 36.
+- **Expert:** 36 layers, 1:1 with the backbone (`expert.layers.0..35`), `hidden_size 2048`,
+  `num_attention_heads 16`, `head_dim 128`, `intermediate_size 8256`, no `embed_tokens`,
+  own final `expert.norm`. **~2.28B params - the same expert capacity as A2 Super's 2.3B.**
+- **D-004 holds and is now structural:** the expert config is `deepcopy(vlm.config.text_config)`
+  with only the four `expert_cfg` keys overridden (`alpamayo1_5.py:94-99`), so
+  `num_hidden_layers` and `num_key_value_heads` are inherited -> KV geometry equality is
+  guaranteed by construction, not by coincidence. (KV-head count itself comes from the
+  Cosmos-Reason2-8B config, not from these two files - read it on the GPU box.)
+- **D-002 holds verbatim**, with published normalization stats to use as-is:
+  `accel_mean 0.02902694707164455`, `accel_std 0.6810426736454882`,
+  `curvature_mean 0.0002692167976330542`, `curvature_std 0.026148280660833106`,
+  bounds +/-9.8 and +/-0.33, `dt 0.1`, `n_waypoints 64`.
+- **D-003 holds with IDENTICAL numbers** - the earlier worry that the token vocabulary shrank
+  was wrong (it came from stale in-code defaults, not the checkpoint):
+  `traj_tokenizer_cfg = DiscreteTrajectoryTokenizer` over the same UnicycleAccelCurvature space,
+  **`num_bins: 3000`**, `dims_min [-10,-10]`, `dims_max [10,10]`,
+  **`tokens_per_future_traj: 128`** (= 64 waypoints x 2 dims).
+  Edge's appended trajectory vocabulary (3000 rows) needs **no change**.
+- **Token layout - the one real difference, and it is an ORDER SWAP:**
+  `traj_token_start_idx: 151669`, `traj_vocab_size: 4000`.
+  A1.5 puts the **future bins first**: future = `[151669, 154669)`, history =
+  `[154669, 155669)` (1000-bin `DeltaTrajectoryTokenizer`). A2 Super was the other way round
+  (history first, future at +1000). So `future_id0 = traj_token_start_idx` here, *not*
+  `start + history_vocab_size`. Region-relative bin ids (D-014) are unchanged.
+  Specials: `history_start 155674`, `history_end 155676`, `future_start 155681`,
+  `future_end 155683`, `history 155684`, `future 155685`; `vocab_size 155697`.
+- `tokens_per_history_traj: 48` (16 waypoints x 3 xyz deltas) - matches the hardcoded
+  `num_traj_token = 48` placeholder in `helper.create_message`.
+- **D-005 holds:** `action_in_proj = PerWaypointActionInProjV2(hidden 512, 20 Fourier feats,
+  max_freq 100, 2 enc layers)`; `action_out_proj = nn.Linear(2048 -> 2)`.
+- **D-006 holds:** `expert_non_causal_attention: true`, `padding_side: left`,
+  `min_pixels 163840 / max_pixels 196608`, `include_camera_ids: true`, `include_frame_nums: true`.
+- Diffusion: `FlowMatching(int_method=euler)`, defaults `num_inference_steps=10`, CFG off.
+- **Checkpoint layout is flat** (`vlm.*`, `expert.*`, `action_in_proj.*`, `action_out_proj.*`)
+  and loads in one call: `Alpamayo1_5.from_pretrained(...)`. No submodule assembly like A2.
+
+## D-020 [VERIFIED] D-012's flow convention survives, but its primary source is gone
+
+- A1.5's released `diffusion/flow_matching.py` ships the **sampler only**: no
+  `construct_training_data`, no `compute_loss_from_pred`, no Beta timestep sampler.
+- The sampler is byte-equivalent in behaviour to A2's (`linspace(0,1,steps+1)`, Euler
+  `x += dt*v`, init `randn*temperature`), which pins the same convention:
+  `x_t = t*x + (1-t)*noise`, `u* = x - noise`, **t = data weight**.
+- **Consequence:** D-012 downgrades from "verified from training code" to "inferred from the
+  sampler". Nothing changes operationally - the labeler stratifies t itself. The `0.999` cap in
+  `TeacherWrapper.stratified_timesteps` is now *our* choice (it keeps gt_flow a0-recovery
+  well-conditioned), not a mirror of the teacher's sampler.
+- **D-016 (student sign flip, sigma = 1 - t, v* = -u) is therefore unchanged** and still the
+  single most dangerous integration detail in Stage 2.
+
+## D-021 [VERIFIED] Meta-action does not exist in Alpamayo 1.5 - drop it from the cache
+
+- `config.json` sets `add_special_tokens: true`, so the tokenizer registers
+  `base_model.SPECIAL_TOKENS`, whose slots 10-11 are `_padding_2`/`_padding_3` - exactly where
+  A2 Super has `meta_action_start`/`meta_action_end`. `token_utils.extract_text_tokens` still
+  asks for `"meta_action"` but will always return `""`.
+- **Consequence (amends D-014):** drop `meta_action` / `meta_action_text` from
+  `TeacherWindowOutput`, the npz shard, and the collator; delete the
+  `cache_root/meta_action_vocab.json` registry and the "meta-action auxiliary head" idea from
+  the README. `curation.py`'s meta-action strata fall back to metadata-only stratification.
+
+## D-022 [OPEN] Phase-B discrete-trajectory-token emission is unverified for A1.5
+
+- For A2 Super, D-014 rested on a *training* loss (`future_traj_loss`, `alpamayo2_super.py:232`)
+  proving the discrete future tokens are a trained target. A1.5's release is inference-only and
+  **strips the future-fusion path**: `TrajectoryFusionMixin.fuse_traj_tokens`
+  (`base_model.py:172-201`) validates the future-tokenizer attributes and then fuses
+  **history only**.
+- Evidence the target exists anyway: the checkpoint defines a full 3000-bin future tokenizer,
+  `<|traj_future|>`/`<|traj_future_start|>`/`<|traj_future_end|>` ids, and
+  `token_utils.extract_traj_tokens` parses exactly that span.
+- **This is now the largest risk in the plan.** Validate FIRST on 2-3 debug clips: unmask the
+  future region, continue generation for `tokens_per_future_traj` steps, detokenize, and check
+  the result is a sane trajectory (compare against the expert's own Euler rollout).
+- **Fallback if it fails:** Stage 1 loses its primary target and reduces to sequence-level CoC KD
+  (D-011) plus a continuous trajectory target; the coarse-minADE gate would have to run off the
+  expert instead of detokenized tokens.
+
+## D-023 [DECIDED] 4-camera configuration (amends D-013)
+
+- A1.5's `load_physical_aiavdataset` defaults to **4 cameras**:
+  `[cross_left_120fov, front_wide_120fov, cross_right_120fov, front_tele_30fov]`, and NVIDIA's
+  own ablation notebook (`notebooks/inference_cam_num.ipynb`) tops out at 4. The camera-index
+  map still covers all 7 (0..6), and A1.5 explicitly supports a variable camera count.
+- **Decision:** label with the 4-camera reference set. It is the configuration NVIDIA
+  demonstrates, it shortens the prompt and the KV cache (cheaper labeling), and it is closer to
+  the student's deployment context than the 7-camera ring.
+- This reverses the D-013 correction, which was an A2 Super fact ("7-camera ring including
+  `camera_rear_tele_30fov`"). `configs/default.yaml:data.cameras` updated accordingly.
+
+---
+
+## Scaffold changes implied by the teacher swap — APPLIED 2026-08-18
+
+1. `configs/default.yaml`: teacher repo, 4 cameras, `feat_layers` re-spaced over 36 layers,
+   meta-action strata removed. (D-018, D-019, D-021, D-023)
+2. `data/preprocess.py`: A1.5 loader has no `include_calibration` kwarg and returns no
+   `camera_names` key — names now derived from the configured camera list. (D-019)
+3. `teacher/wrapper.py`: rewritten against the A1.5 API surface — inlined expert, static
+   `_find_eos_offset` / `_build_expert_pos_ids_and_attn_mask`, `ExpertLogitsProcessor`,
+   `helper.create_message` + `processor.apply_chat_template` instead of the deleted
+   `prepare_model_inputs`/`build_conversation`, `future_id0 = traj_token_start_idx`. (D-019)
+4. `teacher/labeler.py`, `data/dataset.py`, `data/curation.py`: meta-action removed. (D-021)
+5. Student side (`student/edge_wrapper.py`, `losses.py`, `train_stage2.py`, `eval/`):
+   **no changes from the teacher swap** — the trajectory vocabulary is still 3000 bins and the
+   flow conventions on both sides are unchanged (D-019, D-020). Note the student side *does*
+   change under D-024 (LoRA), which is separate and **still pending** — see
+   `TRAINING_STRATEGY.md` §6.
+
+---
+
+## D-024 [DECIDED] LoRA adaptation for both stages, not full fine-tuning
+
+- **Supersedes the freeze schedule's training regime** in D-015/D-017: those entries
+  established *which tower belongs to which stage* (still correct); the implicit "the
+  active tower is fully trainable" was inherited from the 96GB premise, never a considered
+  choice, and is now wrong.
+- **Decision:** LoRA on existing pretrained weights — Stage 1 on the AR tower's
+  `q/k/v/o_proj` (rank 32-64), Stage 2 on the gen tower via cosmos-framework's own shipped
+  default `q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen` (rank 16, alpha 32).
+  Full-rank training **only** for genuinely new parameters: the 3000 appended
+  trajectory-vocab rows and the new action-embodiment rows (D-017), ~12M params.
+- **Rationale:** ~10k training windows is five to six orders of magnitude below a
+  distillation pretraining corpus; the gen tower is where Edge's physical prior lives and
+  Stage 2 was about to full-FT all 1.94B of it on that data. `cosmos-framework` ships a
+  first-class LoRA path (`utils/generator/lora.py`) whose Edge defaults target exactly the
+  gen tower — NVIDIA's intended adaptation mechanism, which we were about to ignore.
+- **Also required (not optional):** gradient-mask the row-indexed tensors LoRA does not
+  cover — embedding/lm_head rows below the appended range, and the 31 non-target embodiment
+  rows in `action2llm`/`llm2action`. Otherwise forgetting leaks back in through them.
+- **Accepted cost:** LoRA may underfit, making a failed Stage-1 gate ambiguous. Mitigated by
+  a full-FT ablation on the 500-clip increment only.
+- **Side effect:** resolves the 48GB budget. Stage-1 trainable params drop 2.48B -> ~25M;
+  full FT needed 43.5GB before activations and did not fit. The earlier 48GB mitigations
+  (8-bit AdamW, frozen-embedding trick, `micro_batch: 1`) are withdrawn. EMA stays off.
+- Reasoning and numbers: `TRAINING_STRATEGY.md` §2-§3.
+
+## D-025 [DECIDED] Framing: domain-adaptive capability transfer, not compression
+
+- **Decision:** position the work as capability transfer into a physically-grounded
+  generalist, not as compression distillation. Report **task gain and retention as a pair**;
+  make **teacher-supervised vs GT-only at matched data/compute** the headline comparison
+  rather than an ablation.
+- **Consequence for D-018:** the reasoner compression ratio (32B->4B becoming 8B->4B after
+  the teacher swap) is close to irrelevant under this framing. D-018's "reframe the thesis
+  contribution" note is settled by this entry.
+- **Consequence:** a retention eval is required in `eval/` — without one the plan cannot
+  detect forgetting at all. Under this framing it is half the result, not hygiene.
+- **Known tradeoff to state in the thesis, not hide:** the cached-target design is
+  off-policy by construction (the teacher is gone by Stage 2 — that is what makes single-GPU
+  work), against a field trend toward on-policy KD. `scheduled_sampling_start_frac: 0.5`
+  partially mitigates. Do not change the design.
+- Full reasoning: `TRAINING_STRATEGY.md` §1, §4, §5.
+
+## D-026 [VERIFIED] D-024 implemented; four latent bugs found while wiring it
+
+Applied 2026-08-22 against the local `../cosmos-framework` clone. New files:
+`student/lora.py`, `checkpoint.py`, `optim.py`, `eval/retention.py`,
+`eval/probes/general_probes.json`, `scripts/06_retention.py`,
+`tests/test_lora_offline.py`. Changed: `student/edge_wrapper.py`,
+`train_stage1.py`, `train_stage2.py`, `configs/default.yaml`.
+
+**Corrections to what TRAINING_STRATEGY §6 assumed:**
+
+- `OmniMoTModel.add_lora` **does exist** (`omni_mot_model.py:5537`); §6 says it does not.
+  It is a forwarder to `inject_lora_pre_fsdp(network, lora_rank=, lora_alpha=,
+  lora_target_modules=)`. The old `_attach_lora` would still have crashed — it called
+  `add_lora(rank=, alpha=)`, a signature that matches neither — so the conclusion held for
+  the wrong reason. We call the free function directly because it takes the subtree, and
+  the subtree is the part that matters:
+- **Injection must be scoped to `language_model.model.layers`.** The framework matches
+  plain targets by leaf NAME across whatever root it is handed, and the reasoner's SigLIP2
+  vision tower — lazily attached at `language_model.visual` by `_ensure_vision_tower` —
+  names its attention leaves `q_proj`/`k_proj`/`v_proj` too. Passing the causal LM as root
+  would silently adapt the vision encoder as well. Inside the layer stack the `_moe_gen`
+  suffix keeps the two towers apart (D-015), so one scope serves both stages.
+- Adapters are meta-device even on an already-materialized model. We `to_empty()` the
+  `lora_A`/`lora_B` **submodules** — `to_empty()` on the wrapper would discard the
+  pretrained base weight it deliberately preserves.
+
+**Bugs found and fixed while wiring (all would have surfaced only on the GPU box):**
+
+1. **`extend_trajectory_vocab` never resized `lm_head`.** It called HF's
+   `resize_token_embeddings`, but `Nemotron3DenseVLTextForCausalLM` sets
+   `_tied_weights_keys = []` and defines no `get_output_embeddings`, so only the INPUT
+   embedding grew. The 3000 appended trajectory ids would have had **no logits at all** and
+   every Stage-1 trajectory loss would have been taken over unreachable rows. Both tables
+   are now resized explicitly, and `config.vocab_size` is kept in sync.
+2. **Timestep conversion was off by 1000x.** `flow_forward` divided sigma by
+   `net.timestep_scale`. The network embeds `action.timesteps * timestep_scale`
+   (`cosmos3_vfm_network.py:788`) where timesteps are DISCRETE scheduler steps and
+   `timestep_scale = timestep_range / num_train_timesteps` (`omni_mot_model.py:264`), so
+   the embedder's input range is `[0, timestep_range)` — and `timestep_range` is **1.0**
+   for Edge (`edge_model_config.py:63`). A normalized sigma passes through unscaled.
+3. **The Stage-1 cosine schedule never fired.** `if "initial_lr" in g` was never true —
+   AdamW does not create that key — so the LR stayed flat for the whole run. `optim.py`
+   now stamps `initial_lr` on every group.
+4. **Stage 2 could not have loaded Stage 1.** Besides the unmerged-LoRA-keys problem D-024
+   predicted, `train_stage2.py` never called `extend_trajectory_vocab`, so the checkpoint's
+   extended tables would have shape-mismatched a fresh student; and
+   `student.model.from_pretrained(dir)` (called on the instance) builds a SECOND model
+   rather than filling the resident one. Now: extend vocab -> `checkpoint.load_into`.
+
+**Checkpoints are merged, non-destructively.** `checkpoint.save` folds `lora_B @ lora_A *
+(alpha/rank)` into `<path>.weight` in a CPU copy and drops the adapter keys; the live model
+keeps its adapters so per-epoch saves do not end training. `load_into` refuses an unmerged
+checkpoint and checks vocab geometry before touching weights. `merge_lora_()` is the
+in-place variant, for export only. The merge math and both gradient row-masks are pinned by
+`tests/test_lora_offline.py` (8 tests, torch-only, no GPU — all passing).
+
+**Judgment call, flagged:** `action_modality_embed` and `time_embedder` are shared across
+all 32 embodiments, so no row mask can protect them. They stay **frozen** by default
+(`student.lora.train_shared_action_embeds: false`); the per-domain rows already give the
+teacher's action space its own affine interface. Flip it only if Stage 2 underfits.
+
+**Config:** `student.freeze` replaced by `student.lora`; stage-1 rank 48/alpha 96,
+stage-2 rank 16/alpha 32 (the shipped Edge default). `micro_batch` doubled in both stages
+with `grad_accum` halved, holding the effective batch at 32. LRs left at their full-FT
+values — LoRA usually wants 2-5x more, and that is the first knob if Stage 1 underfits.
+
+## D-027 [OPEN] The AR pathway is not the HF interface — `ar_forward` cannot run as written
+
+Found while wiring D-026's retention eval, which needed the same pathway.
+
+`Nemotron3DenseVLTextForCausalLM.forward(pack: SequencePack, attention_mask, position_ids,
+...)` takes a **packed sequence**, not `input_ids`. So both of these, written against the
+HF causal-LM interface, are wrong:
+
+- `EdgeStudent.ar_forward` — `self.lm(input_ids=..., output_hidden_states=True,
+  use_cache=True)`
+- `EdgeStudent.generate_traj_tokens` — `self.lm.generate(...)`, which routes through that
+  same pack-based `forward`
+
+The real reasoner-tower API (`unified_mot.py`) is:
+
+- `language_model.model.reasoner_forward(input_ids, cache, position_ids=None,
+  inputs_embeds=None, ...) -> [B, T, hidden]` — final **post-norm** hidden states, so
+  `lm_head(hidden)` gives logits;
+- `language_model.generate_reasoner_text(input_ids, max_new_tokens, *, do_sample,
+  temperature, top_k, top_p, eos_token_id, pad_token_id, seed, return_only_new_tokens, ...)`
+  — greedy or sampled decode with a `ReasonerKVCache`, and the image/video-conditioned
+  prefill path;
+- per-layer KV lives in `ReasonerKVCache(keys, values)` in BSHD layout — not an HF
+  `past_key_values`, which is what `train_stage2.py` currently forwards as `context_kv`.
+
+`eval/retention.py` is already written against these and is correct. **Two things block a
+straight port of `ar_forward`:**
+
+1. `reasoner_forward` returns only the FINAL hidden states, but feature KD (D-008) needs
+   the 8 mapped intermediate layers. `MoTDecoderLayer.reasoner_forward` is called directly
+   rather than through `__call__`, so ordinary `nn.Module` forward hooks will NOT fire —
+   capturing per-layer output means wrapping the bound method per layer.
+2. Trajectory-token sampling needs the vocab restriction Phase B uses (D-014).
+   `generate_reasoner_text` exposes `top_k`/`top_p`/`temperature` but **no
+   `suppress_tokens`**, which is what `generate_traj_tokens` relied on. Either post-mask
+   logits through a custom decode loop over `reasoner_forward` + `ReasonerKVCache`, or
+   accept unrestricted sampling and reject off-vocabulary draws.
+
+Neither is blocked on hardware — but (1) touches the frozen-context/chat-template question
+that Stage-1 input assembly is already waiting on, so do them together.
+
+## D-028 [VERIFIED] Student input format = the teacher's, verbatim
+
+New sibling repo `../alpamayo-recipes` (github.com/NVlabs/alpamayo-recipes, cloned
+2026-08-22) — NVIDIA's post-training recipes. It carries the **training-time** chat
+template that the release only implied: `src/alpamayo/chat_template/{r1,r1_5}.py` +
+`components.py`, with the component order pinned by
+`recipes/alpamayo1_5_sft/configs/vla_processor/default.yaml` and by
+`tests/test_recipe_static_contracts.py`.
+
+**Decision:** the student's deployment context mirrors the teacher's input exactly —
+cameras, ego motion, short text instruction — and the student produces CoC then
+trajectory tokens. This closes the "freeze Edge's deployment-context chat template"
+open item.
+
+**The format, cross-validated by two independent sources that agree** — the released
+`alpamayo1_5/helper.py::create_message` (which `teacher/wrapper.py` already uses for
+labeling) and the recipes training template:
+
+    system     "You are a driving assistant that generates safe and accurate actions."
+    user       per camera, ASCENDING camera index:
+                 "<Display name>: " then per frame "frame {i} " + <image>
+               "<|traj_history_start|>" + "<|traj_history|>" x48 + "<|traj_history_end|>"
+               ["<|route_start|>" nav "<|route_end|>"]        # unused for now
+               "output the chain-of-thought reasoning of the driving process,
+                then output the future trajectory."
+    assistant  "<|cot_start|>" cot "<|cot_end|>"
+               "<|traj_future_start|>" + 128 bins + "<|traj_future_end|>"
+
+Component order is `image -> traj_history -> [route] -> prompt`; in generation mode the
+assistant turn is opened with `<|cot_start|>` and nothing else. History is **48** slots
+(`helper.py: num_traj_token = 48`), future is 128 bins (D-014). Camera display names and
+indices are `alpamayo.common.constants` (index orders the prompt — `construct_image`
+asserts ascending; our 4-camera set is 0,1,2,6, already ascending, D-023).
+
+**Two things are the student's own and are NOT copied:**
+
+1. **Role scaffolding** — Edge has its own chat template and role tokens. We mirror the
+   content and its order, not the teacher's turn markup. Hence `student/prompt.py`
+   emits SEGMENTS, not one pre-rendered string.
+2. **Image placeholder count per frame** — a property of Edge's SigLIP2 tower and
+   processor (`_ensure_vision_tower` plumbs `config.image_token_id`), not of the
+   teacher. `assemble()` takes it as a callable so the real processor decides it on the
+   GPU box and the module stays testable offline.
+
+**Ego motion rides in the 48 reserved slots, as in the teacher** — A1.5 overwrites those
+slot embeddings with a fused projection of the continuous ego history
+(`model.fuse_traj_tokens`). Edge has no such module, so we owe it one
+(`EgoHistoryEncoder`, still to write): a new full-rank trainable module, which is
+exactly what D-024 says new interfaces get. **Rejected:** serializing ego motion as text
+numerals — lossy, far more tokens, and it stops being "the teacher's input".
+
+**Also appended to the student vocabulary** alongside the 3000 trajectory bins: the 9
+structural special tokens above. The student's tokenizer knows none of them, and the
+CoC/trajectory losses key off the spans they delimit.
+
+`student/prompt.py` implements this; `tests/test_prompt_offline.py` pins the rendered
+context against the expected literal (12 tests, no GPU).
+
+**Gap this exposes:** `collate_stage1` produces no `input_ids` and no images at all — the
+cached shards are teacher TARGETS only (`labeler.py`'s `savez_compressed`). Stage-1
+training must pair each shard with a re-loaded window (`preprocess.load_window` already
+returns student-resolution frames per camera plus `ego_history_xyz`/`rot`). That
+plumbing, `EgoHistoryEncoder`, and the D-027 port are one connected piece of work.
+
+## D-029 [VERIFIED] Stage-1 input path built; ego motion is DISCRETE, not a projection
+
+Implements D-028 and closes D-027. New: `student/prompt.py`, `student/context.py`,
+`data/dataset.py::Stage1Dataset` + `collate_student`, `losses.gather_targets`,
+`tests/test_{prompt,context}_offline.py`. Changed: `student/edge_wrapper.py`
+(`ar_forward`, `generate_traj_tokens`, `extend_trajectory_vocab`), `teacher/wrapper.py`,
+`data/preprocess.py`, both trainers, `eval/coarse_minade.py`.
+
+**Correction to D-028: no `EgoHistoryEncoder` is needed, and none was written.**
+`fuse_traj_tokens` sounds like an embedding fusion but is not. It calls
+`tokenize_history_trajectory` (`base_model.py:95`), which runs a SECOND tokenizer —
+`DeltaTrajectoryTokenizer`, 1000 bins — over the ego history and then
+`replace_pad_token`s the resulting ids into the `<|traj_history|>` slots. Ego motion is
+therefore discrete token ids, exactly like the future trajectory, and the student needs
+no continuous side-channel at all. D-028's "we owe Edge a projection module" was wrong.
+
+That tokenizer is called with the history passed as the FUTURE argument and only the
+first pose kept as the reference — an inversion that is easy to get backwards, so the
+teacher wrapper now hands the student a ready-made `hist_tokenize_fn` closure rather
+than raw `encode`.
+
+**Vocabulary layout** (checkpoint `config.json`, so [VERIFIED]): `traj_vocab_size = 4000`,
+`traj_token_start_idx = 151669`, `tokens_per_history_traj = 48`,
+`tokens_per_future_traj = 128`. Future occupies the first 3000 bins, history the next
+1000. The student appends **4000 bins + 9 structural special tokens = 4009 rows**, laid
+out `[future | history | specials]`, with `future_base` / `hist_base` / `special_ids`
+recorded on the wrapper. Previously it appended only 3000, which would have left the ego
+slots unrepresentable.
+
+**D-027 resolved.** `ar_forward` now runs `lm.model.reasoner_forward(...)` + `lm_head`.
+Per-layer hidden states for feature KD come from `_capture_layers`, which shadows each
+layer's bound `reasoner_forward` for the duration — `_impl_reasoner_forward` calls that
+method DIRECTLY, so `register_forward_hook` never fires. `generate_traj_tokens` is the
+framework's own decode loop (`ReasonerKVCache`, mrope decode positions, its
+`_sample_next_token`) plus a per-step logit mask restricting emission to the future-bin
+rows, since `generate_reasoner_text` has no `suppress_tokens`.
+
+**Right-padding is now a contract, not a preference.** `reasoner_forward` takes NO
+attention mask — the tower is causal by construction. Trailing padding can never reach a
+real token; leading padding would corrupt every position. `collate_student` right-pads
+and the losses mask.
+
+**Two alignment rules in `losses.gather_targets`,** both silent failures if wrong:
+the logit that predicts position `p` is at `p-1`; and CoC targets are read back out of
+`input_ids` rather than from the cache, because the cached ids are in the TEACHER's
+vocabulary while the student's own ids for the same text are already in the assembled
+sequence. That sidesteps the D-011 vocab-match question entirely. Trajectory top-k
+indices still need `+ future_base`, since the cache stores region-relative bins (D-014).
+
+**Window addressing.** Shards are named `{window_idx:02d}.npz` and store no timestamp, so
+Stage-1 recovers a window's `t0_us` from its index through
+`preprocess.window_t0s_us(cfg)` — now the single home for that formula. **Changing it
+silently repoints every existing cache at different video.**
+
+**Still VALIDATE-ON-GPU:** which image processor the Cosmos3-Edge snapshot ships
+(`context.load_image_processor` tries `AutoProcessor` then `AutoImageProcessor`) and
+whether its `pixel_values`/`image_grid_thw` match what
+`prepare_multimodal_reasoner_inputs` expects. Placeholder counts per frame are derived
+from the processor's own returned grid, so nothing guesses a constant.
+
+**Unchanged and still open:** `_gen_pathway_forward` (the packed gen-pathway forward).
+Stage 2 now passes the reasoner's final hidden states as context instead of the
+non-existent `past_key_values`, but the packed und/gen wiring is still the remaining
+GPU-box piece.
+
+## D-030 [VERIFIED] The teacher/student pairing is vendor-endorsed; no recipe exists for it
+
+Two independent NVIDIA statements bracket this project, and the gap between them is
+the contribution.
+
+**Cosmos 3 Edge release article** (user-sourced, 2026-08-22): the model "kann als
+Student-Backbone für die Destillation automobiler Richtlinienmodelle eingesetzt werden,
+unter anderem mit NVIDIA Alpamayo Vision-Language-Action-Modellen" — usable as a student
+backbone for distilling automotive policy models, expressly including with Alpamayo VLA
+models. That is this thesis, named by the vendor.
+
+**`../alpamayo-recipes/README.md`** describes Alpamayo 2 Super's uses as including "a
+teacher model for distillation and quantization into student models that meet in-vehicle
+latency and safety requirements on DRIVE AGX Thor". Both ends of the pairing are
+positioned for exactly this.
+
+**But neither repo ships a recipe for it.** Verified 2026-08-22:
+- `alpamayo-recipes` advertises "post-train, quantize or distill Alpamayo VLA models" in
+  its purpose table, yet `recipes/` contains only `alpamayo1_5_quant`, `alpamayo1_5_sft`,
+  `alpamayo1_sft`, `alpamayo1_x_rl`. There is no distillation recipe and no roadmap entry
+  promising one.
+- The only distillation cookbooks in `../cosmos` are **DMD2 step distillation**
+  (Cosmos3-Super T2I/I2V -> 4-step students). That is TRAINING_STRATEGY §1's bucket 3 —
+  compressing sampling STEPS, not transferring capability — and D-011 already ruled it
+  out as a different mechanism. Confirmed now that it is the ONLY distillation NVIDIA
+  publishes for Cosmos 3.
+
+**What this settles:** the "why this pairing" question, which is now answered by the
+vendor rather than argued by us. Motivation should cite both statements.
+
+**What it does NOT settle, and should not be read as settling:**
+- The teacher is **Alpamayo 1.5, not 2 Super** (D-018, a memory-driven swap). NVIDIA's
+  explicit "teacher for distillation" language attaches to the 34B Super. The capability-
+  transfer framing (TRAINING_STRATEGY §1) is what justifies the smaller teacher; expect
+  an examiner to ask, and answer with D-018 plus the headroom number from
+  `scripts/07_measure_gap.py`, not with the vendor quote.
+- The world-model forgetting risk is unchanged. "Use it as a policy student" is an
+  intended-use statement, not a guarantee that action-only adaptation leaves the
+  generation tower intact — and the tower's attention weights are demonstrably shared
+  across vision and action tokens (D-029 discussion, `get_gen_seq` = all generating
+  tokens). Vendor intent does not remove the mechanism.
+
+**Consequence for the framing:** NVIDIA says Edge can be an automotive policy student;
+nobody has published what that costs its world model. The retention pair (D-025) answers
+a question the vendor left open, which makes it a contribution rather than hygiene.

@@ -5,7 +5,7 @@ configured camera (4 frames/camera at the teacher's convention), egomotion
 history, and the ground-truth future trajectory over the eval horizon.
 
 Data access goes through the `physical_ai_av` package (the same interface the
-Alpamayo 2 repo uses via `load_physical_aiavdataset`) - NOT raw NCore zarr.itar
+Alpamayo 1.5 repo uses via `load_physical_aiavdataset`) - NOT raw NCore zarr.itar
 parsing. Clips stream from HF or read from a local snapshot; `paths.dataset_root`
 is passed as the interface's local_dir/cache. See DECISIONS.md D-013.
 """
@@ -54,7 +54,7 @@ def clip_metadata(cfg, clip_id: str) -> dict:
 class Window:
     clip_id: str
     t0_us: int
-    data: dict[str, Any]                   # alpamayo2_super model-input format:
+    data: dict[str, Any]                   # alpamayo1_5 model-input format:
                                            # image_frames (N_cam, F, 3, H, W), camera_indices,
                                            # ego_history_/future_ xyz+rot (1,1,T,...), timestamps
     frames_student: dict[str, np.ndarray]  # camera_name -> (F, h, w, 3) uint8, student res
@@ -69,7 +69,7 @@ def _resize_batch(frames: np.ndarray, hw: tuple[int, int]) -> np.ndarray:
 
 
 def load_window(cfg, clip_id: str, t0_us: int) -> Window:
-    from alpamayo2_super.load_physical_aiavdataset import load_physical_aiavdataset
+    from alpamayo1_5.load_physical_aiavdataset import load_physical_aiavdataset
     avdi = get_interface(cfg)
     cameras = [c.lower() for c in cfg.data.raw["cameras"]]
     camera_features = [getattr(avdi.features.CAMERA, c.upper()) for c in cameras]
@@ -80,12 +80,13 @@ def load_window(cfg, clip_id: str, t0_us: int) -> Window:
         maybe_stream=True,
         num_frames=cfg.data.context_frames,
         camera_features=camera_features,
-        include_calibration=False,
     )
     # Student-resolution copies, keyed by camera name (frames are (F, 3, H, W)).
+    # A1.5's loader returns no `camera_names` key, so names come from the configured
+    # order - which is exactly the order it stacks `image_frames` in (D-019).
     hw = tuple(cfg.data.raw["student_resolution"])
     frames_student = {}
-    for i, name in enumerate(data["camera_names"]):
+    for i, name in enumerate(cameras):
         f = data["image_frames"][i].permute(0, 2, 3, 1).numpy()  # (F, H, W, 3) uint8
         frames_student[name] = _resize_batch(f, hw)
     return Window(
@@ -98,11 +99,25 @@ def load_window(cfg, clip_id: str, t0_us: int) -> Window:
     )
 
 
-def iter_windows(cfg, clip_id: str) -> Iterator[tuple[int, Window]]:
+def window_t0s_us(cfg) -> list[int]:
+    """Window anchors for any clip, in microseconds.
+
+    Deterministic and clip-independent BY DESIGN: the cached shards are named
+    `{window_idx:02d}.npz` and store no timestamp, so stage-1 training recovers a
+    window's t0 from its index alone (`data/dataset.py`). Change this formula and
+    every existing cache silently points at different video.
+    """
     n = cfg.data.windows_per_clip
     horizon = cfg.eval.horizon_s
     # Anchor windows so 1.6 s of history and the full future horizon fit inside
     # the 20 s clip, spread evenly with margin at both ends.
-    t0s = np.linspace(2.0, 20.0 - horizon - 0.5, n)
-    for w_idx, t0 in enumerate(t0s):
-        yield w_idx, load_window(cfg, clip_id, int(round(t0 * 1e6)))
+    return [int(round(t0 * 1e6)) for t0 in np.linspace(2.0, 20.0 - horizon - 0.5, n)]
+
+
+def window_t0_us(cfg, window_idx: int) -> int:
+    return window_t0s_us(cfg)[window_idx]
+
+
+def iter_windows(cfg, clip_id: str) -> Iterator[tuple[int, Window]]:
+    for w_idx, t0_us in enumerate(window_t0s_us(cfg)):
+        yield w_idx, load_window(cfg, clip_id, t0_us)

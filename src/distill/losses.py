@@ -4,6 +4,45 @@ import torch
 import torch.nn.functional as F
 
 
+def gather_targets(logits: torch.Tensor, input_ids: torch.Tensor,
+                   pos_mask: torch.Tensor, n_targets: int):
+    """Line the student's sequence up with the cached teacher targets.
+
+    The student context is one long sequence (cameras, ego bins, instruction,
+    CoC, trajectory bins), but every loss here is written against a compact
+    per-target layout. This selects the marked positions and returns
+    `(logits, target_ids, valid)` shaped (B, n_targets, V) / (B, n_targets) /
+    (B, n_targets).
+
+    TWO alignment rules, both easy to get silently wrong:
+
+    * **Autoregressive shift.** The logit that PREDICTS the token at position p
+      sits at p-1. We gather at `positions - 1`, never at the positions.
+    * **Targets come from the sequence, not from the cache.** The cached CoC ids
+      are in the TEACHER's vocabulary; the student's own ids for the same text
+      are already in `input_ids`, because the context builder tokenized the
+      teacher's `coc_text` with the student's tokenizer. Reading targets back
+      out of `input_ids` sidesteps the whole vocab-match question (D-011).
+
+    The batch loop is deliberate: micro-batches are 4-8 here, and a vectorized
+    scatter would obscure the shift rule for no measurable gain.
+    """
+    B, L, V = logits.shape
+    out = logits.new_zeros(B, n_targets, V)
+    tgt = input_ids.new_zeros(B, n_targets)
+    valid = torch.zeros(B, n_targets, dtype=torch.bool, device=logits.device)
+    for b in range(B):
+        pos = pos_mask[b].nonzero(as_tuple=True)[0]
+        pos = pos[pos > 0][:n_targets]          # position 0 has no predictor
+        k = pos.shape[0]
+        if k == 0:
+            continue
+        out[b, :k] = logits[b, pos - 1]
+        tgt[b, :k] = input_ids[b, pos]
+        valid[b, :k] = True
+    return out, tgt, valid
+
+
 def traj_topk_kl(student_logits: torch.Tensor, topk_idx: torch.Tensor,
                  topk_logp: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """KL(teacher || student) on discrete trajectory tokens over K+1 buckets:

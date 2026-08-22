@@ -17,6 +17,7 @@ import numpy as np
 import torch
 
 from ..teacher.wrapper import TeacherWrapper, TeacherWindowOutput
+from ..data import frames
 from ..data.preprocess import iter_windows
 
 log = logging.getLogger(__name__)
@@ -35,8 +36,6 @@ def save_shard(path: Path, out: TeacherWindowOutput) -> None:
         traj_topk_logp=out.traj_topk_logp.cpu().to(torch.float16).numpy(),
         coc_token_ids=out.coc_token_ids.cpu().numpy().astype(np.int32),
         coc_text=np.str_(out.coc_text),
-        meta_action=np.int32(out.meta_action),
-        meta_action_text=np.str_(out.meta_action_text),
         flow_t=out.flow_t.cpu().numpy().astype(np.float32),
         flow_a_t=out.flow_a_t.cpu().numpy().astype(np.float32),
         flow_v=out.flow_v.cpu().to(torch.float16).numpy(),
@@ -53,9 +52,17 @@ def run_labeling(cfg, clip_ids: list[str]) -> None:
     teacher = TeacherWrapper(cfg)
     done = skipped = 0
     t0 = time.time()
+    cache_frames = bool(cfg.data.get("cache_student_frames", True))
+    quality = int(cfg.data.get("frame_jpeg_quality", 92))
     for clip_id in clip_ids:
         for w_idx, window in iter_windows(cfg, clip_id):
             path = shard_path(cache_root, clip_id, w_idx)
+            in_path = frames.input_path(cache_root, clip_id, w_idx)
+            # The student's inputs are written even when the teacher targets are
+            # already cached: an older cache predates this file, and re-streaming
+            # the clip once now beats re-streaming it every epoch later.
+            if cache_frames and not in_path.exists():
+                frames.save_window_input(in_path, window, quality=quality)
             if path.exists():
                 skipped += 1
                 continue

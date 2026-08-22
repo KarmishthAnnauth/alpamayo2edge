@@ -1,8 +1,8 @@
-torch>=2.4
+torch>=2.8            # A1.5 pins torch==2.8.0 / transformers==4.57.1
 numpy
 pyyaml
 opencv-python-headless
-transformers>=4.46
+transformers>=4.57
 peft
 einops
 scipy
@@ -11,4 +11,4 @@ pyarrow
 hydra-core
 huggingface_hub
 # Local sibling repos (clone next to this repo, then):
-#   pip install -e ../alpamayo2 -e ../physical_ai_av
+#   pip install -e ../alpamayo1.5 -e ../physical_ai_av

@@ -8,13 +8,16 @@ import functools
 import torch
 from torch.utils.data import DataLoader
 
-from ..data.dataset import DistillShardDataset, collate_stage1
+from ..data.dataset import Stage1Dataset, collate_stage1
 from .open_loop import evaluate
 
 
 @torch.no_grad()
 def coarse_minade(cfg, student, split: str = "challenging", k: int = 6) -> float:
-    ds = DistillShardDataset(cfg, clip_ids=_split_clips(cfg, split))
+    # Needs the student context, not just the cached targets: the metric is
+    # decoded from the student's OWN sampled trajectory tokens (D-028).
+    ds = Stage1Dataset(cfg, student.context_builder(),
+                       clip_ids=_split_clips(cfg, split))
     dl = DataLoader(ds, batch_size=8, collate_fn=functools.partial(
         collate_stage1, pad_id=student.tokenizer.pad_token_id))
 

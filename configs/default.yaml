@@ -1,23 +1,36 @@
-# Alpamayo 2 Super -> Cosmos 3 Edge distillation
-# Single-GPU profile: 1x RTX PRO 6000 Blackwell 96GB, 5k curated clips.
+# Alpamayo 1.5 -> Cosmos 3 Edge distillation
+# Single-GPU profile, 5k curated clips. Teacher swapped from Alpamayo 2 Super
+# (34B, ~68GB bf16) to Alpamayo 1.5 (11.08B, 22.16GB bf16) to fit the available
+# RTX GPU. See DECISIONS.md D-018..D-023.
 
 paths:
   dataset_root: /data/physicalai-av          # PhysicalAI-AV NCore clips
   cache_root: /data/distill_cache            # teacher targets (one shard per clip)
   runs_root: /data/runs
-  teacher_repo: nvidia/Alpamayo2-Super
+  teacher_repo: nvidia/Alpamayo-1.5-10B
   student_repo: nvidia/Cosmos3-Edge
 
 data:
   num_clips: 5000
   increments: [500, 2000, 5000]              # incremental labeling / scaling-curve points
   windows_per_clip: 2                        # training windows sampled per 20s clip
-  # 7-camera ring = the Alpamayo 2 Super S1 convention (load_physical_aiavdataset defaults)
+  # 4-camera reference set = the Alpamayo 1.5 load_physical_aiavdataset default and the
+  # configuration NVIDIA's own ablation notebook tops out at (D-023). All 7 ring cameras
+  # remain addressable (camera index map covers 0..6) if we ever want the ablation.
   cameras: [camera_cross_left_120fov, camera_front_wide_120fov, camera_cross_right_120fov,
-            camera_rear_left_70fov, camera_rear_tele_30fov, camera_rear_right_70fov,
             camera_front_tele_30fov]
   context_frames: 4                          # frames per camera (teacher convention)
   student_resolution: [360, 640]             # Edge control resolution (H, W)
+  # Write the student's own inputs (JPEG frames + ego history) during the
+  # labeling pass, which already loads every window. Without this, stage-1
+  # training re-streams every clip once per epoch.
+  # Size: 10k windows x 16 frames (4 cameras x 4) at 360x640 q92. Measured
+  # bounds on synthetic 360x640: 14 KB/frame smooth, 220 KB/frame pure noise;
+  # real road footage sits nearer the low end, so expect single-digit to low
+  # tens of GB, NOT the ~105GB the same frames would take uncompressed.
+  cache_student_frames: true
+  frame_jpeg_quality: 92                     # raise toward 100 if artifacts show
+                                             # in the vision tower's features
   split:
     holdout_countries: [JPN, ZAF]            # geographic test holdout - never trained on
     val_fraction: 0.05
@@ -26,6 +39,9 @@ data:
     # Stratified oversampling of long-tail scenarios. Weights multiply base
     # sampling probability for clips whose metadata/first-pass teacher labels match.
     strata_weights:
+      # NB: the teacher-meta-action bootstrap path is gone - Alpamayo 1.5 has no
+      # meta-action head (D-021). Strata are metadata-only; cut_in is unreachable
+      # until a replacement signal exists.
       intersection: 3.0
       pedestrian: 3.0
       cut_in: 4.0
@@ -39,21 +55,41 @@ teacher:
   max_coc_tokens: 48                         # short-CoC budget == student deployment context
   topk_logits: 32
   flow_targets_per_window: 12                # K stratified (t, x_t, u_teacher) tuples (D-007/012)
-  timestep_stratification: uniform           # uniform bins over [0, 0.999); t = data weight (D-012)
+  timestep_stratification: uniform           # uniform bins over [0, 0.999); t = data weight
+                                             # (D-012; cap is now our choice, D-020)
   n_traj_samples: 4                          # sampled continuous trajectories (sanity/eval)
   expert_batch: 4                            # KV batch for expert forwards (memory-bound)
   gen_top_p: 0.98                            # teacher release inference defaults
   gen_temperature: 0.6
-  feat_layers: [7, 15, 23, 31, 39, 47, 55, 63]  # cached teacher layers (feature KD / CKA, D-008)
+  feat_layers: [3, 8, 12, 17, 21, 26, 30, 35]   # cached teacher layers (feature KD / CKA, D-008)
+                                             # re-spaced over A1.5's 36 layers (was 64, D-019)
   feat_pool_len: 8                           # mean-pool segments per cached layer
 
 student:
-  freeze:
-    diffusion_tower_stage1: true
-    ar_tower_stage2: true
-    ar_tower_stage2_lora: false              # set true + rank>0 if stage2 is capacity-limited
-    lora_rank: 16
-  new_token_lr_mult: 8.0                     # trajectory-vocab embeddings + projections
+  # D-024: capability transfer, not compression - both stages adapt through LoRA.
+  # See TRAINING_STRATEGY.md §2. Injection is scoped to the decoder-layer stack;
+  # targets are matched by cosmos-framework's inject_lora_pre_fsdp (plain leaf
+  # names, and the `_moe_gen` suffix is what makes a target gen-tower-only).
+  lora:
+    stage1:                                  # AR/reasoner tower
+      enabled: true                          # false = full-FT ablation; does NOT
+                                             # fit 48GB (43.5GB of states before
+                                             # activations) - 500-clip diagnostic only
+      rank: 48                               # 32-64: more behaviour to absorb than stage 2
+      alpha: 96                              # 2x rank, the framework's own ratio
+      targets: [q_proj, k_proj, v_proj, o_proj]
+      # Escalation if attention-only underfits - MUST be path-qualified, since
+      # up_proj/down_proj are leaf names shared by both towers:
+      #   targets: [..., mlp.up_proj, mlp.down_proj]
+    stage2:                                  # generation/diffusion tower
+      enabled: true
+      rank: 16                               # Cosmos3-Edge.yaml's shipped default
+      alpha: 32
+      targets: [q_proj_moe_gen, k_proj_moe_gen, v_proj_moe_gen, o_proj_moe_gen]
+    train_shared_action_embeds: false        # action_modality_embed + time_embedder are
+                                             # shared by all 32 embodiments: a forgetting
+                                             # channel no row mask covers. Keep off.
+  new_token_lr_mult: 8.0                     # trajectory rows, action-domain rows, projections
   action_domain_id: 31                       # new embodiment domain slot for the teacher's
                                              # accel/curvature space (D-017); verify unused
   layer_map:
@@ -62,9 +98,13 @@ student:
 
 stage1:
   epochs: 6                                  # small data: early-stop on challenging-split coarse minADE
-  micro_batch: 2
-  grad_accum: 16
-  lr: 1.0e-4
+  micro_batch: 4                             # was 2 under full FT; LoRA freed ~35GB (D-024).
+  grad_accum: 8                              # effective batch held at 32. Raise micro_batch
+                                             # further once the first run reports real usage.
+  lr: 1.0e-4                                 # inherited from the full-FT regime. LoRA usually
+                                             # wants 2-5x more; first thing to tune if stage 1
+                                             # underfits (that ambiguity is TRAINING_STRATEGY §2's
+                                             # "one real cost").
   warmup_frac: 0.03
   weight_decay: 0.05
   grad_checkpoint: true
@@ -79,9 +119,11 @@ stage1:
 stage2:
   supervision: teacher_flow                  # teacher_flow (D-007) | gt_flow (ablation baseline)
   epochs: 8
-  micro_batch: 4
-  grad_accum: 8
+  micro_batch: 8                             # was 4; same LoRA headroom as stage 1
+  grad_accum: 4                              # effective batch held at 32
   lr: 5.0e-5
+  warmup_frac: 0.03
+  weight_decay: 0.0
   grad_checkpoint: true
   loss_weights:
     flow_distill: 1.0
@@ -93,3 +135,20 @@ eval:
   horizon_s: 6.4
   minade_k: 6
   challenging_split: challenging_v1          # NVIDIA's hard samples, held out from training
+  # Retention (D-025, TRAINING_STRATEGY §4): half the headline result, not hygiene.
+  # Baseline is cached from the UNTRAINED Edge checkpoint once, so base and
+  # trained never have to be resident together.
+  retention:
+    baseline_dir: /data/runs/retention_base
+    probe_file: src/distill/eval/probes/general_probes.json
+    max_new_tokens: 64
+    # Gen-tower denoising retention on non-AV clips. Leave null to skip that
+    # half with a warning; any directory of short mp4/webm clips works.
+    generic_clips_dir: null
+    n_generic_clips: 16
+    flow_probe_timesteps: [0.1, 0.3, 0.5, 0.7, 0.9]
+    seed: 0
+
+# NOTE: no EMA anywhere by design (TRAINING_STRATEGY §3). NVIDIA's Edge recipe
+# enables it, but that is an 8-GPU config with fsdp_master_dtype float32; here it
+# would cost a full extra weight copy for no benefit at LoRA scale.

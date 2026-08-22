@@ -9,6 +9,17 @@ from __future__ import annotations
 import torch
 
 
+def ade(pred: torch.Tensor, gt: torch.Tensor) -> torch.Tensor:
+    """Single-mode ADE. pred: (B, H, 2+); gt: (B, H, 2+). Ego frame, metres.
+
+    Mean L2 displacement over the horizon, x/y only — the standard open-loop
+    number, and the one to quote when a model emits one trajectory rather than a
+    set. `min_ade` is its k-sample cousin and is NOT comparable across different
+    k, so always report k alongside it.
+    """
+    return torch.linalg.norm(pred[..., :2] - gt[..., :2], dim=-1).mean(-1)
+
+
 def min_ade(pred: torch.Tensor, gt: torch.Tensor) -> torch.Tensor:
     """pred: (B, K, H, 2+) modes; gt: (B, H, 2+). Positions in ego frame.
     Returns per-sample min over modes of mean L2 displacement (x, y only)."""
