@@ -19,7 +19,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from .config import load_config
-from .data.dataset import Stage1Dataset, collate_stage2
+from .data.dataset import Stage1Dataset, collate_stage2, move_batch
 from .student.edge_wrapper import EdgeStudent
 from . import checkpoint, losses
 from .optim import build_optimizer, cosine_lr, set_lr, trainable_report
@@ -60,8 +60,7 @@ def main(cfg_path: str):
     step = 0
     for epoch in range(cfg.stage2.epochs):
         for i, batch in enumerate(dl):
-            batch = {k: (v.cuda(non_blocking=True) if torch.is_tensor(v) else v)
-                     for k, v in batch.items()}
+            batch = move_batch(batch)
             frac = step / max(total_steps, 1)
             use_student_tokens = frac >= cfg.stage2.scheduled_sampling_start_frac
 

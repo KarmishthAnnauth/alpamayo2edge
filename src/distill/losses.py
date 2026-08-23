@@ -104,7 +104,14 @@ def feature_match(proj_student: dict[int, torch.Tensor],
 
 def gt_traj_ce(student_logits: torch.Tensor, gt_token_ids: torch.Tensor,
                mask: torch.Tensor) -> torch.Tensor:
-    """Anchor CE on ground-truth trajectory tokens (guards against teacher errors)."""
+    """Anchor CE on ground-truth trajectory tokens (guards against teacher errors).
+
+    `gt_token_ids` MUST come from the cache's `gt_traj_token_ids` (the GT future run
+    through the teacher's own tokenizer), offset into the student's appended rows.
+    Passing the targets `gather_targets` returns instead reads the TEACHER's tokens
+    back out of `input_ids` and quietly turns this into a hard-label copy of
+    `traj_topk_kl` - which is exactly what it was until 2026-08-23.
+    """
     ce = F.cross_entropy(student_logits.transpose(1, 2), gt_token_ids, reduction="none")
     return (ce * mask).sum() / mask.sum().clamp_min(1)
 

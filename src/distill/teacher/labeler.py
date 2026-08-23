@@ -18,7 +18,7 @@ import torch
 
 from ..teacher.wrapper import TeacherWrapper, TeacherWindowOutput
 from ..data import frames
-from ..data.preprocess import iter_windows
+from ..data.preprocess import load_window, window_t0s_us
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +41,7 @@ def save_shard(path: Path, out: TeacherWindowOutput) -> None:
         flow_v=out.flow_v.cpu().to(torch.float16).numpy(),
         traj_samples=out.traj_samples.cpu().numpy().astype(np.float32),
         gt_traj=out.gt_traj.cpu().numpy().astype(np.float32),
+        gt_traj_token_ids=out.gt_traj_token_ids.cpu().numpy().astype(np.int32),
         gt_future_xyz=out.gt_future_xyz.cpu().numpy().astype(np.float32),
         feat_layers=np.array(sorted(out.feats.keys()), dtype=np.int32),
         **{f"feat_{k}": v.cpu().to(torch.float16).numpy() for k, v in out.feats.items()},
@@ -54,16 +55,29 @@ def run_labeling(cfg, clip_ids: list[str]) -> None:
     t0 = time.time()
     cache_frames = bool(cfg.data.get("cache_student_frames", True))
     quality = int(cfg.data.get("frame_jpeg_quality", 92))
+    t0s = window_t0s_us(cfg)
     for clip_id in clip_ids:
-        for w_idx, window in iter_windows(cfg, clip_id):
+        for w_idx, t0_us in enumerate(t0s):
             path = shard_path(cache_root, clip_id, w_idx)
             in_path = frames.input_path(cache_root, clip_id, w_idx)
+            need_shard = not path.exists()
             # The student's inputs are written even when the teacher targets are
             # already cached: an older cache predates this file, and re-streaming
             # the clip once now beats re-streaming it every epoch later.
-            if cache_frames and not in_path.exists():
+            need_input = cache_frames and not in_path.exists()
+            # Decide BEFORE loading. `load_window` streams, decodes and resizes the
+            # window, and it used to run on every iteration - including the ones
+            # about to be skipped. That made the nested increments pay for their
+            # predecessors twice: `--n 2000` re-streamed all 500 already-labeled
+            # clips to write nothing. Resume is now genuinely free.
+            if not need_shard and not need_input:
+                skipped += 1
+                continue
+
+            window = load_window(cfg, clip_id, t0_us)
+            if need_input:
                 frames.save_window_input(in_path, window, quality=quality)
-            if path.exists():
+            if not need_shard:
                 skipped += 1
                 continue
             out = teacher.label_window(

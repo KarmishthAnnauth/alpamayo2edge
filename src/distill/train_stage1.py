@@ -19,7 +19,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from .config import load_config
-from .data.dataset import Stage1Dataset, collate_stage1
+from .data.dataset import Stage1Dataset, collate_stage1, move_batch
 from .student.edge_wrapper import EdgeStudent
 from .student.layer_map import FeatureProjections, uniform_map
 from . import checkpoint, losses
@@ -66,8 +66,7 @@ def main(cfg_path: str):
     best, patience, step = float("inf"), 0, 0
     for epoch in range(cfg.stage1.epochs):
         for i, batch in enumerate(dl):
-            batch = {k: (v.cuda(non_blocking=True) if torch.is_tensor(v) else v)
-                     for k, v in batch.items()}
+            batch = move_batch(batch)
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 out = student.ar_forward(batch, capture_layers=lmap.keys())
                 proj = projections({int(k): v for k, v in out["hidden"].items()})
@@ -93,8 +92,13 @@ def main(cfg_path: str):
                         + w["text_kl"] * losses.text_kl_or_ce(
                             coc_logits, coc_tgt, batch["coc_mask"] & coc_ok, vocab_ok=True)
                         + w["feat"] * losses.feature_match(proj, batch["feats"])
+                        # GT bins, NOT traj_tgt: traj_tgt is read back out of
+                        # input_ids, which carry the TEACHER's tokens, so passing it
+                        # here made gt_ce a hard-label restatement of traj_kl instead
+                        # of an independent anchor. Same appended-row offset as topk.
                         + w["gt_ce"] * losses.gt_traj_ce(
-                            traj_logits, traj_tgt, traj_mask))
+                            traj_logits, batch["gt_traj_tok"] + student.future_base,
+                            traj_mask))
             (loss / cfg.stage1.grad_accum).backward()
             if (i + 1) % cfg.stage1.grad_accum == 0:
                 set_lr(opt, cosine_lr(step, total_steps, warmup))

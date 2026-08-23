@@ -148,6 +148,26 @@ def collate_student(items: list[dict], pad_id: int) -> dict:
     return out
 
 
+def move_batch(batch, device="cuda", non_blocking: bool = True):
+    """Recursively move a collated batch to `device`.
+
+    Recursive on purpose. `collate_stage1` returns `feats` as a dict of per-layer
+    tensors, and the flat `torch.is_tensor(v)` guard the call sites used to carry
+    skipped it silently: the teacher's features stayed on the CPU while the
+    student's went to the GPU, and `losses.feature_match` - which coerces dtype
+    but deliberately not device - raised on the first step of stage 1.
+
+    Non-tensor leaves (`clip_ids`) pass through untouched.
+    """
+    if torch.is_tensor(batch):
+        return batch.to(device, non_blocking=non_blocking)
+    if isinstance(batch, dict):
+        return {k: move_batch(v, device, non_blocking) for k, v in batch.items()}
+    if isinstance(batch, (list, tuple)):
+        return type(batch)(move_batch(v, device, non_blocking) for v in batch)
+    return batch
+
+
 def collate_stage1(batch: list[dict], pad_id: int) -> dict:
     """Pads token streams; stacks feature targets per teacher layer."""
     def pad(key, dtype=torch.long):
@@ -161,6 +181,9 @@ def collate_stage1(batch: list[dict], pad_id: int) -> dict:
         return out, mask
 
     traj, traj_mask = pad("traj_token_ids")
+    # Same positions and the same 128-token geometry as `traj`, so `traj_mask`
+    # covers both. Region-relative, like every other bin id in the cache.
+    gt_traj_tok, _ = pad("gt_traj_token_ids")
     coc, coc_mask = pad("coc_token_ids")
     topk_idx, _ = pad("traj_topk_idx")
     topk_logp, _ = pad("traj_topk_logp", dtype=torch.float32)
@@ -170,6 +193,7 @@ def collate_stage1(batch: list[dict], pad_id: int) -> dict:
     out = dict(
         traj=traj, traj_mask=traj_mask, coc=coc, coc_mask=coc_mask,
         topk_idx=topk_idx, topk_logp=topk_logp, feats=feats,
+        gt_traj_tok=gt_traj_tok,
         gt_traj=torch.stack([torch.as_tensor(b["gt_traj"], dtype=torch.float32) for b in batch]),
         clip_ids=[b["clip_id"] for b in batch],
     )

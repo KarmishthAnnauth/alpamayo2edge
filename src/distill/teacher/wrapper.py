@@ -52,6 +52,11 @@ class TeacherWindowOutput:
     flow_v: torch.Tensor                # (K_flow, H, A) - teacher velocity u(x_t, t | KV)
     traj_samples: torch.Tensor          # (n_samples, H, A) fp32 - sampled actions (sanity)
     gt_traj: torch.Tensor               # (H, A) fp32 - GT future in ACTION space
+    gt_traj_token_ids: torch.Tensor     # (T_traj,) int - REGION-RELATIVE GT bins [0, 3000):
+                                        # the GT future run through the teacher's OWN
+                                        # discrete tokenizer, so stage-1's gt_ce anchor is
+                                        # a genuine second opinion rather than a hard-label
+                                        # restatement of traj_token_ids
     gt_future_xyz: torch.Tensor         # (T_fut, 3) fp32 - GT future xyz, ego frame (eval)
 
 
@@ -279,7 +284,8 @@ class TeacherWrapper:
 
     @torch.no_grad()
     def label_window(self, window, k_flow: int, topk: int,
-                     max_coc: int, n_traj_samples: int) -> TeacherWindowOutput:
+                     max_coc: int, n_traj_samples: int,
+                     greedy_traj: bool = False) -> TeacherWindowOutput:
         """One full teacher pass over a preprocessed window (KV resident throughout).
 
         1. Phase A: released inference path - generate CoC, stopping right after
@@ -287,7 +293,10 @@ class TeacherWrapper:
         2. Phase B: continue generation restricted TO the future-bin region for
            exactly tokens_per_future_traj (128) steps, capturing logits -> top-k
            KD targets. UNVERIFIED for A1.5 (D-022) - check the detokenized result
-           on debug clips before trusting a full labeling run.
+           on debug clips before trusting a full labeling run
+           (`scripts/02a_probe_phaseb.py`, which passes greedy_traj=True: a
+           stochastic decode makes "is this trajectory sane?" much harder to
+           judge, though the labeling run itself samples).
         3. Pool hidden states of the configured teacher layers (feature KD / CKA).
         4. While KV is resident: k_flow stratified (x_t, t) -> teacher expert
            velocities u_teacher (teacher_flow supervision, D-007), then
@@ -364,6 +373,13 @@ class TeacherWrapper:
         gen_cfg_b.min_new_tokens = c.tokens_per_future_traj      # 128
         gen_cfg_b.max_new_tokens = c.tokens_per_future_traj
         gen_cfg_b.output_logits = True
+        if greedy_traj:
+            # top_p/temperature have to go too, or transformers warns that they
+            # are set while do_sample is False. Only `traj_token_ids` changes;
+            # the captured top-k log-probs are the raw logits either way.
+            gen_cfg_b.do_sample = False
+            gen_cfg_b.top_p = None
+            gen_cfg_b.temperature = None
         seq_a = out_a.sequences
         out_b = model.vlm.generate(
             input_ids=seq_a,
@@ -397,6 +413,21 @@ class TeacherWrapper:
             traj_future_xyz=data["ego_future_xyz"],
             traj_future_rot=data["ego_future_rot"],
         ).reshape(*action_space.get_action_space_dims())                  # (H, A) = (64, 2)
+
+        # GT through the teacher's own future tokenizer. Pure arithmetic on tensors
+        # already in hand, so it is free at label time - and it can ONLY be captured
+        # here: retrofitting it later means re-running the whole labeling pass.
+        # CPU on purpose: `traj_tokenizer` is a plain object, so `model.to(device)`
+        # never registered its inner action space as a submodule and it still lives
+        # on the CPU. `window.data` is the untouched CPU copy (`to_device` returns a
+        # new dict rather than mutating).
+        wd = window.data
+        gt_traj_token_ids = self.future_traj_tokenizer.encode(
+            hist_xyz=wd["ego_history_xyz"][:, -1].float().cpu(),
+            hist_rot=wd["ego_history_rot"][:, -1].float().cpu(),
+            fut_xyz=wd["ego_future_xyz"][:, -1].float().cpu(),
+            fut_rot=wd["ego_future_rot"][:, -1].float().cpu(),
+        )[0]                                                              # (T_traj,)
 
         kv = out_b.past_key_values
         kv_len = kv.get_seq_length()
@@ -465,6 +496,7 @@ class TeacherWrapper:
             flow_v=flow_v.cpu(),
             traj_samples=traj_samples.cpu().float(),
             gt_traj=action.cpu().float(),
+            gt_traj_token_ids=gt_traj_token_ids.cpu(),
             gt_future_xyz=torch.as_tensor(window.gt_future_xyz),
         )
 

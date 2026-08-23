@@ -8,6 +8,8 @@ being informative at small data scale.
 from __future__ import annotations
 import torch
 
+from ..data.dataset import move_batch
+
 
 def ade(pred: torch.Tensor, gt: torch.Tensor) -> torch.Tensor:
     """Single-mode ADE. pred: (B, H, 2+); gt: (B, H, 2+). Ego frame, metres.
@@ -31,7 +33,7 @@ def min_ade(pred: torch.Tensor, gt: torch.Tensor) -> torch.Tensor:
 def evaluate(model_sample_fn, dataloader, k: int) -> dict:
     scores = []
     for batch in dataloader:
-        batch = {kk: (v.cuda() if torch.is_tensor(v) else v) for kk, v in batch.items()}
+        batch = move_batch(batch)
         pred = model_sample_fn(batch, k=k)          # (B, K, H, A)
         scores.append(min_ade(pred, batch["gt_traj"]).cpu())
     s = torch.cat(scores)
