@@ -65,11 +65,18 @@ class Stage1Dataset(Dataset):
     the PhysicalAI-AV interface, so this is I/O-bound — give it workers.
     """
 
-    def __init__(self, cfg, context_builder, clip_ids: list[str] | None = None):
+    def __init__(self, cfg, context_builder, clip_ids: list[str] | None = None,
+                 for_generation: bool = False):
         from .preprocess import load_window, window_t0_us
 
         self.cfg = cfg
         self.ctx = context_builder
+        # Eval mode: the CoC is still teacher-forced but the 128 trajectory
+        # positions are NOT — the context stops at `<|traj_future_start|>` so the
+        # student decodes them itself. Building the teacher-forced context and
+        # then generating from it (which is what the gate did) puts the teacher's
+        # own answer in the prompt and measures nothing.
+        self.for_generation = bool(for_generation)
         self._load_window = load_window
         self._t0 = window_t0_us
         self.cache_root = Path(cfg.paths.cache_root)
@@ -92,8 +99,14 @@ class Stage1Dataset(Dataset):
         traj_bins = [int(b) for b in d["traj_token_ids"]]
         ctx = self.ctx.build(window,
                              coc_text=str(d["coc_text"]),
-                             traj_bins=traj_bins)
+                             traj_bins=None if self.for_generation else traj_bins,
+                             for_generation=self.for_generation)
         d["student"] = ctx
+        # The ego history is the frame `detokenize_traj` integrates waypoints
+        # from, so the gate needs it alongside the tokens. `[:, -1]` drops the
+        # n_traj axis exactly as the teacher's own detokenization does.
+        d["hist_xyz"] = window.data["ego_history_xyz"][:, -1][0]
+        d["hist_rot"] = window.data["ego_history_rot"][:, -1][0]
         return d
 
     def _window(self, clip_id: str, w_idx: int):
@@ -197,6 +210,15 @@ def collate_stage1(batch: list[dict], pad_id: int) -> dict:
         gt_traj=torch.stack([torch.as_tensor(b["gt_traj"], dtype=torch.float32) for b in batch]),
         clip_ids=[b["clip_id"] for b in batch],
     )
+    # ACTION space (accel, curvature) is what `gt_traj` holds; minADE is a
+    # POSITIONAL metric, and `gt_future_xyz` is its reference. `open_loop.evaluate`
+    # scored against `gt_traj` until 2026-08-24, which is not a distance at all.
+    out["gt_future_xyz"] = torch.stack(
+        [torch.as_tensor(b["gt_future_xyz"], dtype=torch.float32) for b in batch])
+    for key in ("hist_xyz", "hist_rot"):
+        if key in batch[0]:
+            out[key] = torch.stack(
+                [torch.as_tensor(b[key], dtype=torch.float32) for b in batch])
     # Present once the dataset is Stage1Dataset; absent for target-only use
     # (the layer-map CKA probe, offline inspection).
     if "student" in batch[0]:

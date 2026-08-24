@@ -104,16 +104,25 @@ class ContextBuilder:
 
     def build(self, window, coc_text: str | None = None,
               traj_bins: list[int] | None = None,
-              nav_text: str | None = None) -> dict:
+              nav_text: str | None = None,
+              for_generation: bool = False) -> dict:
         """Teacher-forced sequence when targets are given; a generation prompt
         when they are not (the assistant turn then opens `<|cot_start|>` and
-        stops, exactly as the released `create_message` does)."""
+        stops, exactly as the released `create_message` does).
+
+        `for_generation=True` alongside a `coc_text` builds the stage-1 gate's
+        prefill: everything up to and including `<|traj_future_start|>`, with the
+        128 trajectory positions left for the student to emit. `traj_span` is
+        then None — there is nothing to score teacher-forced — and `input_ids`
+        ends exactly where decoding starts.
+        """
         pixel_values, grid, per_image = self._encode_images(window)
 
         user = prompt_mod.user_segments(
             self.cameras, self.n_frames, nav_text=nav_text,
             hist_bins=self._history_bins(window))
-        assistant = prompt_mod.assistant_segments(coc_text=coc_text, traj_bins=traj_bins)
+        assistant = prompt_mod.assistant_segments(
+            coc_text=coc_text, traj_bins=traj_bins, for_generation=for_generation)
 
         common = dict(
             encode=self._encode_text,

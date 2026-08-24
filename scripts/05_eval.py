@@ -1,4 +1,21 @@
-"""Full-pipeline open-loop eval on the challenging split + geographic holdout."""
+"""Full-pipeline open-loop eval on the challenging split + geographic holdout.
+
+NOT RUNNABLE YET, and deliberately left that way (D-032). Three things are wrong
+with it, all of which stage 2 has to fix anyway:
+
+  * `DistillShardDataset` returns teacher targets only — no student context, so
+    `generate_traj_tokens` has no `input_ids` to prefill from. It wants
+    `Stage1Dataset(..., for_generation=True)`, like `eval/coarse_minade.py`.
+  * `sample_refined_trajectory` goes through `_gen_pathway_forward`, the packed
+    gen-pathway forward that is still VALIDATE-ON-GPU.
+  * the headline eval should free-run the CoC (decode text to `<|cot_end|>`, then
+    the restricted 128-token trajectory decode) rather than teacher-force it as
+    the epoch gate does. That two-phase decode does not exist yet.
+
+`holdout_geo` additionally has no shards at all: `curation.curate` drops JPN/ZAF
+before the teacher ever sees those clips. Evaluating there needs an input-only
+caching pass — GT and student frames, no teacher — which is cheap but unwritten.
+"""
 import functools, sys
 sys.path.insert(0, "src")
 import torch

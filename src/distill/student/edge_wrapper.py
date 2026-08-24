@@ -147,8 +147,34 @@ class EdgeStudent(nn.Module):
         self.hist_base = old_n + n_future
         self.n_hist_bins = n_hist
         self.special_ids = {t: old_n + n_bins + i for i, t in enumerate(specials)}
-        self.traj_detokenize = traj_tok_spec["detokenizer_fn"]
+        # PRIVATE on purpose: `decode` expects `encode`'s (accel, curvature) dim
+        # order, and everything in this project — cache, targets, and whatever the
+        # student learns to emit — is in the teacher's EMITTED order (D-031). Route
+        # through `detokenize_traj` below, never through this attribute.
+        self._traj_decode = traj_tok_spec["detokenizer_fn"]
         self.hist_tokenize = traj_tok_spec.get("hist_tokenize_fn")
+
+    def detokenize_traj(self, tokens: torch.Tensor, hist_xyz: torch.Tensor,
+                        hist_rot: torch.Tensor) -> torch.Tensor:
+        """Region-relative bins in EMISSION order -> (B, H, 3) ego-frame waypoints.
+
+        The student's mirror of `TeacherWrapper.detokenize_traj`, and the student's
+        only detokenization entry point. The student is trained on the teacher's
+        emitted tokens, so it emits in the teacher's order too — which means it
+        needs the same `swap_action_dims` before `decode`, whose convention is
+        `encode`'s (D-031). Skipping the swap costs ~20-128 m of ADE and looks
+        exactly like a model that failed to learn.
+
+        `hist_xyz` (B, T, 3) / `hist_rot` (B, T, 3, 3) are the window's ego
+        history — the reference frame `decode` integrates from.
+        """
+        from ..teacher.wrapper import swap_action_dims
+
+        toks = swap_action_dims(tokens.reshape(tokens.shape[0], -1).long().cpu())
+        # `decode` returns a 3-tuple; the third slot is a timestamp A1.5 never fills.
+        fut_xyz, _, _ = self._traj_decode(hist_xyz.float().cpu(),
+                                          hist_rot.float().cpu(), toks)
+        return fut_xyz
 
     # ---------------- context assembly (D-028/D-029) ----------------
 

@@ -33,7 +33,8 @@ def main(cfg_path: str):
     # The stage-1 checkpoint carries the EXTENDED tables (+3000 trajectory
     # rows), so the vocab has to be extended before the weights land - with the
     # same spec file, or the geometry check in checkpoint.load_into fires.
-    traj_spec = torch.load(Path(cfg.paths.cache_root) / "traj_tokenizer_spec.pt")
+    traj_spec = torch.load(Path(cfg.paths.cache_root) / "traj_tokenizer_spec.pt",
+                           weights_only=False)  # pickled callables, D-032
     student.extend_trajectory_vocab(traj_spec)
     stage1_ckpt = Path(cfg.paths.runs_root) / "stage1" / "best"
     checkpoint.load_into(student, stage1_ckpt)

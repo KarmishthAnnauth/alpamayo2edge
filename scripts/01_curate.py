@@ -19,3 +19,10 @@ out = Path(cfg.paths.cache_root) / f"curated_{a.n}.json"
 out.parent.mkdir(parents=True, exist_ok=True)
 json.dump(chosen, open(out, "w"))
 print(f"wrote {len(chosen)} clip ids -> {out}")
+
+# Splits come from the same curated list and are what stage 1 trains and gates
+# on; writing them here means they can never be forgotten (scripts/01b_splits.py
+# regenerates them standalone for a cache curated before this existed).
+from distill.data.splits import write_splits  # noqa: E402
+for name, ids in write_splits(cfg, chosen).items():
+    print(f"  split_{name}.json: {len(ids)} clips")

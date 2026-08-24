@@ -705,3 +705,137 @@ exit stays cheap. D-022 closes.
 camera and 4 cameras that is ~40 s/window, ~11 h of streaming for the 500 increment. Fits
 `main`'s 3-day cap here; does NOT fit for 5000 (~110 h). Parallel per-camera fetch plus a
 prefetch queue is a prerequisite for the full run, not for this one.
+
+## D-032 [VERIFIED] The stage-1 consumer side was unrunnable — six defects, plus three more found while fixing them
+
+Found 2026-08-24 while the 500-clip labeling run was in flight, by reading the path the
+cache feeds rather than the path that writes it. Nothing here is a teacher-side problem;
+the shards being written are fine. All six are fixed, all fixes are pinned by offline
+tests, none of it needed a GPU.
+
+The pattern is worth naming: every one of these sits at a seam between two modules that
+were written weeks apart and never executed together. The labeler was tested against the
+labeler; the losses were tested against the losses.
+
+### The two that would have crashed
+
+**1. Feature KD compared unpooled states against pooled ones.** `label_window` caches
+`(feat_pool_len, D_t)` per layer — `torch.chunk(h, 8)` over the teacher's PREFILL — while
+`ar_forward` returns `(B, L, D)` per-token states, and nothing reduced them.
+`feature_match` would have raised at step 1. Fixed: `layer_map.pool_prompt_segments`
+mirrors `torch.chunk` exactly (not an even split — chunk sizes are `ceil(L/n)`, so an
+even split pools different token ranges than the cache did) over `[0, n_prompt)`, which
+also excludes the right-padding and the teacher-forced answer the teacher never saw.
+
+**2. No `split_*.json` existed.** `coarse_minade` reads `split_challenging.json`,
+`05_eval.py` and `07_measure_gap.py` read others, and nothing in the repo wrote any of
+them — `07_measure_gap.py` carried a NOTE saying so. The gate runs at the END of epoch 1,
+so this surfaces hours into a run. New `data/splits.py` + `scripts/01b_splits.py`, also
+called from `01_curate.py`. **Membership is a per-clip hash, not a list position**, so the
+splits nest the way the curated increments do (`val_500 ⊂ val_2000`) — splitting by index
+would reassign every clip when the increment grows and the data-scaling curve would be
+comparing three different validation sets.
+
+`eval.challenging_split: challenging_v1` is aspirational: the PhysicalAI-AV metadata
+carries no such flag. `split_challenging.json` is the long-tail STRATA of the val split
+(`curation.stratum_of` ≠ "default"), with a documented fallback to the whole val split
+when fewer than 5 clips qualify. Config comment updated to say so rather than implying
+NVIDIA's list is wired.
+
+### The four that would not have
+
+**3. Training trained on the gate's clips.** `train_stage1` built `Stage1Dataset` over
+every shard on disk; the gate evaluated a subset of the same. Now `split_train`.
+
+**4. minADE was computed against action space.** `open_loop.evaluate` scored
+`batch["gt_traj"]` — the GT future in the teacher's `UnicycleAccelCurvature` space — with
+`min_ade`, whose `[..., :2]` means *x, y in metres*. On `gt_traj` those two slots are
+accel and curvature. It runs, it returns a plausible float, and stage 1 early-stops on it.
+The reference is `gt_future_xyz`, which the collator did not even pass through; it does
+now, and `evaluate` raises rather than falling back.
+
+**5. The gate generated from the teacher-forced context.** `Stage1Dataset` built the full
+sequence — teacher CoC *and* the teacher's 128 trajectory bins — and `coarse_minade` then
+called `generate_traj_tokens` on it, i.e. asked the student to produce an answer already
+present in its prompt. New `for_generation` mode (`prompt.assistant_segments` →
+`ContextBuilder.build` → `Stage1Dataset`) stops the context at `<|traj_future_start|>`.
+Note the trap it sidesteps: `assemble` skips a `bins` segment whose values are None but
+still emits the CLOSING token, so the naive "just pass `traj_bins=None`" prefill ends on
+`<|traj_future_end|>`.
+
+**Decision, flagged as a judgment call:** the CoC stays teacher-forced in the epoch gate.
+It keeps the gate comparable across epochs, matches the training context exactly, and
+keeps the cost at 128 decode steps rather than ~192. The price is that the gate does not
+measure the student's own reasoning — the free-running two-phase decode (CoC, then
+trajectory) belongs in the final eval. Batch size is 1 there for the same class of reason
+`collate_student` right-pads: right-padding is correct for a teacher-forced forward and
+wrong for a prefill, since every shorter sample would decode its first token after a run
+of pad tokens.
+
+**6. `student.traj_detokenize` was the teacher's raw `tok.decode`** — wrong arity for how
+`coarse_minade` called it, and, worse, it bypassed `swap_action_dims`. D-031 says the
+swap belongs at exactly two points and that "anything that decodes trajectory tokens by
+calling the tokenizer directly is a bug waiting to happen"; this was that. The attribute
+is now `_traj_decode` (private) behind `EdgeStudent.detokenize_traj`, the student's mirror
+of `TeacherWrapper.detokenize_traj`. **The student inherits the teacher's transposed
+emission order because it is trained on the teacher's emitted tokens** — the swap is not
+teacher-only.
+
+### Also: the layer map was neither injective nor over the cached layers
+
+`uniform_map` returned one entry per STUDENT layer — 28 of them onto 8 teacher layers —
+and `FeatureProjections.forward` keys its output by TEACHER layer. Twenty of the twenty-
+eight projections were therefore overwritten in a dict, received no gradient, and which
+student layer fed each teacher layer was decided by iteration order. It was also called
+with `expert_layers["attended_layers"]`, all 36 layers (the expert attends every one,
+D-004), while the cache holds 8.
+
+Both fixed: the map is built over `cfg.teacher.feat_layers`, one student layer per teacher
+layer, and `FeatureProjections` now refuses a non-injective map. And
+`student.layer_map.mode: cka` — D-008's primary — was dead config: the trainer hardcoded
+`uniform_map`. CKA now runs where it can: a few batches of the UNTRAINED student before
+step 0, inside `train_stage1._build_layer_map`, since the projections do not exist yet and
+the probe is a handful of forward passes. `cka_map` was rewritten to iterate the teacher
+layers (the side that must be covered exactly once) and is monotone by construction.
+`cka_probe_clips: 2000` — which nothing read — becomes `cka_probe_batches: 4`.
+
+### Three more, found while writing the smoke test
+
+`FeatureProjections` was constructed with `expert_layers["kv_dim"]` as its output
+dimension. `probe_expert_conditioning` returns no such key — it returns `kv_heads`,
+`head_dim` and `teacher_hidden` — so stage 1 died on a `KeyError` before step 0. Loud,
+but also wrong in intent: the projection has to land on the dimension the CACHE was
+written at, and the cached features are pooled *hidden states*, not KV. It now reads
+D_t off a shard header directly (`_cached_feature_dim`) and warns if that disagrees
+with the probed `teacher_hidden`. This is also the cheapest answer to D-019's open
+question — the number A1.5's config.json does not carry.
+
+**The text-KD target was sized in the teacher's vocabulary.** `gather_targets` was
+called with `n_targets = batch["coc"].shape[1]` — the padded length of the TEACHER's
+CoC token ids — while the positions it gathers are the STUDENT's. The two counts differ
+by construction: cross-family tokenizers are exactly why the cache stores `coc_text` and
+the context re-tokenizes it (D-011). Any student CoC that tokenized longer than the
+teacher's had its tail silently dropped from the loss, and the mask then intersected two
+different length conventions. Now sized from `coc_pos` itself and masked by `coc_ok`
+alone.
+
+Same class, same day: `torch.load` of `traj_tokenizer_spec.pt` needs
+`weights_only=False`. The spec pickles the teacher tokenizer's bound `decode` and a
+`HistoryTokenize` instance; torch >= 2.6 defaults `weights_only=True` and refuses both,
+and `requirements.txt` pins torch 2.8 (D-031). Fixed in both trainers and
+`scripts/06_retention.py`.
+
+### Environment consequence to check on the box
+
+`traj_tokenizer_spec.pt` pickles the teacher tokenizer's bound `decode` method (D-029's
+`HistoryTokenize` note is the same issue from the other side). Stage 1 runs in the
+**cosmos-framework** env and `torch.load`s that file, so **`alpamayo1.5` must be importable
+there too**, not only in the labeling env. Cheapest check: `python -c "import
+torch;torch.load('<cache>/traj_tokenizer_spec.pt')"` in the training env, before anything
+else.
+
+### Not fixed, deliberately
+
+`scripts/05_eval.py` has the same class of defects (shard-only dataset, no student
+context, `sample_refined_trajectory` against the still-open `_gen_pathway_forward`). It is
+stage-2 infrastructure and is not on the critical path until stage 1 passes its gate.

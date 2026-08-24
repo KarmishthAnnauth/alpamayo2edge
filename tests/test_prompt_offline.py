@@ -120,3 +120,51 @@ def test_special_tokens_cover_every_marker_the_template_emits():
     import re
     for marker in set(re.findall(r"<\|[a-z_]+\|>", text)):
         assert marker in prompt.SPECIAL_TOKENS, f"{marker} is emitted but never appended"
+
+
+# ---- generation mode for the stage-1 gate (2026-08-24) ----------------------
+
+def _assemble(segs):
+    return prompt.assemble(
+        segs,
+        encode=lambda t: [hash(t) % 1000],
+        special_id=lambda t: 900_000,
+        bin_id=lambda b: 100_000 + b,
+        image_tokens=lambda i: 0,
+        image_token_id=7,
+    )
+
+
+def test_generation_mode_stops_at_traj_future_start():
+    """The gate prefills up to the opening token and decodes the 128 bins itself.
+
+    Without `for_generation` the sequence ends on `<|traj_future_end|>`: the
+    `bins` segment is skipped when its values are None, but the CLOSING token is
+    not, so the student would be asked to continue a trajectory that has already
+    been closed.
+    """
+    segs = prompt.assistant_segments(coc_text="slowing for the crosswalk",
+                                     for_generation=True)
+    assert prompt.render(segs).endswith("<|traj_future_start|>")
+    assert "<|traj_future_end|>" not in prompt.render(segs)
+    assert _assemble(segs).traj_span is None
+
+
+def test_generation_mode_keeps_the_coc_span_forced():
+    segs = prompt.assistant_segments(coc_text="clear road", for_generation=True)
+    a = _assemble(segs)
+    assert a.coc_span is not None, "the CoC is teacher-forced even in gate mode"
+
+
+def test_teacher_forced_mode_is_unchanged():
+    segs = prompt.assistant_segments(coc_text="clear road", traj_bins=list(range(128)))
+    a = _assemble(segs)
+    assert a.traj_span is not None
+    assert a.traj_span[1] - a.traj_span[0] == prompt.N_FUTURE_TOKENS
+    assert prompt.render(segs).endswith("<|traj_future_end|>")
+
+
+def test_no_coc_still_means_open_the_assistant_turn_and_stop():
+    for gen in (False, True):
+        segs = prompt.assistant_segments(coc_text=None, for_generation=gen)
+        assert prompt.render(segs) == "<|cot_start|>"

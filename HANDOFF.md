@@ -11,11 +11,21 @@ same size, the 3000-bin trajectory vocabulary is unchanged, and the whole studen
 untouched. What changed: the API surface, the token *order* (future bins first), the camera
 set (4, not 7), the layer count (36, not 64), and meta-action is gone.
 
-**Next action is the headroom measurement — see `COMPARISON.md`** (GPU runbook:
-teacher vs zero-shot Edge ADE on the same clips, D-030/D-031). It needs no cached
-shards and gates whether the training plan is worth the GPU weeks.
+**Next action: `NEXT_STEPS.md`** — the stage-1 runbook, written 2026-08-24 while the
+500-clip labeling pass was running. Order is splits -> offline tests -> retention
+baseline -> `scripts/03a_smoke_stage1.py` (one batch through the whole stage-1 path,
+which has never executed) -> the headroom measurement (`COMPARISON.md`) -> stage 1.
 
-**Read `DECISIONS.md` first** (append-only log, D-001 … D-030), then
+**Read D-032 before touching the stage-1 code.** Nine defects on the CONSUMER side of
+the cache were found and fixed that day: unpooled features against the cache's pooled
+ones, no `split_*.json` written by anything, training on the gate's own clips, minADE
+scored against action space, the gate generating from a context that already contained
+the teacher's answer, a detokenizer that bypassed D-031's dim swap, a projection built
+from a config key that does not exist, a `torch.load` that torch >= 2.6 refuses, and a
+text-KD target sized in the teacher's vocabulary instead of the student's. Three would
+have crashed; the rest would have produced a number that looked fine.
+
+**Read `DECISIONS.md` first** (append-only log, D-001 … D-032), then
 `TRAINING_STRATEGY.md` (why the training regime is LoRA and how the project is framed).
 The log holds verified
 architecture facts, committed design choices with rationale, and open items. Treat [VERIFIED]
@@ -56,6 +66,9 @@ action head (D-017), and the CRITICAL sign/timestep conversion σ = 1−t, v* = 
 teacher and student rectified-flow conventions (D-016) handled inside `flow_forward`.
 
 **Open items:**
+- Stage 1 has never RUN against real weights. `scripts/03a_smoke_stage1.py` is the
+  one-batch dry run that settles the remaining VALIDATE-ON-GPU items in one go (image
+  processor, D_t, action-domain slot, gradient flow, peak memory).
 - **Stage-1 input path is BUILT (D-028/D-029).** The student's context mirrors the
   teacher's exactly — cameras, ego motion, short instruction — pinned against two
   agreeing NVIDIA sources. D-027 is closed: `ar_forward` runs
@@ -68,10 +81,11 @@ teacher and student rectified-flow conventions (D-016) handled inside `flow_forw
   stage 1). The gen tower's denoising loss on generic clips is still unwired — it
   needs a real framework `training_step` data batch. Relative weight drift per tower
   covers it for now.
-- **`label_window` Phase B is the top risk (D-022).** A1.5's release strips the future-token
-  fusion path, so it is unproven that the model emits usable discrete trajectory tokens.
-  Validate on 2–3 debug clips before any labeling run; if it fails, Stage 1 falls back to
-  sequence-level CoC KD plus a continuous trajectory target.
+- ~~`label_window` Phase B is the top risk (D-022).~~ **CLOSED by D-031** (2026-08-24):
+  region_mass 0.9889, argmax_match 1.000, sampled ADE 1.79 m against the expert's 1.34 m.
+  The future region IS a trained target. Two things came out of it that are permanent:
+  A1.5 emits the action dims TRANSPOSED (`swap_action_dims`, two call sites only), and the
+  cached decode is SAMPLED — greedy collapses the curvature dim on 6 windows in 10.
 - `EdgeStudent._gen_pathway_forward` (# VALIDATE-ON-GPU): wire the packed gen-pathway
   forward against `unified_mot.py`'s und/gen packed-sequence utilities on the GPU box.
 - Image processing is the last unverified link in the Stage-1 path: which processor
@@ -89,8 +103,9 @@ teacher and student rectified-flow conventions (D-016) handled inside `flow_forw
   LoRA regime — full FT needed 43.5GB before activations. Wrapper code is
   written-but-unrun on real weights — validate on 2–3 debug clips first. The torch-only
   parts (LoRA merge math, gradient row-masks) ARE tested:
-  `python -m pytest tests/ -q`, 26 passing, no GPU needed.
+  `python -m pytest tests/ -q` — 26 + the resume/prefetch/dim-order sets + ~25 added
+  with D-032 (splits, layer map, pooling, gate arithmetic), no GPU needed.
 
-**Conventions:** append new decisions to DECISIONS.md as D-031+ with [VERIFIED]/[DECIDED]/[OPEN]
+**Conventions:** append new decisions to DECISIONS.md as D-033+ with [VERIFIED]/[DECIDED]/[OPEN]
 tags. Terminology precision matters: "flow matching" ≠ "diffusion" — the distinction propagates
 into supervision-signal design.

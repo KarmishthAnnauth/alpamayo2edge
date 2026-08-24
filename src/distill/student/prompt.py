@@ -156,15 +156,27 @@ def user_segments(camera_names: list[str], n_frames: int,
 
 def assistant_segments(coc_text: str | None = None,
                        traj_bins: list[int] | None = None,
-                       n_future: int = N_FUTURE_TOKENS) -> list[Segment]:
+                       n_future: int = N_FUTURE_TOKENS,
+                       for_generation: bool = False) -> list[Segment]:
     """The target side. Pass nothing for generation mode (opens `<|cot_start|>`
-    and stops, exactly like the released `create_message`)."""
+    and stops, exactly like the released `create_message`).
+
+    `for_generation` with a `coc_text` is the third case, and it is the one the
+    stage-1 gate needs: the CoC is teacher-forced but the trajectory is not, so
+    the sequence STOPS at `<|traj_future_start|>` and the model decodes from
+    there. Without it the prefill would end on `<|traj_future_end|>` (the `bins`
+    segment is skipped when `values is None`, the closing token is not), and the
+    student would be asked to continue a trajectory that has already been
+    closed.
+    """
     segs = [Segment("text", text="<|cot_start|>")]
     if coc_text is None:
         return segs
     segs.append(Segment("text", text=coc_text))
     segs.append(Segment("text", text="<|cot_end|>"))
     segs.append(Segment("text", text="<|traj_future_start|>"))
+    if for_generation:
+        return segs
     segs.append(Segment("bins", count=n_future,
                         values=tuple(traj_bins) if traj_bins is not None else None))
     segs.append(Segment("text", text="<|traj_future_end|>"))

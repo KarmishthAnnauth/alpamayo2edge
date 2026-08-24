@@ -54,7 +54,8 @@ student = EdgeStudent(cfg).cuda().eval()
 # trained weights in; the trained state dict is already LoRA-merged.
 base_sd = {k: v.detach().to("cpu", copy=True) for k, v in student.model.state_dict().items()}
 
-traj_spec = torch.load(Path(cfg.paths.cache_root) / "traj_tokenizer_spec.pt")
+traj_spec = torch.load(Path(cfg.paths.cache_root) / "traj_tokenizer_spec.pt",
+                       weights_only=False)  # pickled callables, D-032
 student.extend_trajectory_vocab(traj_spec)
 checkpoint.load_into(student, a.ckpt)
 

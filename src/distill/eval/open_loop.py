@@ -30,12 +30,34 @@ def min_ade(pred: torch.Tensor, gt: torch.Tensor) -> torch.Tensor:
 
 
 @torch.no_grad()
-def evaluate(model_sample_fn, dataloader, k: int) -> dict:
+def evaluate(model_sample_fn, dataloader, k: int, gt_key: str = "gt_future_xyz",
+             device: str = "cuda") -> dict:
+    """minADE_k over a dataloader. `model_sample_fn(batch, k) -> (B, K, H, 3+)`.
+
+    The reference is `gt_future_xyz`: ego-frame POSITIONS, which is what a
+    displacement error is defined over. It is emphatically NOT `gt_traj`, which
+    this function used until 2026-08-24 — that field is the GT future in the
+    teacher's ACTION space, so `[..., :2]` there means (accel, curvature) and the
+    resulting "metres" were a norm over an accel/curvature plane. It ran, it
+    produced a plausible-looking float, and it would have early-stopped stage 1
+    on it.
+    """
     scores = []
     for batch in dataloader:
-        batch = move_batch(batch)
-        pred = model_sample_fn(batch, k=k)          # (B, K, H, A)
-        scores.append(min_ade(pred, batch["gt_traj"]).cpu())
+        batch = move_batch(batch, device)
+        if gt_key not in batch:
+            raise KeyError(
+                f"{gt_key} missing from the batch — the collator must carry the "
+                "positional GT for a distance metric; `gt_traj` is action space "
+                "and is not a substitute")
+        pred = model_sample_fn(batch, k=k)          # (B, K, H, 3)
+        gt = batch[gt_key]
+        if pred.shape[-2] != gt.shape[-2]:
+            raise ValueError(
+                f"horizon mismatch: predicted {pred.shape[-2]} waypoints against "
+                f"{gt.shape[-2]} GT — check tokens_per_future_traj against "
+                "eval.horizon_s")
+        scores.append(min_ade(pred, gt).cpu())
     s = torch.cat(scores)
     return {"minade": float(s.mean()), "n": int(s.numel()),
             "p90": float(s.quantile(0.9))}

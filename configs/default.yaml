@@ -110,7 +110,10 @@ student:
                                              # accel/curvature space (D-017); verify unused
   layer_map:
     mode: cka                                # cka primary; uniform demoted to baseline (D-008)
-    cka_probe_clips: 2000
+    cka_probe_batches: 4                     # stage-1 batches used to probe the mapping,
+                                             # measured on the UNTRAINED student before
+                                             # step 0 (was cka_probe_clips, which nothing
+                                             # read - the trainer hardcoded uniform)
 
 stage1:
   epochs: 6                                  # small data: early-stop on challenging-split coarse minADE
@@ -150,7 +153,16 @@ stage2:
 eval:
   horizon_s: 6.4
   minade_k: 6
+  # The gate decodes 128 tokens x minade_k modes per window at batch 1 (see
+  # eval/coarse_minade.py for why batch 1), so it is minutes, not seconds. Cap
+  # the window count to keep a per-epoch signal cheap; null = the whole split.
+  gate_max_windows: 60
   challenging_split: challenging_v1          # NVIDIA's hard samples, held out from training
+                                             # NOTE: unused - the PhysicalAI-AV metadata
+                                             # carries no such flag, so split_challenging.json
+                                             # is the long-tail STRATA of the val split
+                                             # (data/splits.py). Rename or wire when a real
+                                             # challenging-split id list exists.
   # Retention (D-025, TRAINING_STRATEGY §4): half the headline result, not hygiene.
   # Baseline is cached from the UNTRAINED Edge checkpoint once, so base and
   # trained never have to be resident together.
