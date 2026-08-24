@@ -34,11 +34,14 @@ Four independent lines of evidence, weakest to strongest:
                clamped to a region edge. Catches the failure ADE can miss: a
                collapsed curvature dim decodes to a smooth, plausible-looking,
                entirely straight line.
-  argmax match In greedy mode the emitted token MUST equal `traj_topk_idx[:, 0]`.
-               This tests our own plumbing, not the teacher - an off-by-one
-               between `out_b.logits` steps and the `out_b.sequences` slice
-               would silently misalign every KD target in the cache. Failing
-               here is a bug in us and invalidates the rest of the readout.
+  argmax match In greedy mode the emitted token MUST be a maximiser of the
+               captured region log-probs. This tests our own plumbing, not the
+               teacher - an off-by-one between `out_b.logits` steps and the
+               `out_b.sequences` slice would silently misalign every KD target in
+               the cache. Failing here is a bug in us and invalidates the rest of
+               the readout. Ties count: the logits are bf16, adjacent bins tie
+               exactly, and `topk` and `argmax` break those ties differently
+               (D-031) - which says nothing about alignment.
 
 Exit codes, so this can gate a shell chain: 0 PASS, 1 MARGINAL, 3 FAIL,
 4 BROKEN (our plumbing). MARGINAL is deliberately non-zero - it means decide
@@ -79,13 +82,9 @@ def hist_poses(window) -> tuple[torch.Tensor, torch.Tensor]:
 
 
 def tokens_to_xyz(teacher, tokens: torch.Tensor, window) -> torch.Tensor:
-    """Region-relative bin ids -> (H, 3) waypoints, via the teacher's own
-    detokenizer. Note `decode` returns a 3-tuple - the third element is a
-    timestamp slot A1.5 never fills."""
-    hx, hr = hist_poses(window)
-    fut_xyz, _, _ = teacher.future_traj_tokenizer.decode(
-        hx, hr, tokens.reshape(1, -1).long().cpu())
-    return fut_xyz[0]
+    """Region-relative bin ids -> (H, 3) waypoints. Delegates to the wrapper so
+    the emission-order dim swap (D-031) is applied in exactly one place."""
+    return teacher.detokenize_traj(tokens, window)
 
 
 def actions_to_xyz(teacher, actions: torch.Tensor, window) -> torch.Tensor:
@@ -130,6 +129,21 @@ def token_health(tokens: torch.Tensor, n_bins: int, dims: int = 2) -> dict:
     }
 
 
+def tie_aware_match(out) -> float:
+    """Fraction of steps where the emitted token is a maximiser of the captured
+    region log-probs. Still catches the real failure this check exists for - an
+    off-by-one between the logits steps and the sequence slice puts the emitted
+    token at an arbitrary rank, usually outside the top-k entirely - while not
+    firing on bf16 ties, which carry no information about alignment."""
+    tok = out.traj_token_ids.long().cpu()
+    idx = out.traj_topk_idx.long().cpu()
+    logp = out.traj_topk_logp.float().cpu()
+    hit = (idx == tok[:, None])                       # (T, K) where the emitted id sits
+    found = hit.any(-1)
+    emitted_logp = torch.where(found, (logp * hit).sum(-1), torch.tensor(float("-inf")))
+    return float((found & (emitted_logp >= logp[:, 0])).float().mean())
+
+
 def probe_window(teacher, cfg, window, sampled: bool) -> dict:
     tc = cfg.teacher
     out = teacher.label_window(
@@ -159,10 +173,21 @@ def probe_window(teacher, cfg, window, sampled: bool) -> dict:
         "ade_discrete_vs_expert": float(ade(disc[None].expand_as(expert), expert).mean()),
         "region_mass": float(logp.exp().sum(-1).mean()),
         "top1_prob": float(logp[:, 0].exp().mean()),
-        "argmax_match": float((out.traj_token_ids.cpu()
-                               == out.traj_topk_idx[:, 0].cpu()).float().mean()),
+        # Ties count as matches. In greedy mode the emitted token must be *a*
+        # maximiser of the region logits, not literally `topk_idx[:, 0]`: the
+        # logits are bf16, exact ties between adjacent bins are common, and
+        # `torch.topk` and generate's `argmax` break them differently. Measured
+        # on three clips: every mismatch sat at rank 1 with a top1-minus-emitted
+        # log-prob gap of exactly 0.0000. Comparing ids alone reported 0.906-0.953
+        # and cried BROKEN over an alignment that was never wrong (D-031).
+        "argmax_match": float(tie_aware_match(out)),
         "coc_text": out.coc_text[:200],
         **token_health(out.traj_token_ids, teacher.n_future_bins),
+        # The same statistics on the GT stream, as the reference the degeneracy
+        # check needs. Both are in emission order (D-031), so they are directly
+        # comparable dim for dim.
+        **{f"gt_{k}": v for k, v in
+           token_health(out.gt_traj_token_ids, teacher.n_future_bins).items()},
     }
     rec["_xyz"] = {"gt": gt.numpy(), "discrete": disc.numpy(),
                    "floor": floor.numpy(), "expert": expert.numpy()}
@@ -176,6 +201,11 @@ def probe_window(teacher, cfg, window, sampled: bool) -> dict:
             n_traj_samples=1, greedy_traj=False)
         rec["ade_sampled"] = float(ade(
             tokens_to_xyz(teacher, s.traj_token_ids, window)[None], gt[None])[0])
+        # Token health on the SAMPLED stream too. Without this the degeneracy
+        # check describes the greedy decode, which is the one thing in this
+        # script that never reaches the cache.
+        rec.update({f"sampled_{k}": v for k, v in
+                    token_health(s.traj_token_ids, teacher.n_future_bins).items()})
     return rec
 
 
@@ -193,27 +223,79 @@ def waypoint_table(xyz: dict, idx=(9, 19, 31, 63)) -> list[str]:
     return lines
 
 
+def is_degenerate(r: dict, prefix: str = "") -> bool:
+    """Is an action dim collapsed *beyond what the road itself is doing*?
+
+    `prefix` selects which decode's stream to judge: "" for the greedy one,
+    "sampled_" for the one the labeling run actually caches.
+
+    The absolute form of this check ("<=2 distinct bins, or a run of >=16") is
+    unreadable on the very case it was written for. On a straight road the GT
+    curvature is genuinely near-constant, so a correct teacher MUST emit a
+    near-constant curvature dim - the first probe run flagged 4 distinct bins and
+    a run of 42 on a clip whose GT drifts 12.9 m laterally over 227 m, which is a
+    straight road being described accurately. With no reference the check cannot
+    tell that from a dead head, so it fires on healthy windows and blocks PASS.
+
+    Referenced against the GT stream's own per-dim statistics it means what it was
+    meant to mean: the teacher flattened a dim that GT does not have flat.
+
+    `max_run` is printed but is NOT a trigger. It compares an absolute run length
+    between a smooth model output and a noisy measured GT, so any model smoother
+    than its own target scores worse on it - it penalises the behaviour we want.
+    The window that proved it emitted MORE distinct bins per dim than GT (18 vs
+    15, 48 vs 41) and scored the best ADE of the run (0.62 m, against the
+    expert's 2.99 m), and the clause called it degenerate. Distinct bins per dim
+    is the instrument; run length is context for a human reading the table.
+    """
+    for n, gn in zip(r[f"{prefix}n_unique_per_dim"], r["gt_n_unique_per_dim"]):
+        # `n <= 2` alone false-positives on a stationary vehicle, where GT is
+        # every bit as flat (one probe window read emitted [1, 10] against GT
+        # [1, 3] and was called degenerate). Require GT to actually have
+        # variation before calling a flat dim a collapse.
+        if (n <= 2 and gn > 2) or n * 4 <= gn:
+            return True
+    return False
+
+
 def verdict(rows: list[dict]) -> tuple[str, list[str]]:
     med = lambda k: float(np.median([r[k] for r in rows]))  # noqa: E731
-    mass, a_disc, a_exp = med("region_mass"), med("ade_discrete"), med("ade_expert")
+    mass, a_exp = med("region_mass"), med("ade_expert")
     match = min(r["argmax_match"] for r in rows)
     notes = []
+
+    # Judge the decode that reaches the cache. `02_label.py` samples (top_p 0.98,
+    # temperature 0.6); the greedy stream exists only so a human can read the
+    # waypoint table without stochastic noise, and it is systematically worse -
+    # measured 2.77 m greedy vs 1.22 m sampled over ten windows, because greedy
+    # decoding of a head whose top-1 sits near 0.5 latches onto one bin and
+    # repeats it. Gating on greedy fails a cache that is fine.
+    scored_sampled = "ade_sampled" in rows[0]
+    prefix = "sampled_" if scored_sampled else ""
+    a_disc = med("ade_sampled" if scored_sampled else "ade_discrete")
+    which = "sampled" if scored_sampled else "greedy"
+    if not scored_sampled:
+        notes.append(
+            "scored on the GREEDY decode, which is not what 02_label.py caches. "
+            "Re-run with --sampled before treating any ADE or degeneracy reading "
+            "here as a verdict on the cache.")
 
     if match < 1.0:
         return "BROKEN", [
             f"argmax_match {match:.3f} < 1.0 in greedy mode. This is OUR bug, not the "
-            "teacher's: the captured logits and the emitted sequence disagree, so every "
-            "top-k KD target in the cache would be misaligned with its token. Fix the "
-            "`out_b.logits` / `out_b.sequences` indexing in `label_window` before reading "
-            "anything else here."]
+            "teacher's: the emitted token is not even a maximiser of the captured region "
+            "log-probs (ties are already allowed for), so every top-k KD target in the "
+            "cache would be misaligned with its token. Fix the `out_b.logits` / "
+            "`out_b.sequences` indexing in `label_window` before reading anything else "
+            "here. Sanity check first that the decode really was greedy."]
 
     ade_ok = a_disc <= max(ADE_PASS_RATIO * a_exp, a_exp + ADE_PASS_SLACK)
     ade_marginal = a_disc <= max(ADE_MARGINAL_RATIO * a_exp, a_exp + ADE_MARGINAL_SLACK)
-    degenerate = [r for r in rows if min(r["n_unique_per_dim"]) <= 2 or r["max_run"] >= 16]
+    degenerate = [r for r in rows if is_degenerate(r, prefix)]
     if degenerate:
         notes.append(
-            f"{len(degenerate)}/{len(rows)} windows have a collapsed action dim "
-            "(<=2 distinct bins) or a run of >=16 identical tokens - a constant "
+            f"{len(degenerate)}/{len(rows)} windows have an action dim that is "
+            f"collapsed RELATIVE TO GT in the {which} stream - a constant "
             "accel/curvature decodes to a smooth line that ADE can score as merely "
             "mediocre. Treat a good ADE here as coincidence.")
     # A broken floor does not un-train the teacher's head - region_mass is
@@ -246,7 +328,7 @@ def verdict(rows: list[dict]) -> tuple[str, list[str]]:
             "continuous trajectory target, with the coarse-minADE gate running off the "
             "expert instead of detokenized tokens."]
     return "MARGINAL", notes + [
-        f"region_mass {mass:.3f}, discrete ADE {a_disc:.2f} m vs expert {a_exp:.2f} m. "
+        f"region_mass {mass:.3f}, {which} ADE {a_disc:.2f} m vs expert {a_exp:.2f} m. "
         "Ambiguous. Widen to ~10 clips, plot the trajectories from the saved npz, and "
         "decide deliberately - this gates GPU-weeks, so it is worth the extra hour."]
 
@@ -297,6 +379,13 @@ def main() -> int:
             print(f"    bins unique {r['n_unique']}/128 (per dim "
                   f"{r['n_unique_per_dim']}) | max_run {r['max_run']} | "
                   f"edge {r['edge_frac']:.3f}")
+            if a.sampled:
+                print(f"      sampled    {r['sampled_n_unique']}/128 (per dim "
+                      f"{r['sampled_n_unique_per_dim']}) | max_run "
+                      f"{r['sampled_max_run']}        <- THE CACHED STREAM")
+            print(f"      vs GT      {r['gt_n_unique']}/128 (per dim "
+                  f"{r['gt_n_unique_per_dim']}) | max_run {r['gt_max_run']}"
+                  "        <- the reference; a straight road is flat in both")
             print("\n".join(waypoint_table(xyz)))
             print(f"    CoC: {r['coc_text'][:110]!r}\n")
 

@@ -6,6 +6,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
+.venv-a2e/
 venv/
 
 # Data / model artifacts (root-level only; src/distill/data is code and stays tracked)

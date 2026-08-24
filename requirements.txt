@@ -1,8 +1,12 @@
-torch>=2.8            # A1.5 pins torch==2.8.0 / transformers==4.57.1
+# Pinned, not >=: A1.5's pyproject requires torch==2.8.0 / transformers==4.57.1
+# exactly. Left open, uv resolves torch 2.13 + transformers 5.x, which is a
+# different generation API than the teacher's generate() path is written against.
+torch==2.8.0
+torchvision>=0.23
 numpy
 pyyaml
 opencv-python-headless
-transformers>=4.57
+transformers==4.57.1
 peft
 einops
 scipy
@@ -10,5 +14,15 @@ pandas
 pyarrow
 hydra-core
 huggingface_hub
-# Local sibling repos (clone next to this repo, then):
-#   pip install -e ../alpamayo1.5 -e ../physical_ai_av
+# Local sibling repos. Order matters: A1.5 pins physical-ai-av==0.2.0, but the local
+# checkout is 0.2.2 (what every measurement so far was taken against), so install A1.5
+# with --no-deps and let physical_ai_av's own version stand.
+#   uv pip install -e ../physical_ai_av
+#   uv pip install -e ../alpamayo1.5 --no-deps
+#   uv pip install accelerate hydra-colorlog pillow matplotlib seaborn pytest
+#
+# flash-attn: A1.5's config.json sets attn_implementation=flash_attention_2, so it is
+# required, not optional. PyPI only ships an sdist (a ~1h source build); the matching
+# prebuilt wheel is:
+#   uv pip install --no-deps https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp312-cp312-linux_x86_64.whl
+# The cu12 / torch2.8 / cxx11abiTRUE / cp312 tags must all match the env above.

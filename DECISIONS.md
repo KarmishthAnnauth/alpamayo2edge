@@ -222,7 +222,7 @@ Source: `../alpamayo1.5/{config.json, model.safetensors.index.json}` (HF snapsho
   `cache_root/meta_action_vocab.json` registry and the "meta-action auxiliary head" idea from
   the README. `curation.py`'s meta-action strata fall back to metadata-only stratification.
 
-## D-022 [OPEN] Phase-B discrete-trajectory-token emission is unverified for A1.5
+## D-022 [CLOSED -> D-031] Phase-B discrete-trajectory-token emission is unverified for A1.5
 
 - For A2 Super, D-014 rested on a *training* loss (`future_traj_loss`, `alpamayo2_super.py:232`)
   proving the discrete future tokens are a trained target. A1.5's release is inference-only and
@@ -596,3 +596,112 @@ vendor rather than argued by us. Motivation should cite both statements.
 **Consequence for the framing:** NVIDIA says Edge can be an automotive policy student;
 nobody has published what that costs its world model. The retention pair (D-025) answers
 a question the vendor left open, which makes it a contribution rather than hygiene.
+
+## D-031 [VERIFIED] Phase B works, but A1.5 emits the action dims transposed — and greedy decoding of it is a trap
+
+Closes D-022. Ten curated windows, `02a_probe_phaseb.py --clips 10 --sampled`, 2026-08-24.
+
+**The decisive reading: `region_mass` 0.9889** (pass >= 0.5, fail < 0.05). The teacher puts
+98.9% of the whole ~155k-vocabulary softmax on its top-32 future bins. The 3000-row future
+region is a *trained* target, not allocated-and-never-supervised vocabulary. Measured on raw
+logits, so it is independent of every decode and detokenization choice below it.
+
+| reading | value | note |
+|---|---|---|
+| `region_mass` | 0.9889 | decisive; three orders of magnitude clear of the fail band |
+| `argmax_match` | 1.000 | logits/sequence alignment correct |
+| floor ADE | 0.01 m | codec and coordinate frame correct |
+| sampled ADE | 1.79 m | what `02_label.py` caches |
+| expert ADE | 1.34 m | ratio 1.34, gate allows 2.0 |
+| greedy ADE | 2.82 m | diagnostic only — NOT what is cached |
+
+### 1. The teacher emits (curvature, accel); its own tokenizer reads (accel, curvature)
+
+The 128-token future stream is 64 waypoints x 2 dims interleaved.
+`DiscreteTrajectoryTokenizer.encode` builds it from `UnicycleAccelCurvatureActionSpace` in
+(accel, curvature) order and `decode` reshapes identically — mutual inverses, so the
+quantization floor round-trips to ~0.01 m **no matter what the model does**. A1.5 emits the
+two dims the other way round.
+
+Feeding the emitted stream to `decode` untouched gave ADE 20-128 m; swapping first gave
+0.62-5.31 m. Independent of ADE, the per-dim statistics say it outright: on a straight clip
+the *emitted* stream's first dim is the one pinned at bin ~1500 (value 0, zero curvature)
+while `encode`'s first dim is the one that varies. The dim-major transpose was tested and
+ruled out (9.97-77 m).
+
+Nothing in the release round-trips a model-emitted future token through `decode` — the
+future-fusion path is stripped, which is what made D-022 open in the first place — so this is
+invisible to A1.5's own tests. It is a property of the checkpoint, not a bug in us.
+
+**The half no probe number would have caught:** `gt_traj_token_ids` comes out of `encode`, so
+it lands in the OPPOSITE order to `traj_token_ids` and `traj_topk_*`. Cached that way, stage
+1's `gt_ce` anchor would train the student toward the per-waypoint transpose of what
+`traj_kl` distils — two supervisions fighting, on a term weighted 0.25, low enough to degrade
+a run without breaking it. Caught only because the cached-GT field (added 2026-08-23) put
+both orders in the same shard where they could be compared.
+
+Fix: `swap_action_dims` in `wrapper.py`, applied at exactly two points — the GT encode in
+`label_window`, and `TeacherWrapper.detokenize_traj`, now the only detokenization entry
+point. Pinned by `tests/test_traj_dim_order_offline.py`.
+
+### 2. Score the sampled decode. Greedy is a decode artifact, not a teacher property
+
+`02_label.py` samples (top_p 0.98, temperature 0.6); `greedy_traj=True` exists only so a
+human can read a waypoint table without stochastic noise. Greedy decoding of a head whose
+top-1 sits near 0.5 latches onto one bin and repeats it:
+
+| | greedy | sampled |
+|---|---|---|
+| median ADE | 2.82 m | **1.79 m** |
+| windows with a collapsed curvature dim | 6/10 | **1/10** |
+
+Every window that emitted a single curvature bin under greedy recovered under sampling
+(`[1,16]`->`[5,45]`, `[1,15]`->`[13,48]`, `[1,20]`->`[13,46]`). One window still flags:
+`170f2756`, one curvature bin against GT's six, on a road straight to within 0.7 m over
+141 m — six bins is ~0.001 1/m, a 1000 m radius. Its ADE is longitudinal, from the accel dim,
+which is not collapsed.
+
+The probe now measures token health on the sampled stream and gates on it. Gating on greedy
+fails a cache that is fine.
+
+### 3. Probe corrections made along the way (thresholds untouched)
+
+`MASS_PASS 0.5`, `ADE_PASS_RATIO 2.0`, `ADE_PASS_SLACK 1.0` are unchanged. What changed is
+*which quantity* is measured:
+
+- **`argmax_match` counts ties.** bf16 logits tie exactly between adjacent bins, and
+  `torch.topk` and generate's `argmax` break those ties differently. Comparing ids alone read
+  0.906-0.953 and cried BROKEN over an alignment that was never wrong: every mismatch sat at
+  rank 1 with a top1-minus-emitted log-prob gap of exactly 0.0000.
+- **Degeneracy is referenced against GT's own per-dim counts.** The absolute form is
+  unreadable on the case it was written for — on a straight road a correct teacher MUST emit
+  near-constant curvature.
+- **`max_run` is printed, not triggered.** It compares a smooth model against noisy measured
+  GT, so any model smoother than its target scores worse. It flagged the window with *more*
+  distinct bins than GT and the best ADE of the run.
+- **A flat dim needs GT to have variation** before it counts as collapsed, or a stationary
+  vehicle (GT `[1, 3]`) false-positives.
+
+### 4. Environment facts this run established
+
+- A1.5's expert mask is built float32 (`alpamayo1_5.py:198`) while the expert runs bf16, and
+  torch 2.8's SDPA rejects a bias whose dtype differs from the query's. Every released entry
+  point wraps generation in `torch.autocast`, which casts the mask with q/k/v; `label_window`
+  now does the same. The expert is forced to sdpa deliberately (`alpamayo1_5.py:103` — "the
+  diffusion expert does not support FlashAttention 2"), so this path is unavoidable.
+- flash-attn IS required (`config.json` sets `flash_attention_2`) and must match
+  cu12/torch2.8/cxx11abiTRUE/cp312.
+- `requirements.txt` had open-ended bounds; uv resolved torch 2.13 + transformers 5.x against
+  A1.5's hard pins of 2.8.0 / 4.57.1. Now pinned.
+
+### Verdict
+
+The probe returns MARGINAL on 1/10 degenerate windows. Every other criterion passes, and the
+one flag is a straight road being described as straight. **Proceeding to `02_label.py --n
+500`** — the increment is itself the hedge (nested subset, resumable, additive), so an early
+exit stays cheap. D-022 closes.
+
+**Still open:** `run_labeling` is serial, so the GPU idles through every fetch. At ~10 s per
+camera and 4 cameras that is ~40 s/window, ~11 h of streaming for the 500 increment. Fits
+`main`'s 3-day cap here; does NOT fit for 5000 (~110 h). Parallel per-camera fetch plus a
+prefetch queue is a prerequisite for the full run, not for this one.

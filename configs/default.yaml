@@ -4,10 +4,17 @@
 # RTX GPU. See DECISIONS.md D-018..D-023.
 
 paths:
-  dataset_root: /data/physicalai-av          # PhysicalAI-AV NCore clips
-  cache_root: /data/distill_cache            # teacher targets (one shard per clip)
-  runs_root: /data/runs
-  teacher_repo: nvidia/Alpamayo-1.5-10B
+  # /data and /bulk belong to the `lab` group, which this account is not in; all
+  # project state lives under $HOME instead. Storage is not a constraint: clips
+  # stream over HTTP range reads and are never materialized (D-019).
+  dataset_root: /home/firvads_ruiyang/Karmishth/alpamayo2edge/data/physicalai-av
+  cache_root: /home/firvads_ruiyang/Karmishth/alpamayo2edge/distill_cache
+  runs_root: /home/firvads_ruiyang/Karmishth/alpamayo2edge/runs
+  # Local snapshot of nvidia/Alpamayo-1.5-10B (21 GB, 5 shards). from_pretrained takes
+  # a path, so this skips the re-download. Its config.json still points
+  # vlm_name_or_path at nvidia/Cosmos-Reason2-8B, whose processor/tokenizer are
+  # fetched into HF_HUB_CACHE - weights are not, they are in the shards below.
+  teacher_repo: /home/firvads_ruiyang/Karmishth/alpamayo2edge/alpamayo1.5/model
   student_repo: nvidia/Cosmos3-Edge
 
 data:
@@ -139,7 +146,7 @@ eval:
   # Baseline is cached from the UNTRAINED Edge checkpoint once, so base and
   # trained never have to be resident together.
   retention:
-    baseline_dir: /data/runs/retention_base
+    baseline_dir: /home/firvads_ruiyang/Karmishth/alpamayo2edge/runs/retention_base
     probe_file: src/distill/eval/probes/general_probes.json
     max_new_tokens: 64
     # Gen-tower denoising retention on non-AV clips. Leave null to skip that

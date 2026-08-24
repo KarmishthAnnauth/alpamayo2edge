@@ -36,6 +36,33 @@ import torch
 import torch.nn.functional as F
 
 
+def swap_action_dims(tokens: torch.Tensor) -> torch.Tensor:
+    """Convert between the teacher's EMITTED future-token order and the order
+    `DiscreteTrajectoryTokenizer.encode/decode` use. Its own inverse.
+
+    D-031. The 128-token future stream is 64 waypoints x 2 action dims,
+    interleaved. `encode` builds it from `UnicycleAccelCurvatureActionSpace`, so
+    it is waypoint-major in (accel, curvature) order, and `decode` reshapes with
+    exactly the same convention - the two are mutual inverses, which is why the
+    quantization floor round-trips to ~0.01-0.34 m and proves nothing about the
+    model. **A1.5 emits the two dims the other way round: (curvature, accel).**
+
+    Measured on three clips: feeding the emitted stream to `decode` untouched
+    gives ADE 20-128 m, and swapping the dims first gives 0.62-5.31 m - level
+    with the expert's own 0.57-3.37 m. The per-dim statistics say the same thing
+    without reference to ADE: on a straight clip the emitted stream's FIRST dim
+    is the one pinned near bin 1500 (value 0, i.e. zero curvature) while
+    `encode`'s first dim is the one that varies.
+
+    Nothing in the release ever round-trips a model-emitted future token through
+    `decode` - the future-fusion path is stripped (D-022) - so this mismatch is
+    invisible to A1.5's own tests. It is a property of the checkpoint, not a bug
+    in us, and it must be applied in exactly two places (see `label_window` and
+    `TeacherWrapper.detokenize_traj`) or the cache silently disagrees with itself.
+    """
+    return tokens.reshape(*tokens.shape[:-1], -1, 2).flip(-1).reshape(*tokens.shape)
+
+
 @dataclasses.dataclass
 class TeacherWindowOutput:
     """Everything cached per training window during the offline labeling pass."""
@@ -282,10 +309,47 @@ class TeacherWrapper:
 
     # ---------------- Labeling-pass API ----------------
 
+    def detokenize_traj(self, tokens: torch.Tensor, window) -> torch.Tensor:
+        """Region-relative bin ids in EMISSION order -> (H, 3) ego-frame waypoints.
+
+        The single detokenization entry point. Everything the cache stores -
+        `traj_token_ids`, `gt_traj_token_ids`, and whatever the student learns to
+        emit - is in the teacher's emission order, so the dim swap back to
+        `decode`'s convention belongs here and nowhere else (D-031,
+        `swap_action_dims`). Anything that decodes trajectory tokens by calling
+        the tokenizer directly is a bug waiting to happen.
+        """
+        d = window.data
+        hx = d["ego_history_xyz"][:, -1].float().cpu()
+        hr = d["ego_history_rot"][:, -1].float().cpu()
+        toks = swap_action_dims(tokens.reshape(1, -1).long().cpu())
+        # `decode` returns a 3-tuple; the third slot is a timestamp A1.5 never fills.
+        fut_xyz, _, _ = self.future_traj_tokenizer.decode(hx, hr, toks)
+        return fut_xyz[0]
+
     @torch.no_grad()
     def label_window(self, window, k_flow: int, topk: int,
                      max_coc: int, n_traj_samples: int,
                      greedy_traj: bool = False) -> TeacherWindowOutput:
+        """One full teacher pass, under autocast. Real work is in `_label_window`.
+
+        A1.5 builds the expert's 4D attention mask as float32
+        (`alpamayo1_5.py:198`) while the expert itself runs bf16, and torch 2.8's
+        SDPA rejects an attention bias whose dtype differs from the query's. Autocast
+        casts the mask along with q/k/v, which is why the released path never trips
+        it: `test_inference.py:59` and all four notebooks wrap their calls exactly
+        this way. This is the vendor's own usage, not a workaround for it - note the
+        expert is forced to sdpa on purpose (`alpamayo1_5.py:103`, "the diffusion
+        expert does not support FlashAttention 2"), so this path is unavoidable.
+        """
+        dtype = torch.bfloat16 if self.cfg.teacher.dtype == "bf16" else torch.float16
+        with torch.autocast(self.device, dtype=dtype):
+            return self._label_window(window, k_flow, topk, max_coc,
+                                      n_traj_samples, greedy_traj)
+
+    def _label_window(self, window, k_flow: int, topk: int,
+                      max_coc: int, n_traj_samples: int,
+                      greedy_traj: bool = False) -> TeacherWindowOutput:
         """One full teacher pass over a preprocessed window (KV resident throughout).
 
         1. Phase A: released inference path - generate CoC, stopping right after
@@ -428,6 +492,12 @@ class TeacherWrapper:
             fut_xyz=wd["ego_future_xyz"][:, -1].float().cpu(),
             fut_rot=wd["ego_future_rot"][:, -1].float().cpu(),
         )[0]                                                              # (T_traj,)
+        # `encode` lays the dims out (accel, curvature); the teacher EMITS
+        # (curvature, accel), and `traj_token_ids` / `traj_topk_*` above are in
+        # emission order. Cache everything in that one order, or stage 1 trains
+        # `gt_ce` against the transpose of what `traj_kl` distils - the two
+        # supervisions would fight, silently, per waypoint (D-031).
+        gt_traj_token_ids = swap_action_dims(gt_traj_token_ids)
 
         kv = out_b.past_key_values
         kv_len = kv.get_seq_length()
