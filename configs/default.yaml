@@ -66,6 +66,15 @@ teacher:
                                              # (D-012; cap is now our choice, D-020)
   n_traj_samples: 4                          # sampled continuous trajectories (sanity/eval)
   expert_batch: 4                            # KV batch for expert forwards (memory-bound)
+  # Window-level fetch concurrency. Streaming is network-bound and the teacher is
+  # GPU-bound, so they overlap: the first live run measured 30 s/window at 20% GPU
+  # utilisation, i.e. ~24 s of streaming per ~6 s of teacher. NVIDIA's
+  # load_physical_aiavdataset fetches its cameras serially inside one call, so the
+  # concurrency has to be per window, not per camera. Past ~4 the teacher is the
+  # floor and more workers only add memory. Set to 1 for a serial run when debugging.
+  prefetch_workers: 4
+  prefetch_depth: 6                          # windows in flight; the memory knob,
+                                             # each holds decoded frames
   gen_top_p: 0.98                            # teacher release inference defaults
   gen_temperature: 0.6
   feat_layers: [3, 8, 12, 17, 21, 26, 30, 35]   # cached teacher layers (feature KD / CKA, D-008)

@@ -68,7 +68,10 @@ def save_window_input(path: Path, window, quality: int = 92) -> Path:
         v = window.data[key]
         arrays[key] = (v.detach().cpu().numpy() if hasattr(v, "detach")
                        else np.asarray(v)).astype(np.float32)
-    np.savez(path, **arrays)
+    # Atomic, for the same reason as the targets shard: resume keys off
+    # existence, so a truncated input file is skipped forever (D-031).
+    from ..teacher.labeler import atomic_savez
+    atomic_savez(path, False, **arrays)
     return path
 
 

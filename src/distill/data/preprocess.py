@@ -11,23 +11,33 @@ is passed as the interface's local_dir/cache. See DECISIONS.md D-013.
 """
 from __future__ import annotations
 import dataclasses
+import threading
 from typing import Any, Iterator
 
 import numpy as np
 
-_AVDI = None  # process-wide singleton; the interface caches metadata on init
+# One interface PER THREAD, not per process. `labeler` fetches windows from a
+# pool of threads, and `PhysicalAIAVDatasetInterface` documents no thread-safety
+# guarantee - it holds pandas indices and an HfFileSystem, and the failure mode
+# for sharing those under concurrency is interleaved range reads returning the
+# wrong bytes, which would land in the cache as silently corrupt frames rather
+# than as an exception. An instance costs one parse of the clip index, paid once
+# per worker thread, against a fetch that costs tens of seconds.
+_LOCAL = threading.local()
 
 
 def get_interface(cfg):
-    """PhysicalAIAVDatasetInterface singleton rooted at cfg.paths.dataset_root."""
-    global _AVDI
-    if _AVDI is None:
+    """PhysicalAIAVDatasetInterface for the calling thread, rooted at
+    cfg.paths.dataset_root."""
+    inst = getattr(_LOCAL, "avdi", None)
+    if inst is None:
         import physical_ai_av
-        _AVDI = physical_ai_av.PhysicalAIAVDatasetInterface(
+        inst = physical_ai_av.PhysicalAIAVDatasetInterface(
             local_dir=cfg.paths.dataset_root,
             confirm_download_threshold_gb=float("inf"),
         )
-    return _AVDI
+        _LOCAL.avdi = inst
+    return inst
 
 
 def list_clip_ids(cfg) -> list[str]:
