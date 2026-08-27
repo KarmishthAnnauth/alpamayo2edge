@@ -29,13 +29,24 @@ def _load_shard(path: Path) -> dict:
     return d
 
 
+#: `frames.save_window_input` writes the student's inputs as
+#: `{window_idx:02d}_input.npz` INTO THE SAME clip directory as the teacher
+#: targets `{window_idx:02d}.npz`. A bare `*.npz` glob therefore returns both,
+#: which doubles the dataset length and hands `Stage1Dataset` an input file as
+#: if it were a shard — `int("00_input")` raises before the first forward pass.
+#: `scripts/check_cache.py` already partitions on this suffix; discovery has to
+#: agree with it.
+INPUT_SUFFIX = "_input.npz"
+
+
 def discover_shards(cache_root: Path, clip_ids: list[str] | None = None) -> list[Path]:
     if clip_ids is None:
         with open(cache_root / "manifest.json") as f:
             clip_ids = json.load(f)["clips"]
     shards = []
     for cid in clip_ids:
-        shards += sorted((cache_root / cid).glob("*.npz"))
+        shards += sorted(p for p in (cache_root / cid).glob("*.npz")
+                         if not p.name.endswith(INPUT_SUFFIX))
     return shards
 
 
