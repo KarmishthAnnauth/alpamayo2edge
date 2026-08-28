@@ -119,7 +119,8 @@ env, `report` either.
 ## 6. Stage 1
 
 ```bash
-python -m distill.train_stage1 --config configs/default.yaml 2>&1 | tee ~/stage1.log
+sbatch scripts/03_train_stage1.sh          # Blackwell, via SLURM
+squeue -u $USER                            # then follow slurm-a2e-stage1-<jobid>.out
 ```
 
 What to watch, in the order it appears:

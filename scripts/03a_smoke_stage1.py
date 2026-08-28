@@ -79,7 +79,7 @@ def main() -> int:
 
     feat_layers = [int(l) for l in cfg.teacher.raw["feat_layers"]]
     pool_len = int(cfg.teacher.get("feat_pool_len", 8))
-    n_student_layers = student.model.config.num_hidden_layers
+    n_student_layers = student.n_layers
 
     print("== data ==")
     ds = Stage1Dataset(cfg, student.context_builder(), clip_ids=load_split(cfg, "train"))
@@ -104,9 +104,9 @@ def main() -> int:
     print("== forward ==")
     lmap = uniform_map(feat_layers, n_student_layers)   # smoke test: skip the CKA probe
     projections = FeatureProjections(
-        lmap, student.model.config.hidden_size, d_t).cuda()
+        lmap, student.hidden_size, d_t).cuda()
     if cfg.stage1.grad_checkpoint:
-        student.model.gradient_checkpointing_enable()
+        student.enable_gradient_checkpointing()
 
     with torch.autocast("cuda", dtype=torch.bfloat16):
         out = student.ar_forward(batch, capture_layers=lmap.keys())

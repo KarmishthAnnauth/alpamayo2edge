@@ -4,18 +4,26 @@
 # RTX GPU. See DECISIONS.md D-018..D-023.
 
 paths:
-  # /data and /bulk belong to the `lab` group, which this account is not in; all
-  # project state lives under $HOME instead. Storage is not a constraint: clips
-  # stream over HTTP range reads and are never materialized (D-019).
-  dataset_root: /home/firvads_ruiyang/Karmishth/alpamayo2edge/data/physicalai-av
-  cache_root: /home/firvads_ruiyang/Karmishth/alpamayo2edge/distill_cache
-  runs_root: /home/firvads_ruiyang/Karmishth/alpamayo2edge/runs
+  # Storage split per slurm_tutorial/08-storage.md, which is prescriptive:
+  #   ~/            code only
+  #   /bulk/users/  own data - the 7.3TB disk, no power-loss protection, 500GB quota
+  #   /data/<user>/ results and checkpoints - the power-loss-protected OS disk
+  # Model weights are re-downloadable, so they live on /bulk. The label cache is
+  # NOT: regenerating it is ~21h of GPU + network, so it sits on /data despite
+  # being "generated" data. Clips are still streamed, never materialised (D-019).
+  dataset_root: /bulk/users/vla/alpamayo2edge/data/physicalai-av
+  cache_root: /data/vla/alpamayo2edge/distill_cache
+  runs_root: /data/vla/alpamayo2edge/runs
   # Local snapshot of nvidia/Alpamayo-1.5-10B (21 GB, 5 shards). from_pretrained takes
   # a path, so this skips the re-download. Its config.json still points
   # vlm_name_or_path at nvidia/Cosmos-Reason2-8B, whose processor/tokenizer are
   # fetched into HF_HUB_CACHE - weights are not, they are in the shards below.
-  teacher_repo: /home/firvads_ruiyang/Karmishth/alpamayo2edge/alpamayo1.5/model
-  student_repo: nvidia/Cosmos3-Edge
+  teacher_repo: /bulk/users/vla/alpamayo2edge/teacher-model
+  # Local snapshot of nvidia/Cosmos3-Edge, pinned at revision a9d944e2 (8.6 GB,
+  # downloaded 2026-08-28). Deliberately a local dir, not an HF repo id: an
+  # untrained checkpoint the retention baseline is measured against must not move
+  # under us, and it keeps the load path off the network entirely.
+  student_repo: /bulk/users/vla/alpamayo2edge/cosmos3-edge
 
 data:
   num_clips: 5000
@@ -167,7 +175,7 @@ eval:
   # Baseline is cached from the UNTRAINED Edge checkpoint once, so base and
   # trained never have to be resident together.
   retention:
-    baseline_dir: /home/firvads_ruiyang/Karmishth/alpamayo2edge/runs/retention_base
+    baseline_dir: /data/vla/alpamayo2edge/runs/retention_base
     probe_file: src/distill/eval/probes/general_probes.json
     max_new_tokens: 64
     # Gen-tower denoising retention on non-AV clips. Leave null to skip that

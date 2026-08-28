@@ -36,19 +36,75 @@ log = logging.getLogger(__name__)
 def load_image_processor(ckpt: str):
     """Edge's own image processor.
 
-    VALIDATE-ON-GPU: which processor class the Cosmos3-Edge snapshot ships is
-    not knowable from the framework source alone — it lives in the checkpoint's
-    `preprocessor_config.json`. `prepare_multimodal_reasoner_inputs` wants the
-    patchified pair (`pixel_values [N_patches, C*p*p]`, `image_grid_thw
-    [n_images, 3]`), so whatever comes back must produce that.
+    RESOLVED on the GPU box 2026-08-28 (was D-029's last VALIDATE-ON-GPU item).
+    The snapshot's `preprocessor_config.json` names `Cosmos3EdgeImageProcessor`
+    and `processor_class: Cosmos3EdgeProcessor` — classes that exist only in
+    transformers@main, not in the pinned 4.57.1. On 4.x, `AutoProcessor`
+    therefore SILENTLY degrades to a bare `PreTrainedTokenizerFast`: no
+    exception, no `image_processor` attribute, so the old
+    `getattr(proc, "image_processor", proc)` handed back the tokenizer and the
+    first batch died in `_encode_images` with "You need to specify either `text`
+    or `text_target`". `AutoImageProcessor` is no fallback either — it rejects
+    the same config for an unrecognized `image_processor_type`.
+
+    cosmos-framework ships a native port for exactly this case
+    (`build_cosmos3_edge_processor`, golden-pinned against the old remote-code
+    object by its own `cosmos3_edge_processing_test.py`), so use it whenever the
+    directory is a renewed Edge snapshot and keep AutoProcessor for everything
+    else.
     """
     from transformers import AutoImageProcessor, AutoProcessor
     try:
-        proc = AutoProcessor.from_pretrained(ckpt)
-        return getattr(proc, "image_processor", proc)
-    except Exception as e:  # noqa: BLE001 — the fallback is the point
-        log.info("AutoProcessor failed (%s); trying AutoImageProcessor", e)
-        return AutoImageProcessor.from_pretrained(ckpt)
+        from cosmos_framework.data.generator.processors.cosmos3_edge_processing import (
+            build_cosmos3_edge_processor, is_cosmos3_edge_native_snapshot)
+        if is_cosmos3_edge_native_snapshot(ckpt):
+            # The inner image processor, not the wrapper: the wrapper's
+            # `__call__` expands placeholders inside `text` and raises on
+            # text=None, and ContextBuilder assembles its own token stream.
+            # The wrapper's spatial_shapes->image_grid_thw conversion is
+            # reproduced in `_encode_images` instead.
+            proc = build_cosmos3_edge_processor(ckpt)
+            ip = getattr(proc, "image_processor", None)
+            if ip is None:
+                raise RuntimeError(
+                    "build_cosmos3_edge_processor returned no image_processor")
+            log.info("image processor: %s (native Cosmos3-Edge port)",
+                     type(ip).__name__)
+            return ip
+    except ImportError as e:
+        log.info("cosmos-framework processor port unavailable (%s); "
+                 "falling back to AutoProcessor", e)
+
+    proc = AutoProcessor.from_pretrained(ckpt)
+    ip = getattr(proc, "image_processor", None)
+    if ip is not None:
+        return ip
+    # Do NOT fall through to `proc` itself: a degraded AutoProcessor is a
+    # tokenizer, and calling it with images= fails much later and far away.
+    log.info("AutoProcessor exposed no image_processor (%s); trying "
+             "AutoImageProcessor", type(proc).__name__)
+    return AutoImageProcessor.from_pretrained(ckpt)
+
+
+def _grid_from_encoding(enc):
+    """`(pixel_values [N_patches, C*p*p], image_grid_thw [n_images, 3])`.
+
+    Two producer conventions reach here. Qwen-style processors return
+    `image_grid_thw` directly. Cosmos3-Edge's `Siglip2ImageProcessorCustom`
+    returns the SigLIP2 pair `(pixel_values, spatial_shapes [n_images, 2])`
+    instead, and the reasoner's `prepare_multimodal_reasoner_inputs` only speaks
+    thw. The conversion below is the one Edge's own processor `__call__` applies
+    (cosmos_framework/data/generator/processors/cosmos3_edge_processing.py):
+    flatten pixel_values to two dims and prepend a t=1 column — still images, so
+    one temporal step each.
+    """
+    pixel_values = enc["pixel_values"]
+    if "image_grid_thw" in enc:
+        return pixel_values, enc["image_grid_thw"]
+    ss = enc["spatial_shapes"]
+    pixel_values = pixel_values.view(-1, pixel_values.shape[-1])
+    t_dim = torch.ones((ss.shape[0], 1), dtype=ss.dtype, device=ss.device)
+    return pixel_values, torch.cat([t_dim, ss], dim=1)
 
 
 @dataclasses.dataclass
@@ -93,12 +149,12 @@ class ContextBuilder:
             arr = window.frames_student[name]          # (F, h, w, 3) uint8
             frames.extend(arr[i] for i in range(min(self.n_frames, len(arr))))
         enc = self.image_processor(images=frames, return_tensors="pt")
-        grid = enc["image_grid_thw"]
+        pixel_values, grid = _grid_from_encoding(enc)
         # One image's placeholder count is its grid volume after the spatial
         # merge — the same arithmetic HF processors use to expand <image>.
         per_image = [int(t * h * w) // (self.merge_size ** 2)
                      for t, h, w in grid.tolist()]
-        return enc["pixel_values"], grid, per_image
+        return pixel_values, grid, per_image
 
     # ---- the whole thing ----------------------------------------------------
 

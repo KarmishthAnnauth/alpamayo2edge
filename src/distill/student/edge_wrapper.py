@@ -29,7 +29,9 @@ Blocks marked # VALIDATE-ON-GPU are written against the real APIs but unrun.
 """
 from __future__ import annotations
 import contextlib
+import logging
 import re
+from pathlib import Path
 import torch
 import torch.nn as nn
 
@@ -42,18 +44,148 @@ DIFF_TOWER_PAT = re.compile(
     r"(_moe_gen|action2llm|llm2action|action_modality_embed|time_embedder)")
 AR_TOWER_PAT = re.compile(r"language_model")  # applied AFTER excluding DIFF matches
 
+log = logging.getLogger(__name__)
+
+
+def _patch_hf_storage_info_for_torch28() -> None:
+    """Let cosmos-framework's 3-arg `_HFStorageInfo(...)` work on torch 2.8.
+
+    cosmos-framework targets torch 2.10, where `_HFStorageInfo` carries only
+    (relative_path, shape, dtype). torch 2.8's dataclass still has the older
+    `offset`/`length` fields and they are REQUIRED, so its `read_metadata`
+    raises TypeError before a single weight is read.
+
+    Supplying zeros is safe here, not a guess: on the LOAD path neither reader
+    ever touches those two fields. torch 2.8's
+    `HuggingFaceStorageReader.read_data` uses only `relative_path`, `dtype` and
+    `shape`, taking tensor bytes by FQN out of a full `deserialize()`; and
+    cosmos's own `_MmapSafeReadMixin._process_read_request` overrides that with
+    `safe_open(...).get_slice(fqn)`. Both slice with `req.storage_offsets` /
+    `req.lengths`, which come from the read REQUEST, not from this record.
+    (`.length` is read only in torch's WRITE path, which we never take.)
+
+    Applied to cosmos's module namespace rather than torch's, so the blast
+    radius is the one construction site that needs it. A no-op once the env
+    moves to a torch whose signature already matches.
+    """
+    import inspect
+    from cosmos_framework.inference import model as _cf_model
+
+    real = _cf_model._HFStorageInfo
+    params = inspect.signature(real.__init__).parameters
+    if "offset" not in params:
+        return                                   # torch >= 2.10: nothing to do
+    if getattr(real, "_a2e_shimmed", False):
+        return
+
+    def _compat(relative_path, shape, dtype, offset=0, length=0, **kw):
+        return real(relative_path=relative_path, offset=offset, length=length,
+                    shape=shape, dtype=dtype, **kw)
+
+    _compat._a2e_shimmed = True
+    _cf_model._HFStorageInfo = _compat
+    log.info("patched _HFStorageInfo for torch %s (offset/length unused on load)",
+             torch.__version__)
+
+
+def _point_tokenizer_at_dir(node, ckpt_dir: str) -> bool:
+    """Rewrite a `build_processor_lazy` tokenizer node to load from a local dir.
+
+    Mirrors `inference.Inference._point_tokenizer_node_at_dir`, which the
+    framework's own entrypoint applies and which `from_pretrained_dcp` does NOT:
+    left alone, the node's `repository: nvidia/Cosmos3-Edge` + `revision: main`
+    sends `checkpoint_db._hf_download` off to re-fetch the whole repo through a
+    nested `uv run --isolated ... hf download`. That defeats the local pin, needs
+    the network on every model construction, and is where the first smoke run
+    hung. `build_processor_lazy`'s two modes are mutually exclusive, so the
+    repository trio has to come OUT as `tokenizer_type` goes in.
+    """
+    if not isinstance(node, dict):
+        return False
+    target = str(node.get("_target_", ""))
+    if not target.endswith("build_processor_lazy"):
+        return False
+    if not (node.get("repository") or node.get("tokenizer_type")):
+        return False
+    for k in ("repository", "revision", "subdir"):
+        node.pop(k, None)
+    node["tokenizer_type"] = ckpt_dir
+    return True
+
+
+def _patch_tokenizer_nodes(obj, ckpt_dir: str) -> int:
+    """Walk the model spec and repoint every processor node at `ckpt_dir`."""
+    n = 0
+    if isinstance(obj, dict):
+        n += _point_tokenizer_at_dir(obj, ckpt_dir)
+        for v in obj.values():
+            n += _patch_tokenizer_nodes(v, ckpt_dir)
+    elif isinstance(obj, list):
+        for v in obj:
+            n += _patch_tokenizer_nodes(v, ckpt_dir)
+    return n
+
+
+def _omni_config(ckpt_dir: str):
+    """The framework's own Cosmos3-Edge architecture spec, as a Cosmos3OmniConfig.
+
+    `deserialize_config_dict` runs `undo_config_replacements`, which rewrites the
+    yaml's `cosmos3._src.vfm.*` _target_ paths onto the installed
+    `cosmos_framework.*` modules — so the `cosmos3` package itself is never
+    imported and does not need to exist.
+    """
+    import cosmos_framework
+    from cosmos_framework.inference.model import Cosmos3OmniConfig
+    from cosmos_framework.inference.common.config import deserialize_config_dict
+    from cosmos_framework.inference.common.public_model_config import (
+        load_model_config_from_hf_config)
+
+    yaml_path = (Path(cosmos_framework.__file__).parent / "inference" / "configs"
+                 / "model" / "Cosmos3-Edge.yaml")
+    if not yaml_path.is_file():
+        raise FileNotFoundError(
+            f"{yaml_path} is missing — the Cosmos3-Edge architecture spec ships "
+            "with cosmos-framework and is what the HF repo's config.json does not "
+            "carry. Check the ../cosmos-framework checkout.")
+    model_dict = load_model_config_from_hf_config(deserialize_config_dict(yaml_path))
+    if not _patch_tokenizer_nodes(model_dict, ckpt_dir):
+        log.warning("no build_processor_lazy tokenizer node found in %s — if model "
+                    "construction stalls, it is re-downloading the processor from "
+                    "the hub", yaml_path)
+    return Cosmos3OmniConfig(model=model_dict)
+
 
 class EdgeStudent(nn.Module):
     def __init__(self, cfg, device: str = "cuda"):
         super().__init__()
         from huggingface_hub import snapshot_download
         from transformers import AutoTokenizer
-        from cosmos_framework.inference.model import Cosmos3OmniModel
+        from cosmos_framework.inference.model import Cosmos3OmniConfig, Cosmos3OmniModel
 
         self.cfg = cfg
-        ckpt = snapshot_download(cfg.paths.student_repo)
+        # A local checkpoint directory OR an HF repo id. `paths.student_repo` is
+        # now the former, mirroring `paths.teacher_repo`: `snapshot_download`
+        # resolves `main` at call time, so a push upstream would silently swap the
+        # base weights out from under a retention baseline that is only meaningful
+        # against the exact checkpoint it was measured on (D-025). A local dir also
+        # drops the dependency on HF_HUB_CACHE being exported at load time.
+        repo = str(cfg.paths.student_repo)
+        ckpt = repo if Path(repo).is_dir() else snapshot_download(repo)
         self._ckpt_dir = ckpt
-        self.model = Cosmos3OmniModel.from_pretrained_dcp(ckpt).to(device)
+        # `from_pretrained_dcp` defaults `config` to
+        # `Cosmos3OmniConfig.from_pretrained(ckpt)`, which reads the HF repo's
+        # config.json — a plain transformers config (model_type cosmos3_edge,
+        # text_config/vision_config). That carries no `model:` section, so
+        # Cosmos3OmniConfig falls back to `{}` and the Hydra spec the model is
+        # instantiated from is empty; construction then dies deep inside
+        # `__init__` on `model_dict.config.ema` (the framework's own
+        # `load_model_config_dict` documents exactly this "Missing key ema"
+        # failure). The architecture has to come from the framework's shipped
+        # model config instead; the checkpoint dir supplies only the WEIGHTS,
+        # which load fine from the diffusers-style layout via CheckpointType.HF.
+        _patch_hf_storage_info_for_torch28()
+        self.model = Cosmos3OmniModel.from_pretrained_dcp(
+            Path(ckpt), config=_omni_config(ckpt)).to(device)
         # OmniMoTModel -> Cosmos3VFMNetwork -> unified-MoT language model
         self.omni = self.model.model
         self.net = self.omni.net
@@ -69,6 +201,33 @@ class EdgeStudent(nn.Module):
         self._device = torch.device(device)
         self._mask_handles: list = []   # gradient row-masks, cleared per stage
         self.lora_stats: dict = {}
+
+    def enable_gradient_checkpointing(self) -> None:
+        """Turn on activation checkpointing for the AR tower.
+
+        NOT on `self.model`: the Cosmos3OmniModel wrapper reports
+        `supports_gradient_checkpointing = False` and transformers raises
+        outright. The tower that supports it is the language model underneath
+        (`self.lm`), which is also the only part stage 1 backprops through.
+        """
+        self.lm.gradient_checkpointing_enable()
+
+    # ---------------- geometry ----------------
+    # `self.model` is the Cosmos3OmniModel wrapper and its config is a
+    # Cosmos3OmniConfig, which carries the Hydra `model:` spec and NOT the
+    # reasoner's dimensions. The AR tower's own config is the one with them
+    # (28 layers x 2048, corroborated by len(lm.model.layers)); reading them off
+    # `model.config` raised AttributeError in the stage-1 layer-map setup.
+
+    @property
+    def n_layers(self) -> int:
+        """Decoder layers in the AR tower — the CKA map's student axis."""
+        return int(self.lm.config.num_hidden_layers)
+
+    @property
+    def hidden_size(self) -> int:
+        """AR-tower hidden width — the FeatureProjections input dim."""
+        return int(self.lm.config.hidden_size)
 
     # ---------------- vocab ----------------
 
@@ -201,7 +360,20 @@ class EdgeStudent(nn.Module):
         if image_processor is None:
             image_processor = load_image_processor(self._ckpt_dir)
         self.lm._ensure_vision_tower()   # plumbs config.image_token_id
-        merge = getattr(getattr(self.lm, "config", None), "spatial_merge_size", 1)
+        # The VISION TOWER is the authority, not `lm.config` — which does not
+        # carry `spatial_merge_size` at all, so the old `getattr(..., 1)` here
+        # silently resolved merge=1 and made ContextBuilder reserve 880
+        # placeholders per frame where the tower emits 220 (verified on the box:
+        # 4 images of 880 raw patches -> image_features (880, 2048)). That 4x
+        # mismatch is a masked_scatter size error at best. No default: a wrong
+        # merge is worse than a missing one.
+        merge = getattr(getattr(self.lm, "visual", None), "spatial_merge_size", None)
+        if merge is None:
+            merge = getattr(getattr(self.lm, "config", None), "spatial_merge_size", None)
+        if merge is None:
+            raise RuntimeError(
+                "cannot resolve spatial_merge_size from the vision tower or the "
+                "LM config; ContextBuilder's placeholder count would be guesswork")
         return ContextBuilder(
             tokenizer=self.tokenizer,
             image_processor=image_processor,
@@ -249,11 +421,26 @@ class EdgeStudent(nn.Module):
         return self.lm.model.layers
 
     def _reset_trainable(self) -> None:
+        # Materialize the vision tower FIRST. `_ensure_vision_tower` is lazy, so
+        # a freeze that ran before it left the 489M SigLIP2 encoder at the torch
+        # default requires_grad=True. It is in no optimizer group either way
+        # (param_groups_stage1 returns LoRA params + the appended vocab rows), so
+        # nothing was training — but autograd still retained activations through
+        # all 27 vision layers to build gradients that were then discarded.
+        # Measured on the box: 12+ GiB of retained activations vs 0.38 GiB with
+        # the tower frozen; it is what made a 7.66 GiB model OOM a 48 GiB card.
+        ensure = getattr(self.lm, "_ensure_vision_tower", None)
+        if ensure is not None:
+            ensure()
         for h in self._mask_handles:
             h.remove()
         self._mask_handles.clear()
         for p in self.model.parameters():
             p.requires_grad_(False)
+        visual = getattr(self.lm, "visual", None)
+        if visual is not None:                 # not reached by self.model.parameters()
+            for p in visual.parameters():      # on every path — belt and braces
+                p.requires_grad_(False)
 
     def _enable_new_vocab_rows(self) -> list[nn.Parameter]:
         """Appended trajectory rows of embed_tokens + lm_head, masked so the

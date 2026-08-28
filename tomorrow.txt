@@ -1,0 +1,11 @@
+tmux attach -t label
+  # or, without attaching:
+  grep -E "labeled [0-9]+|done:|FAILED|consecutive" ~/label.log | tail -20
+  python ~/Karmishth/alpamayo2edge/alpamayo2edge/scripts/check_cache.py
+  
+  
+  
+Run on monday to start the labelling again: 
+tmux attach -t label
+cd ~/Karmishth/alpamayo2edge/alpamayo2edge
+bash scripts/sbatch_label.sh 5000 2>&1 | tee -a ~/label.log

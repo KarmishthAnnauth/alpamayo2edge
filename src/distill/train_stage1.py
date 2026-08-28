@@ -1,7 +1,9 @@
 """Stage 1: distill the teacher reasoner into Edge's AR tower.
 
-Single-GPU (RTX 6000 Ada, 48 GB) loop: bf16 autocast, gradient checkpointing,
-accumulation. Early stopping on challenging-split coarse minADE (decoded from
+Single-GPU loop on the SLURM-allocated RTX PRO 6000 Blackwell (96 GB): bf16
+autocast, gradient checkpointing, accumulation. Launch via
+`sbatch scripts/03_train_stage1.sh` — the Ada is outside SLURM, so a bare
+`python -m distill.train_stage1` lands on the wrong card. Early stopping on challenging-split coarse minADE (decoded from
 discrete tokens alone - no diffusion tower involved, plan gate 3.3).
 
 The AR tower is adapted through LoRA (D-024): trainable is ~25M adapter params
@@ -11,6 +13,7 @@ Checkpoints are written MERGED via distill.checkpoint - see that module.
 from __future__ import annotations
 import argparse
 import functools
+import os
 import logging
 import math
 from pathlib import Path
@@ -88,7 +91,7 @@ def main(cfg_path: str):
                            weights_only=False)
     student.extend_trajectory_vocab(traj_spec)
     if cfg.stage1.grad_checkpoint:
-        student.model.gradient_checkpointing_enable()
+        student.enable_gradient_checkpointing()
 
     expert_layers = torch.load(Path(cfg.paths.cache_root) / "expert_layers.pt",
                                weights_only=False)
@@ -96,7 +99,7 @@ def main(cfg_path: str):
     # attends all 36 (D-004), `teacher.feat_layers` is the 8 that were written.
     feat_layers = [int(l) for l in cfg.teacher.raw["feat_layers"]]
     pool_len = int(cfg.teacher.get("feat_pool_len", 8))
-    n_student_layers = student.model.config.num_hidden_layers
+    n_student_layers = student.n_layers
 
     # The shards are teacher targets only; Stage1Dataset re-loads each window so
     # the student gets the same cameras + ego motion the teacher saw (D-028).
@@ -105,8 +108,12 @@ def main(cfg_path: str):
     train_ds = Stage1Dataset(cfg, student.context_builder(),
                              clip_ids=load_split(cfg, "train"))
     pad_id = student.tokenizer.pad_token_id
+    # Slurm allocates the CPUs; hardcoding a worker count is how a shared node
+    # ends up oversubscribed (slurm_tutorial/07 "three mistakes", #1). Falls back
+    # to 4 outside a job.
+    n_workers = int(os.environ.get("SLURM_CPUS_PER_TASK", 4))
     dl = DataLoader(train_ds, batch_size=cfg.stage1.micro_batch, shuffle=True,
-                    num_workers=4, pin_memory=True,
+                    num_workers=n_workers, pin_memory=True,
                     collate_fn=functools.partial(collate_stage1, pad_id=pad_id))
 
     lmap = _build_layer_map(cfg, student, dl, feat_layers, n_student_layers, pool_len)
@@ -120,7 +127,7 @@ def main(cfg_path: str):
         log.warning("cached feature dim %d != probed teacher_hidden %d — trusting "
                     "the cache", d_teacher, expert_layers["teacher_hidden"])
     projections = FeatureProjections(
-        lmap, student.model.config.hidden_size, d_teacher).cuda()
+        lmap, student.hidden_size, d_teacher).cuda()
     log.info("layer map (student -> teacher): %s", dict(sorted(lmap.items())))
 
     groups = student.param_groups_stage1()
