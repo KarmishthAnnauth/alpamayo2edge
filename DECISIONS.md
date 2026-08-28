@@ -839,3 +839,71 @@ else.
 `scripts/05_eval.py` has the same class of defects (shard-only dataset, no student
 context, `sample_refined_trajectory` against the still-open `_gen_pathway_forward`). It is
 stage-2 infrastructure and is not on the critical path until stage 1 passes its gate.
+
+---
+
+## D-033 [OPEN] Feature KD is inert as configured, and the CKA map it feeds is collapsed — decide after phase 1
+
+Two findings from the first stage-1 smoke run (2026-08-28, Blackwell, micro_batch 4) and
+the startup of the first real run (job 183). They are separate defects that happen to
+cancel each other out, which is why neither is urgent and why fixing one alone is wrong.
+
+### 1. `feat` contributes ~1.4% of the loss
+
+The smoke test's loss table at step 0:
+
+```
+  traj_kl   12.5911   x1.00  = 12.5911
+  text_kl    6.9430   x0.50  =  3.4715
+  feat       0.3518   x0.00  =  0.0000     <- warmup, not the steady-state weight
+  gt_ce     14.5620   x0.25  =  3.6405
+```
+
+The `x0.00` is `feat_warmup_frac: 0.1` not having ramped at step 0 — expected, not a bug.
+The number that matters is the raw value: at its configured `loss_weights.feat: 0.5` it
+settles at **0.176 against traj_kl's 12.59, about 1.4% of the total**. NEXT_STEPS §4 asked
+this question in exactly these terms ("whether `feat: 0.5` is a contribution or a rounding
+error") and the answer is: a rounding error. Making feature KD a real mechanism needs
+roughly a 10x weight increase, to put it on par with `text_kl`.
+
+### 2. The CKA layer map is collapsed onto adjacent student layers
+
+From job 183's startup, the probe on the untrained student:
+
+```
+layer map (student -> teacher): {4: 3, 21: 8, 22: 12, 23: 17, 24: 21, 25: 26, 26: 30, 27: 35}
+```
+
+Injective and monotone, so it passes the basic check — but seven of the eight student
+layers are CONSECUTIVE (21..27) at the top of a 28-layer stack, with one outlier at layer
+4. The teacher side is spread evenly across its 36. NEXT_STEPS §6 names this case: "if it
+collapses onto adjacent student layers, the mapping is not finding structure and `uniform`
+is the honest baseline; set `student.layer_map.mode: uniform` and say so."
+
+### Why this is [OPEN] rather than fixed
+
+The two compound in a way that makes the current run safe but the obvious fix unsafe:
+because `feat` is ~1.4% of the loss, the layer map barely influences training, so a
+collapsed map costs almost nothing **as configured**. Raise `loss_weights.feat` on its own
+and that stops being true — a collapsed CKA map carrying real weight is worse than a
+uniform one, because it concentrates the feature-matching signal on seven adjacent layers
+near the output rather than distributing it through the stack.
+
+So the two knobs move together or not at all:
+
+* **leave both** — feature KD is a minor regulariser, D-008's CKA mapping is not doing the
+  work the plan claims for it, and the writeup says so plainly; or
+* **raise `loss_weights.feat` to ~5.0 AND set `student.layer_map.mode: uniform`** — feature
+  KD becomes a real mechanism on an honest baseline mapping; or
+* **raise the weight and keep `cka`** — only with evidence that the collapse is a property
+  of the untrained student rather than of the probe, e.g. by re-running the probe on the
+  stage-1 checkpoint and seeing whether the map spreads.
+
+**Decision deferred to the end of phase 1** (user, 2026-08-28): judge it on the epoch-gate
+curve from job 183. If coarse minADE improves steadily with feat inert, feature KD was
+never load-bearing and option 1 is the honest write-up. If the gate plateaus early, option
+2 is the first thing to try before touching `stage1.lr`.
+
+Note when reading that curve: the gate reports "challenging coarse-minADE" but
+`split_challenging == split_val` (264 clips, identical sets) because the PhysicalAI-AV
+metadata carries none of the fields `stratum_of` reads. It is val minADE, not hard-val.
