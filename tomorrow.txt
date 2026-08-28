@@ -9,3 +9,12 @@ Run on monday to start the labelling again:
 tmux attach -t label
 cd ~/Karmishth/alpamayo2edge/alpamayo2edge
 bash scripts/sbatch_label.sh 5000 2>&1 | tee -a ~/label.log
+
+
+Following the log: 
+tail -f logs/a2e-stage1-183.out
+
+
+grep "coarse-minADE" logs/a2e-stage1-183.out    # the learning curve
+sacct -j 183 --format=JobID,State,Elapsed,MaxRSS
+seff 183                                        # whether 8 CPUs / 64 G was right
