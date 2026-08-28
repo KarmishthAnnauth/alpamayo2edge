@@ -207,10 +207,28 @@ class EdgeStudent(nn.Module):
 
         NOT on `self.model`: the Cosmos3OmniModel wrapper reports
         `supports_gradient_checkpointing = False` and transformers raises
-        outright. The tower that supports it is the language model underneath
+        outright. The tower that claims support is the language model underneath
         (`self.lm`), which is also the only part stage 1 backprops through.
+
+        "Claims", because the support flag is inherited and unimplemented: no
+        module defines the `gradient_checkpointing` attribute, so this raises
+        unless LoRA has already been injected (the adapters happen to carry it).
+        And even when it succeeds it does nothing - `_impl_reasoner_forward` calls
+        `decoder_layer.reasoner_forward` directly, never through a checkpoint
+        function. So this warns rather than raising: a config flag must not be
+        able to kill a multi-day unattended run over a feature that is inert.
         """
-        self.lm.gradient_checkpointing_enable()
+        try:
+            self.lm.gradient_checkpointing_enable()
+        except ValueError as e:
+            log.warning("gradient checkpointing unavailable on %s (%s); "
+                        "continuing without it - see stage1.grad_checkpoint in "
+                        "the config for why it is inert here",
+                        type(self.lm).__name__, e)
+            return
+        log.warning("gradient_checkpointing_enable() accepted, but "
+                    "reasoner_forward does not route through a checkpoint "
+                    "function - expect NO memory saving")
 
     # ---------------- geometry ----------------
     # `self.model` is the Cosmos3OmniModel wrapper and its config is a

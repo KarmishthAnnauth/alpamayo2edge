@@ -134,7 +134,19 @@ stage1:
                                              # "one real cost").
   warmup_frac: 0.03
   weight_decay: 0.05
-  grad_checkpoint: true
+  # false because the model cannot do it, not because we don't want it.
+  # Nemotron3DenseVLTextForCausalLM inherits supports_gradient_checkpointing=True
+  # from PreTrainedModel but no module implements the `gradient_checkpointing`
+  # attribute, so transformers' gradient_checkpointing_enable() raises outright
+  # (it happens to succeed AFTER LoRA injection, because the adapter modules carry
+  # the attribute - which is why the smoke test missed this and the trainer did
+  # not). Either way it is a NO-OP: _impl_reasoner_forward calls
+  # decoder_layer.reasoner_forward directly and never routes through a checkpoint
+  # function. Measured peak is 58.3 GiB at micro_batch 4, which is the
+  # UNCHECKPOINTED cost and fits the 96GB Blackwell. The framework's own mechanism
+  # is config.activation_checkpointing.mode, which Cosmos3OmniModel.__init__ forces
+  # to "none"; wiring that up is the real fix and is stage-2 work.
+  grad_checkpoint: false
   loss_weights:
     traj_kl: 1.0
     text_kl: 0.5
