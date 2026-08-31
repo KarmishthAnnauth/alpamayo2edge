@@ -77,7 +77,7 @@ class Stage1Dataset(Dataset):
     """
 
     def __init__(self, cfg, context_builder, clip_ids: list[str] | None = None,
-                 for_generation: bool = False):
+                 for_generation: bool = False, cot_generation: bool = False):
         from .preprocess import load_window, window_t0_us
 
         self.cfg = cfg
@@ -88,6 +88,10 @@ class Stage1Dataset(Dataset):
         # then generating from it (which is what the gate did) puts the teacher's
         # own answer in the prompt and measures nothing.
         self.for_generation = bool(for_generation)
+        # Inspection mode: nothing is teacher-forced. The assistant turn opens
+        # `<|cot_start|>` and stops, so the student free-runs the CoC itself
+        # (`EdgeStudent.generate_coc_text`). `coc_span`/`traj_span` are then None.
+        self.cot_generation = bool(cot_generation)
         self._load_window = load_window
         self._t0 = window_t0_us
         self.cache_root = Path(cfg.paths.cache_root)
@@ -109,7 +113,7 @@ class Stage1Dataset(Dataset):
         # the student's appended future rows are indexed by.
         traj_bins = [int(b) for b in d["traj_token_ids"]]
         ctx = self.ctx.build(window,
-                             coc_text=str(d["coc_text"]),
+                             coc_text=None if self.cot_generation else str(d["coc_text"]),
                              traj_bins=None if self.for_generation else traj_bins,
                              for_generation=self.for_generation)
         d["student"] = ctx
@@ -155,16 +159,19 @@ def collate_student(items: list[dict], pad_id: int) -> dict:
     input_ids = torch.full((B, L), pad_id, dtype=torch.long)
     attention_mask = torch.zeros(B, L, dtype=torch.bool)
     coc_mask = torch.zeros(B, L, dtype=torch.bool)
+    struct_mask = torch.zeros(B, L, dtype=torch.bool)
     traj_mask = torch.zeros(B, L, dtype=torch.bool)
     for j, c in enumerate(ctxs):
         n = c["input_ids"].shape[0]
         input_ids[j, :n] = c["input_ids"]
         attention_mask[j, :n] = True
-        for span, mask in ((c["coc_span"], coc_mask), (c["traj_span"], traj_mask)):
+        for span, mask in ((c["coc_span"], coc_mask),
+                           (c.get("struct_span"), struct_mask),
+                           (c["traj_span"], traj_mask)):
             if span is not None:
                 mask[j, span[0]:span[1]] = True
     out = dict(input_ids=input_ids, attention_mask=attention_mask,
-               coc_pos=coc_mask, traj_pos=traj_mask,
+               coc_pos=coc_mask, struct_pos=struct_mask, traj_pos=traj_mask,
                n_prompt=torch.tensor([c["n_prompt"] for c in ctxs]))
     if ctxs[0]["pixel_values"] is not None:
         out["pixel_values"] = torch.cat([c["pixel_values"] for c in ctxs], dim=0)

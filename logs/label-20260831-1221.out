@@ -1,0 +1,4 @@
+== 2026-08-31T12:21:41+02:00 host=ProArt pid=689638 N=5000 LIMIT=none
+== commit ddfd19b
+   pinned NVIDIA RTX 6000 Ada Generation  47 GiB total, 20 GiB free
+need >23 GiB free on the Ada, have 20

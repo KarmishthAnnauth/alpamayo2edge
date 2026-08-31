@@ -189,6 +189,10 @@ class Assembled:
     history_span: tuple[int, int]          # [start, end) — where ego motion is written
     image_spans: list[tuple[int, int]]     # one per frame, in prompt order
     coc_span: tuple[int, int] | None       # text between cot_start/cot_end
+    struct_span: tuple[int, int] | None    # the `<|cot_end|><|traj_future_start|>` subword
+                                           # tokens — the CoC->trajectory boundary. Supervised
+                                           # so the student learns to TERMINATE its CoC; run 1
+                                           # left these unsupervised (eval_phase1.md §1).
     traj_span: tuple[int, int] | None      # the 128 bin positions
     n_prompt: int                          # ids before the assistant turn
 
@@ -212,8 +216,9 @@ def assemble(
     ids: list[int] = []
     history_span = (0, 0)
     image_spans: list[tuple[int, int]] = []
-    coc_span = traj_span = None
+    coc_span = struct_span = traj_span = None
     pending_coc_start: int | None = None
+    pending_struct_start: int | None = None
 
     for seg in segments:
         if seg.kind == "text":
@@ -223,6 +228,9 @@ def assemble(
                 pending_coc_start = len(ids)
             elif seg.text == "<|cot_end|>" and pending_coc_start is not None:
                 coc_span = (pending_coc_start, start)
+                pending_struct_start = start            # first `<|cot_end|>` subword
+            elif seg.text == "<|traj_future_start|>" and pending_struct_start is not None:
+                struct_span = (pending_struct_start, len(ids))   # through the last subword
         elif seg.kind == "slots":
             start = len(ids)
             if seg.values is None:
@@ -253,7 +261,7 @@ def assemble(
 
     return Assembled(
         input_ids=ids, history_span=history_span, image_spans=image_spans,
-        coc_span=coc_span, traj_span=traj_span,
+        coc_span=coc_span, struct_span=struct_span, traj_span=traj_span,
         n_prompt=len(ids) if n_prompt is None else n_prompt,
     )
 

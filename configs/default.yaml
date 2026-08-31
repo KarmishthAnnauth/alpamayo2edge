@@ -128,10 +128,10 @@ stage1:
   micro_batch: 4                             # was 2 under full FT; LoRA freed ~35GB (D-024).
   grad_accum: 8                              # effective batch held at 32. Raise micro_batch
                                              # further once the first run reports real usage.
-  lr: 1.0e-4                                 # inherited from the full-FT regime. LoRA usually
-                                             # wants 2-5x more; first thing to tune if stage 1
-                                             # underfits (that ambiguity is TRAINING_STRATEGY §2's
-                                             # "one real cost").
+  lr: 3.0e-4                                 # run 2: was 1.0e-4 (inherited from full-FT). Run 1
+                                             # plateaued at epoch 3 then overfit; LoRA wants 2-5x
+                                             # more (D-026, eval_phase1.md §3). Primary gate-facing
+                                             # lever for run 2 - keep the rest fixed to attribute it.
   warmup_frac: 0.03
   weight_decay: 0.05
   # false because the model cannot do it, not because we don't want it.
@@ -149,11 +149,25 @@ stage1:
   grad_checkpoint: false
   loss_weights:
     traj_kl: 1.0
-    text_kl: 0.5
-    feat: 0.5
-    gt_ce: 0.25
+    text_kl: 1.0                             # run 2: was 0.5. Run-1 CoC content was already
+                                             # on-topic (job 202) - the real problem was
+                                             # termination (see struct_ce) not content, so
+                                             # 2x not 4x: keep traj_kl the primary signal.
+    feat: 0.5                                # left as-is: D-033 option 1. Only raise (to ~5.0,
+                                             # with layer_map.mode: uniform) if lr does not
+                                             # break the plateau.
+    gt_ce: 0.5                               # run 2: was 0.25. Harder GT anchor - the token
+                                             # path is still above the teacher's coarse ADE,
+                                             # and the teacher's own distribution is imperfect.
+    struct_ce: 0.5                           # run 2, NEW: CE on the `<|cot_end|>` +
+                                             # `<|traj_future_start|>` subword positions. Run 1
+                                             # never supervised these, so the student could not
+                                             # terminate its CoC and fell back to the base
+                                             # model's `</think>` (job 202). eval_phase1.md §1.
   feat_warmup_frac: 0.1
-  early_stop_patience: 2                     # evals without coarse-minADE improvement
+  early_stop_patience: 3                     # run 2: was 2. Run-1 peak was epoch 3/6 on a
+                                             # noisy gate; a higher lr may move it. (evals
+                                             # without coarse-minADE improvement)
 
 stage2:
   supervision: teacher_flow                  # teacher_flow (D-007) | gt_flow (ablation baseline)

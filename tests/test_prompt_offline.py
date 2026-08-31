@@ -104,7 +104,27 @@ def test_assemble_marks_coc_and_trajectory_spans():
 
 def test_assemble_generation_mode_has_no_trajectory_span():
     a = prompt.assemble(prompt.assistant_segments(), **_stub())
-    assert a.traj_span is None and a.coc_span is None
+    assert a.traj_span is None and a.coc_span is None and a.struct_span is None
+
+
+def test_assemble_marks_the_coc_terminator_span():
+    """`struct_span` must cover exactly the `<|cot_end|><|traj_future_start|>`
+    tokens — run 1 left these unsupervised and the student could not stop its
+    CoC (eval_phase1.md §1)."""
+    segs = prompt.assistant_segments(coc_text="abc", traj_bins=list(range(128)))
+    a = prompt.assemble(segs, **_stub())
+    assert a.struct_span is not None
+    # starts where the CoC text ends, ends where the trajectory bins begin
+    assert a.struct_span[0] == a.coc_span[1]
+    assert a.struct_span[1] == a.traj_span[0]
+    expect = [ord(c) % 50 for c in "<|cot_end|><|traj_future_start|>"]
+    assert a.input_ids[a.struct_span[0]:a.struct_span[1]] == expect
+
+
+def test_assemble_gate_mode_marks_the_terminator_up_to_traj_future_start():
+    a = prompt.assemble(prompt.assistant_segments(coc_text="clear road",
+                                                  for_generation=True), **_stub())
+    assert a.struct_span is not None and a.struct_span[1] == len(a.input_ids)
 
 
 def test_assemble_rejects_a_short_trajectory():

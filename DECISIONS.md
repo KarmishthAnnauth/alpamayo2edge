@@ -842,7 +842,25 @@ stage-2 infrastructure and is not on the critical path until stage 1 passes its 
 
 ---
 
-## D-033 [OPEN] Feature KD is inert as configured, and the CKA map it feeds is collapsed — decide after phase 1
+## D-033 [RESOLVED 2026-08-31] Feature KD is inert as configured, and the CKA map it feeds is collapsed — decide after phase 1
+
+**Resolution (run 1 / job 183, see `eval_phase1.md`): feature KD was not load-bearing.**
+The epoch gate fell from 10.92 m (untrained baseline, job 199) to 2.35 m at epoch 3 — a
+78% reduction — with `feat` at 0.00 for the warmup and ≤1.4% of the loss thereafter. That
+is option 1: feature KD is written up as a minor regulariser, and D-008's CKA mapping did
+not do the work the plan claimed for it. The map stays as-is for now (`mode: cka`, weight
+0.5) because changing it in isolation is the unsafe move described below.
+
+Not fully closed as a *lever*: run 1 also plateaued by epoch 3, so §3 option 2 (raise
+`feat` to ~5.0 **and** switch `layer_map.mode` to `uniform`, together) remains the second
+thing to try for run 2 if the `stage1.lr` bump does not break the plateau. If run 2 clears
+the plateau without touching `feat`, this becomes final.
+
+Original analysis below.
+
+---
+
+## D-033 [was OPEN] Feature KD is inert as configured, and the CKA map it feeds is collapsed — decide after phase 1
 
 Two findings from the first stage-1 smoke run (2026-08-28, Blackwell, micro_batch 4) and
 the startup of the first real run (job 183). They are separate defects that happen to
@@ -907,3 +925,43 @@ never load-bearing and option 1 is the honest write-up. If the gate plateaus ear
 Note when reading that curve: the gate reports "challenging coarse-minADE" but
 `split_challenging == split_val` (264 clips, identical sets) because the PhysicalAI-AV
 metadata carries none of the fields `stratum_of` reads. It is val minADE, not hard-val.
+
+---
+
+## D-034 [RESOLVED 2026-08-31] The CoC terminator was never supervised — the student cannot end its chain-of-causation
+
+Found by free-running the epoch-3 student's CoC on 8 windows (job 202,
+`scripts/05a_inspect_coc.py`; the gate teacher-forces the CoC so it never showed this).
+All 8 samples ran to the token cap: the student **never emits `<|cot_end|>`**. It closes
+reasoning with a literal `</think>` (token id 13, the base Cosmos3-Edge reasoner's native
+delimiter) and then drifts into the appended trajectory-id range with no
+`<|traj_future_start|>` structure.
+
+### Why
+
+The student tokenizer has **no** `<|cot_end|>` / `<|traj_future_start|>` id — unlike the
+teacher (`teacher/wrapper.py:172` adds them), `extend_trajectory_vocab` appends only
+embedding/lm_head rows, not tokenizer entries. So the markers are written as their six /
+nine generic subwords (`< | cot _end | >`). And `coc_span` ended *before* the `<|cot_end|>`
+subwords (`prompt.py`), so `gather_targets`'s AR-shifted CE (`pos-1 -> input_ids[pos]`)
+never had a target inside them. Nothing trained the student to emit the terminator, so
+free-running it falls back to the base model's `</think>`.
+
+### Fix (run 2)
+
+New `struct_span` in `prompt.assemble` = the `<|cot_end|><|traj_future_start|>` subword
+tokens; `struct_pos` mask in `collate_student`; a `struct_ce` term in `train_stage1.py`
+(same `input_ids`-as-target CE as the CoC), `loss_weights.struct_ce: 0.5`. Smoke (job 203)
+confirms 60 supervised structural positions/batch (15 per sample × 4), raw CE 4.2 untrained.
+`generate_coc_text` stops on a string match for `<|cot_end|>` **or** `</think>` since the
+id-level stop is not available.
+
+### Considered and rejected
+
+**Adding the 4009 trajectory/special strings to the student tokenizer** (mirroring the
+teacher) would make `<|cot_end|>` a single learnable id and is arguably the "correct"
+architecture. Rejected for run 2: `len(tokenizer) == 131072 == old embedding size`, so it
+is *feasible* cleanly, but it changes every sequence length and the vocab contract, needs
+its own review, and the subword-CE fix is sufficient to teach termination. Revisit if the
+subwords prove hard to learn (watch `struct_ce` in the run-2 log and re-run job 202's
+inspection).

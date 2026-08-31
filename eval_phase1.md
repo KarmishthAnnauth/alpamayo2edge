@@ -1,11 +1,122 @@
-# Evaluating phase 1 (job 183)
+# Evaluating phase 1
 
-How to decide whether stage-1 training worked, and what to change if it did not.
+Running log of stage-1 training attempts, plus the method for judging each one.
 Companion to `NEXT_STEPS.md` §6; the deferred D-033 decision is settled here too.
+The **Run log** below is the record; sections 0–6 are the method it applies.
 
 ---
 
-## 0. First — get the baseline. The curve is meaningless without it
+## Run log
+
+### Run 1 — job 183, commit `015625e` (2026-08-28)
+
+**Baseline** (job 199, commit `ddfd19b`, 2026-08-31): untrained `coarse minADE_6` =
+**10.92 m** (p90 23.5, n=60), from `03a_smoke_stage1.py --gate 60` — model untouched,
+same 60-window prefix the epoch gate uses. Loss table at step 0:
+
+| term | raw | weight | contribution |
+|---|---|---|---|
+| traj_kl | 12.55 | 1.00 | 12.55 |
+| text_kl | 6.95 | 0.50 | 3.48 |
+| feat | 0.35 | 0.00¹ | 0.00 |
+| gt_ce | 14.38 | 0.25 | 3.59 |
+
+¹ `feat_warmup_frac` not ramped at step 0; steady-state ≤1.4% of the loss (D-033).
+Peak GPU 58.3 GiB @ micro_batch 4, |g| 89.7.
+
+**Curve** (gate: challenging = val, n=60, CoC teacher-forced):
+
+| epoch | minADE_6 | note |
+|---|---|---|
+| — (untrained) | 10.92 | baseline |
+| 0 | 3.284 | −70% vs baseline |
+| 1 | 2.760 | |
+| 2 | 2.644 | |
+| 3 | **2.352** | best → checkpointed |
+| 4 | 2.680 | gate turns |
+| 5 | 2.779 | early stop (patience 2) |
+
+Best checkpoint: epoch 3, `/data/vla/alpamayo2edge/runs/stage1/best`.
+`seff 183`: 9h19m wall, CPU 14.5% of 8 cores, 36 GB / 64 GB RAM.
+
+**Verdict: worked, but plateaus early.** A 78% error reduction vs the untrained
+baseline — not the `<~10% better than untrained` underfit row in §2. Two caveats:
+
+- saturates by epoch 3, then the gate rises through epochs 4–5 while training loss
+  sits flat at a noisy ~2.0–2.7 → mild overfit to the ~10k-window increment;
+- best 2.35 m is *best-of-6*; the teacher's discrete token path scores 1.79 m
+  *single-sample* ADE (§1) — a laxer metric still losing to a stricter one, so
+  distillation signal is left on the table.
+
+Sits between "worked → stage 2" and "underfit → §3". Proceeding with §3.
+
+**D-033 outcome:** feature KD was **not load-bearing**. `feat` was 0.00 at step 0
+and ≤1.4% of the loss thereafter, and the curve improved 78% regardless. Written up
+as a minor regulariser; the CKA map (collapsed onto student layers 21–27) did not do
+the work D-008 claimed for it. The early plateau keeps §3 option 2 on the table for
+run 2 anyway. Recorded under D-033 in `DECISIONS.md`.
+
+**CoC inspection** (job 202, `scripts/05a_inspect_coc.py`, 8 challenging windows,
+free-running — nothing teacher-forced). The gate is blind to this (§5); it is an
+eyeball, not a metric. Full output: `logs/a2e-inspect-coc-202.out`.
+
+- **Content is well-distilled.** The opening clause tracks the teacher closely
+  ("Keep distance to the lead vehicle since it is moving slowly ahead in our
+  lane" vs teacher "…since it is slowing ahead"); red lights, cones/construction,
+  cut-in vehicles, intersections are all named correctly. One genuine miss
+  (window 4: student "proceed straight, light is green" vs teacher "complete a
+  left turn because of a clear gap").
+- **Control is not.** All 8 samples ran to the 640-token cap — the student
+  **never emits `<|cot_end|>`**. It closes reasoning with a literal `</think>`
+  (window 8), the *base model's* convention, then drifts ~575 tokens into the
+  appended trajectory/special id range with no `<|traj_future_start|>` structure.
+- **Root cause is a training gap, not just under-distillation.** `coc_span` ends
+  *before* `<|cot_end|>` (`prompt.py:224`), and `gather_targets` supervises
+  `pos-1 → input_ids[pos]` only for `pos` inside that span — so the last trained
+  CoC target is the last text token, and **nothing ever teaches the student to
+  emit `<|cot_end|>` or the CoC→trajectory boundary**. Free-running, it has no
+  learned stop.
+- Also visible: over-generation — the terse teacher target (~10 tokens) is padded
+  with ungrounded specifics ("backed up by slow trucks and stopped cars"),
+  consistent with `text_kl: 0.5` being weak against a model that wants paragraphs.
+
+Fixed for run 2: `struct_ce` now supervises the `<|cot_end|><|traj_future_start|>`
+subwords (D-034); `text_kl` 0.5 → 1.0. Still owed: the held-out CoC NLL metric
+(§4) — the gate cannot see any of this, so re-run `05a_inspect_coc.py` on the
+run-2 checkpoint to confirm the CoC now terminates.
+
+### Run 2 — config staged, waiting on the data increment
+
+Changes applied to `configs/default.yaml` + the training path (2026-08-31):
+
+| change | from → to | why |
+|---|---|---|
+| `stage1.lr` | 1.0e-4 → **3.0e-4** | plateau at epoch 3; LoRA wants 2–5× (§3 #1, D-026). Primary gate-facing lever — the rest are things the gate can't see, so they don't confound the reading. |
+| `loss_weights.text_kl` | 0.5 → **1.0** | run-1 CoC over-generated, but content was fine (job 202) — 2×, not more; `struct_ce` is the real brevity lever. |
+| `loss_weights.gt_ce` | 0.25 → **0.5** | token path still above the teacher's coarse ADE; harder GT anchor. |
+| `loss_weights.struct_ce` | — → **0.5** (new) | CE on the `<|cot_end|><|traj_future_start|>` subword positions. Run 1 never supervised these → the student could not terminate its CoC (§1, D-034). New `struct_span` in `prompt.py` → `struct_pos` in the collator → term in `train_stage1.py`. |
+| `stage1.early_stop_patience` | 2 → **3** | run-1 peak was epoch 3/6 on a noisy gate. |
+
+Left as-is: `feat` / `layer_map.mode: cka` (D-033 option 1). Only escalate to
+`feat ~5.0` + `mode: uniform` if the lr bump doesn't break the plateau.
+
+**Still open before launch:**
+- ~~per-term loss logging + held-out CoC NLL (§4)~~ — done 2026-08-31
+  (`train_stage1.py`). Every 20 steps: `loss 8.31 [traj 4.2 text 1.9 struct 0.3
+  feat 0.1 gt 1.8]`. Each epoch, next to the gate: `| val CoC NLL 1.83 struct NLL
+  0.11`.
+- **the data increment.** Run-1's epoch-4/5 degradation is overfit to ~7.2k train
+  windows. `tomorrow.txt` has the next labelling batch queued
+  (`sbatch_label.sh 5000`, ~+10k windows). Wait for it — more data outweighs any
+  weight change here.
+
+Sbatch for run 2: `--cpus-per-task=4 --mem=48G` (run 1 used 14.5% CPU, 36 GB).
+
+---
+
+## 0. Method — get the baseline. The curve is meaningless without it
+
+*(Done for run 1 — see the Run log. Keep this for every future run.)*
 
 Nothing recorded an untrained coarse minADE at the gate's own settings, and
 "2.4 m at epoch 6" says nothing on its own. This needs no new code:

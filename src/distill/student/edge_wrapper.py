@@ -769,6 +769,65 @@ class EdgeStudent(nn.Module):
             logits = self.lm.lm_head(h[:, -1, :])
         return torch.stack(emitted, dim=1) - self.future_base
 
+    @torch.no_grad()
+    def generate_coc_text(self, batch, max_new_tokens: int = 256) -> list[list[int]]:
+        """Free-run the chain-of-causation text — no teacher forcing, no restriction.
+
+        The gate (`eval/coarse_minade.py`) teacher-forces the CoC, so it never
+        shows what the student would actually reason. This decodes it: the
+        context must stop at `<|cot_start|>` (`Stage1Dataset(cot_generation=True)`
+        / `ContextBuilder.build(coc_text=None)`), and decoding runs over the FULL
+        vocabulary until the CoC terminates or `max_new_tokens`.
+
+        Termination: the student's tokenizer has no `<|cot_end|>` id — the marker
+        is written as its six generic subwords (`< | cot _end | >`), which is what
+        `struct_ce` supervises (eval_phase1.md §1). So the stop test is a string
+        match on the decoded tail, not an id, and it also catches the base model's
+        native `</think>` (id 13) in case the student falls back to it.
+
+        Shares the prefill / cache / mrope-decode path with `generate_traj_tokens`
+        verbatim. Returns raw id lists (one per row) INCLUDING the terminator
+        subwords; the caller splits the decoded text on `<|cot_end|>` / `</think>`.
+        """
+        from cosmos_framework.model.generator.mot.unified_mot import (
+            ReasonerKVCache, _sample_next_token,
+        )
+
+        model = self.lm.model
+        cache = ReasonerKVCache.empty(num_layers=len(model.layers))
+        fwd, deltas = self._reasoner_inputs(batch)
+        h = model.reasoner_forward(cache=cache, **fwd)
+        base_mrope = (deltas.to(dtype=torch.long).unsqueeze(0).expand(3, -1, -1)
+                      if deltas is not None else None)
+
+        gcfg = self.cfg.teacher
+        temperature = float(gcfg.get("gen_temperature", 1.0))
+        top_p = float(gcfg.get("gen_top_p", 1.0))
+        vocab_lo = self.new_token_range[0]
+        stops = ("<|cot_end|>", "</think>")
+
+        b = h.shape[0]
+        done = [False] * b
+        rows: list[list[int]] = [[] for _ in range(b)]
+        logits = self.lm.lm_head(h[:, -1, :])
+        for step in range(int(max_new_tokens)):
+            tok = _sample_next_token(logits, do_sample=True, temperature=temperature,
+                                     top_k=None, top_p=top_p)
+            for j in range(b):
+                if done[j]:
+                    continue
+                rows[j].append(int(tok[j]))
+                tail = self.tokenizer.decode([t for t in rows[j][-12:] if t < vocab_lo])
+                if any(s in tail for s in stops):
+                    done[j] = True
+            if all(done) or step == int(max_new_tokens) - 1:
+                break
+            position_ids = None if base_mrope is None else base_mrope + cache.seq_len
+            h = model.reasoner_forward(tok.unsqueeze(1), cache=cache,
+                                       position_ids=position_ids)
+            logits = self.lm.lm_head(h[:, -1, :])
+        return rows
+
     def _restrict_to_future_bins(self, logits: torch.Tensor) -> torch.Tensor:
         """-inf everywhere outside [future_base, future_base + 3000)."""
         lo, hi = self.future_base, self.future_base + self.n_future_bins

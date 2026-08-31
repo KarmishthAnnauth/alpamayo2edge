@@ -33,6 +33,43 @@ from .eval.coarse_minade import coarse_minade
 
 log = logging.getLogger(__name__)
 
+#: per-term log key -> config `loss_weights` key
+_WKEY = {"traj": "traj_kl", "text": "text_kl", "struct": "struct_ce",
+         "feat": "feat", "gt": "gt_ce"}
+
+
+@torch.no_grad()
+def _coc_nll(cfg, student, split: str = "val", max_windows: int = 64) -> tuple[float, float]:
+    """Teacher-forced CoC / structural cross-entropy on a held-out split.
+
+    The epoch gate is blind to the CoC (eval_phase1.md §5); this is the number
+    that says whether `text_kl` / `struct_ce` are doing anything. No generation —
+    one forward pass over `max_windows` val windows. Returns (text_nll, struct_nll),
+    each a mean over micro-batches so it is comparable across runs.
+    """
+    ds = Stage1Dataset(cfg, student.context_builder(), clip_ids=load_split(cfg, split))
+    if max_windows and len(ds) > max_windows:
+        ds = torch.utils.data.Subset(ds, range(max_windows))
+    dl = DataLoader(ds, batch_size=cfg.stage1.micro_batch, shuffle=False, num_workers=2,
+                    collate_fn=functools.partial(
+                        collate_stage1, pad_id=student.tokenizer.pad_token_id))
+    text_tot = struct_tot = 0.0
+    n = 0
+    for batch in dl:
+        batch = move_batch(batch)
+        with torch.autocast("cuda", dtype=torch.bfloat16):
+            out = student.ar_forward(batch, capture_layers=())
+            n_coc = int(batch["coc_pos"].sum(1).max())
+            coc_logits, coc_tgt, coc_ok = losses.gather_targets(
+                out["logits"], batch["input_ids"], batch["coc_pos"], n_coc)
+            n_struct = int(batch["struct_pos"].sum(1).max())
+            s_logits, s_tgt, s_ok = losses.gather_targets(
+                out["logits"], batch["input_ids"], batch["struct_pos"], n_struct)
+            text_tot += float(losses.text_kl_or_ce(coc_logits, coc_tgt, coc_ok, vocab_ok=True))
+            struct_tot += float(losses.text_kl_or_ce(s_logits, s_tgt, s_ok, vocab_ok=True))
+        n += 1
+    return (text_tot / max(n, 1), struct_tot / max(n, 1))
+
 
 def _cached_feature_dim(shard_path, layer: int) -> int:
     """D_t, read off a cached shard's own feature array."""
@@ -171,24 +208,38 @@ def main(cfg_path: str):
                 n_coc = int(batch["coc_pos"].sum(1).max())
                 coc_logits, coc_tgt, coc_ok = losses.gather_targets(
                     out["logits"], batch["input_ids"], batch["coc_pos"], n_coc)
+                # The `<|cot_end|><|traj_future_start|>` boundary tokens. Run 1
+                # never supervised these, so the student could not terminate its
+                # CoC and free-ran into the base model's `</think>` (job 202,
+                # eval_phase1.md §1). Same `input_ids`-as-target CE as the CoC.
+                n_struct = int(batch["struct_pos"].sum(1).max())
+                struct_logits, struct_tgt, struct_ok = losses.gather_targets(
+                    out["logits"], batch["input_ids"], batch["struct_pos"], n_struct)
                 traj_mask = batch["traj_mask"] & traj_ok
                 # The teacher cached REGION-RELATIVE bins (D-014); the student's
                 # logits are over its whole extended vocabulary, so the top-k
                 # indices need the appended-row offset before they can index it.
                 topk_idx = batch["topk_idx"] + student.future_base
 
-                loss = (w["traj_kl"] * losses.traj_topk_kl(
-                            traj_logits, topk_idx, batch["topk_logp"], traj_mask)
-                        + w["text_kl"] * losses.text_kl_or_ce(
-                            coc_logits, coc_tgt, coc_ok, vocab_ok=True)
-                        + w["feat"] * losses.feature_match(proj, batch["feats"])
-                        # GT bins, NOT traj_tgt: traj_tgt is read back out of
-                        # input_ids, which carry the TEACHER's tokens, so passing it
-                        # here made gt_ce a hard-label restatement of traj_kl instead
-                        # of an independent anchor. Same appended-row offset as topk.
-                        + w["gt_ce"] * losses.gt_traj_ce(
-                            traj_logits, batch["gt_traj_tok"] + student.future_base,
-                            traj_mask))
+                # Per-term, unweighted — so the log can attribute the curve
+                # (eval_phase1.md §4). `gt` uses the cached GT bins, NOT `traj_tgt`:
+                # `traj_tgt` is read back out of `input_ids`, which carry the
+                # TEACHER's tokens, so passing it there made `gt` a hard-label
+                # restatement of `traj` instead of an independent anchor. Same
+                # appended-row offset as `topk_idx`.
+                terms = {
+                    "traj": losses.traj_topk_kl(
+                        traj_logits, topk_idx, batch["topk_logp"], traj_mask),
+                    "text": losses.text_kl_or_ce(
+                        coc_logits, coc_tgt, coc_ok, vocab_ok=True),
+                    "struct": losses.text_kl_or_ce(
+                        struct_logits, struct_tgt, struct_ok, vocab_ok=True),
+                    "feat": losses.feature_match(proj, batch["feats"]),
+                    "gt": losses.gt_traj_ce(
+                        traj_logits, batch["gt_traj_tok"] + student.future_base,
+                        traj_mask),
+                }
+                loss = sum(w.get(_WKEY[k], 0.0) * v for k, v in terms.items())
             (loss / cfg.stage1.grad_accum).backward()
             if (i + 1) % cfg.stage1.grad_accum == 0:
                 set_lr(opt, cosine_lr(step, total_steps, warmup))
@@ -197,12 +248,20 @@ def main(cfg_path: str):
                 opt.step(); opt.zero_grad(set_to_none=True)
                 step += 1
                 if step % 20 == 0:
-                    log.info("epoch %d step %d/%d loss %.4f", epoch, step, total_steps, loss.item())
+                    breakdown = " ".join(f"{k} {float(v):.3f}" for k, v in terms.items())
+                    log.info("epoch %d step %d/%d loss %.4f [%s]",
+                             epoch, step, total_steps, loss.item(), breakdown)
 
         score = coarse_minade(cfg, student, split="challenging",
                               k=int(cfg.eval.minade_k),
                               max_windows=cfg.eval.get("gate_max_windows", None))
-        log.info("epoch %d challenging coarse-minADE %.3f m", epoch, score)
+        # The gate teacher-forces the CoC and scores only the trajectory (§5), so
+        # it cannot see whether `text`/`struct` are learning. This can (§4): same
+        # two CE terms, teacher-forced, on the held-out val split.
+        text_nll, struct_nll = _coc_nll(cfg, student,
+                                        max_windows=cfg.eval.get("gate_max_windows", 64))
+        log.info("epoch %d challenging coarse-minADE %.3f m | val CoC NLL %.3f "
+                 "struct NLL %.3f", epoch, score, text_nll, struct_nll)
         if score < best:
             best, patience = score, 0
             ckpt = Path(cfg.paths.runs_root) / "stage1" / "best"

@@ -1,0 +1,141 @@
+Job 183 on ProArt, started 2026-08-28T13:16:49+02:00
+Submitted from: /home/vla/projects/alpamayo2edge
+GPU:            NVIDIA RTX PRO 6000 Blackwell Workstation Edition,NVIDIA RTX 6000 Ada Generation
+Commit:         015625e
+Scratch:        /bulk/scratch/vla/183
+----------------------------------------------------------------
+   CUDA_VISIBLE_DEVICES = GPU-1e9d88da-6c84-dbf7-f179-fdca7207dae0
+   CPUs allocated       = 8
+   device 0             = NVIDIA RTX PRO 6000 Blackwell Workstation Edition  95.0 GiB total, 93.2 GiB free
+----------------------------------------------------------------
+INFO:megatron.core.msc_utils:The multistorageclient package is available.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/distributed/fsdp/src/megatron_fsdp/utils.py:108: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+INFO:megatron.core.distributed.fsdp.src.megatron_fsdp.megatron_fsdp:Detected Megatron Core, using Megatron-FSDP with Megatron.
+INFO:megatron.core.distributed.fsdp.src.megatron_fsdp.param_and_grad_buffer:Detected Megatron Core, using Megatron-FSDP with Megatron.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/__init__.py:24: UserWarning: Transformer Engine and Apex are not installed. Falling back to Torch optimizers.
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/optimizer.py:28: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/clip_grads.py:29: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier, multi_tensor_l2norm, and multi_tensor_scale
+  warnings.warn(
+[08-28 13:16:57|INFO|cosmos_framework/model/generator/omni_mot_model.py:124:__init__] OmniMoTModel: config {'tokenizer': {'bucket_name': 'bucket', 'object_store_credential_path_pretrained': 'credentials/gcp_training.secret', 'vae_path': 'pretrained/tokenizers/video/wan2pt2/Wan2.2_VAE.pth', 'chunk_duration': 93, 'keep_decoder_cache': False, 'use_streaming_encode': False, 'encode_chunk_frames': {'256': 68, '480': 24, '720': 8, '768': 8}, 'encode_exact_durations': [17, 61, 73], 'spatial_compression_factor': 16, 'temporal_compression_factor': 4, 'temporal_window': None, 'encode_bucket_multiple': None, 'causal': True, '_target_': 'cosmos_framework.model.generator.tokenizers.wan2pt2_vae_4x16x16.Wan2pt2VAEInterface'}, 'load_vision_tokenizer': True, 'lidar_tokenizer': None, 'lidar_state_ch': None, 'lidar_fps': None, 'net': None, 'ema': {'enabled': False, 'rate': 0.1, 'iteration_shift': 0, '_type': 'cosmos_framework.configs.base.defaults.ema.EMAConfig'}, 'parallelism': {'data_parallel_shard_degree': -1, 'data_parallel_replicate_degree': 1, 'context_parallel_shard_degree': 1, 'cfg_parallel_shard_degree': 1, 'enable_inference_mode': True, 'fsdp_master_dtype': 'float32', 'fsdp_reduce_dtype': None, '_type': 'cosmos_framework.configs.base.defaults.parallelism.ParallelismConfig'}, 'attention_io_layout': 'sequence_sharded', 'compile': {'enabled': False, 'compiled_region': 'language', 'compile_dynamic': True, 'use_cuda_graphs': False, 'ar_post_saturation_mode': 'default', 'max_autotune_pointwise': False, 'coordinate_descent_tuning': False, '_type': 'cosmos_framework.configs.base.defaults.compile.CompileConfig'}, 'quantization': {'method': None, 'fp8_granularity': 'per_row', 'modelopt_fp8_checkpoint_path': None, 'mixed_precision_first_steps': 0, 'mixed_precision_last_steps': 0, 'mixed_precision_reasoner_policy': 'high_precision', 'mixed_precision_w8a16_cache': 'none', 'include_regex': [], 'exclude_regex': [], 'modelopt_fp8_target_fqns': [], '_type': 'cosmos_framework.configs.base.defaults.quantization.QuantizationConfig'}, 'activation_checkpointing': {'mode': 'none', 'preserve_rng_state': True, 'determinism_check': 'default', 'save_ops_regex': ['fmha'], '_type': 'cosmos_framework.configs.base.defaults.activation_checkpointing.ActivationCheckpointingConfig'}, 'precision': 'bfloat16', 'lora_enabled': False, 'lora_rank': 16, 'lora_alpha': 32, 'lora_target_modules': 'q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen', 'rectified_flow_training_config': {'shift': {'256': 3, '480': 5, '720': 10}, 'shift_image': None, 'use_dynamic_shift': False, 'train_time_image_distribution': 'logitnormal', 'train_time_video_distribution': 'waver', 'train_time_action_distribution': 'logitnormal', 'train_time_sound_distribution': 'logitnormal', 'train_time_weight': 'uniform', 'loss_scale': 10.0, 'image_loss_scale': None, 'sound_loss_scale': 2.0, 'lidar_loss_scale': None, 'use_discrete_rf': False, 'action_loss_weight': 10.0, 'independent_action_schedule': False, 'shift_action': None, 'independent_sound_schedule': False, 'shift_sound': None, 'normalize_loss_by_active': False, 'sample_level_loss_averaging': False, 'high_sigma_ratio': 0.05, 'high_sigma_timesteps_max': 1000, 'high_sigma_timesteps_min': 995, 'use_high_sigma_strategy': False, 'use_high_sigma_strategy_action': False, 'use_high_sigma_strategy_sound': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowTrainingConfig'}, 'rectified_flow_inference_config': {'scheduler_type': 'unipc', 'num_train_timesteps': 1000, 'shift': 1, 'use_dynamic_shifting': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowInferenceConfig'}, 'fixed_step_sampler_config': None, 'vlm_config': {'model_name': 'nvidia/Cosmos3-Edge-Reasoner', 'safetensors_path': '', 'pretrained_weights': {'enabled': False, 'backbone_path': 's3://bucket/cosmos3/pretrained/huggingface/nvidia/Cosmos3-Edge-Reasoner-590c1c0/', 'credentials_path': 'credentials/gcp_checkpoint.secret', 'enable_gcs_patch_in_boto3': True, 'checkpoint_format': None, '_type': 'cosmos_framework.configs.base.defaults.reasoner.PretrainedWeightsConfig'}, 'model_instance': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLTextForCausalLM', 'config': {'_target_': 'cosmos_framework.configs.base.defaults.reasoner.create_vlm_config', 'base_config': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLMoTConfig.from_json_file', 'json_file': 'cosmos_framework/model/generator/reasoner/nemotron_3_dense_vl/configs/Nemotron-2B-Dense-VL.json'}, 'include_visual': None, 'qk_norm_for_text': False, 'use_und_k_norm_for_gen': True}}, 'tokenizer': {'repository': None, 'revision': None, 'subdir': '', '_target_': 'cosmos_framework.data.generator.processors.build_processor_lazy', 'tokenizer_type': '/bulk/users/vla/alpamayo2edge/cosmos3-edge'}, 'layer_module': None, 'qk_norm': False, 'tie_word_embeddings': False, 'use_system_prompt': False, '_type': 'cosmos_framework.configs.base.defaults.reasoner.VLMConfig'}, 'diffusion_expert_config': {'timestep_range': 1.0, 'load_weights_from_pretrained': False, 'enable_vision_modality_embeddings': False, 'enable_media_modality_embedding': False, 'enable_sound_modality_embedding': True, 'patch_spatial': 2, 'max_vae_latent_side_after_patchify': 20, 'enable_fps_modulation': True, 'base_fps': 24, 'sound_base_temporal_compression_factor': None, 'vision_temporal_position_mode': 'latent_index', 'unified_3d_mrope_reset_spatial_ids': True, 'unified_3d_mrope_temporal_modality_margin': 15000, '_type': 'cosmos_framework.configs.base.defaults.model_config.DiffusionExpertConfig'}, 'input_video_key': 'video', 'input_image_key': 'images', 'input_caption_key': 'ai_caption', 'state_ch': 48, 'state_t': 300, 'latent_downsample_factor': 16, 'resolution': '480', 'max_num_tokens_after_packing': 74000, 'joint_attn_implementation': 'two_way', 'flex_attention': {'enabled': False, 'backend': 'auto', 'mask': {'attention_scope': 'all_views'}}, 'natten_parameter_list': None, 'video_temporal_causal': False, 'causal_training_strategy': 'none', 'lbl': {'method': 'local', 'coeff_und': None, 'coeff_gen': None, '_type': 'cosmos_framework.configs.base.defaults.model_config.LBLConfig'}, 'vision_gen': True, 'action_gen': True, 'max_action_dim': 64, 'num_embodiment_domains': 32, 'sound_gen': False, 'sound_tokenizer': None, 'sound_dim': None, 'sound_latent_fps': 25, 'enable_input_bias': True, 'log_enc_time_every_n': 100, 'exclude_reasoner_weights_from_checkpoint': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.OmniMoTModelConfig'}
+[08-28 13:16:57|WARNING|cosmos_framework/model/generator/omni_mot_model.py:150:set_precision] OmniMoTModel: precision torch.bfloat16
+This processor does not use the `size` parameter. It will be ignored.
+[08-28 13:16:57|INFO|cosmos_framework/data/generator/processors/base.py:131:__init__] Successfully loaded processor from local cache
+[08-28 13:16:57|INFO|cosmos_framework/utils/checkpoint_db.py:338:download] Downloading checkpoint Wan2.2/vae(361a913ee1ff4f4ea6b6cba51ace2313)
+[08-28 13:16:57|INFO|cosmos_framework/utils/checkpoint_db.py:171:_hf_download] uv run --isolated --project /home/vla/projects/cosmos-framework/cosmos_framework/utils/hf_cli --locked --no-default-groups hf download --format=json Wan-AI/Wan2.2-TI2V-5B --repo-type model --revision 921dbaf3f1674a56f47e83fb80a34bac8a8f203e Wan2.2_VAE.pth
+Installed 16 packages in 4ms
+[08-28 13:17:01|INFO|cosmos_framework/model/generator/tokenizers/wan2pt2_vae_4x16x16.py:1056:_video_vae] loading /bulk/users/vla/alpamayo2edge/hf-cache/models--Wan-AI--Wan2.2-TI2V-5B/snapshots/921dbaf3f1674a56f47e83fb80a34bac8a8f203e/Wan2.2_VAE.pth
+[08-28 13:17:01|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_tokenizers: 3.85 s
+[08-28 13:17:01|INFO|cosmos_framework/utils/generator/parallelism.py:110:_validate] dp_shard auto-inferred to world_size = 1
+[08-28 13:17:01|INFO|cosmos_framework/utils/generator/parallelism.py:124:_validate] dp_replicate is set to -1, will be automatically determined based on world_size 1 // dp_shard 1.
+[08-28 13:17:01|INFO|cosmos_framework/utils/generator/parallelism.py:129:_validate] dp_replicate is set to 1.
+`torch_dtype` is deprecated! Use `dtype` instead!
+[08-28 13:17:01|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on meta to cuda and broadcast model states: 0.06 s
+[08-28 13:17:01|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on Creating PyTorch model and ema if enabled: 0.14 s
+[08-28 13:17:01|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_model: 0.14 s
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/torch/distributed/checkpoint/utils.py:483: UserWarning: torch.distributed is disabled, unavailable or uninitialized, assuming the intent is to load in a single process.
+  return func(*args, **kwargs)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+[08-28 13:17:03|INFO|../cosmos-framework/cosmos_framework/model/generator/mot/unified_mot.py:2656:_ensure_vision_tower] Edge vision tower: loading from checkpoint-local bundle /bulk/users/vla/alpamayo2edge/cosmos3-edge/vision_encoder
+INFO:__main__:layer map (student -> teacher): {4: 3, 21: 8, 22: 12, 23: 17, 24: 21, 25: 26, 26: 30, 27: 35}
+[08-28 13:17:21|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[08-28 13:17:21|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+INFO:__main__:LoRA: {'wrapped': 112, 'by_leaf': {'q_proj': 28, 'k_proj': 28, 'v_proj': 28, 'o_proj': 28}, 'lora_params': 19267584, 'example': ['0.self_attn.q_proj', '0.self_attn.k_proj', '0.self_attn.v_proj']}
+INFO:__main__:trainable 639.7M [group0(x1.0): 19.3M, group1(x8.0): 553.3M, group2(x8.0): 67.1M]
+INFO:__main__:epoch 0 step 20/1386 loss 9.0072
+INFO:__main__:epoch 0 step 40/1386 loss 5.7458
+INFO:__main__:epoch 0 step 60/1386 loss 3.6174
+INFO:__main__:epoch 0 step 80/1386 loss 4.2373
+INFO:__main__:epoch 0 step 100/1386 loss 2.8413
+INFO:__main__:epoch 0 step 120/1386 loss 2.6899
+INFO:__main__:epoch 0 step 140/1386 loss 3.9872
+INFO:__main__:epoch 0 step 160/1386 loss 2.7674
+INFO:__main__:epoch 0 step 180/1386 loss 2.9212
+INFO:__main__:epoch 0 step 200/1386 loss 3.5016
+INFO:__main__:epoch 0 step 220/1386 loss 2.3455
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 3.284 m (p90 7.622, n=60)
+INFO:__main__:epoch 0 challenging coarse-minADE 3.284 m
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1/best (992 tensors)
+INFO:__main__:epoch 1 step 240/1386 loss 2.3551
+INFO:__main__:epoch 1 step 260/1386 loss 2.9281
+INFO:__main__:epoch 1 step 280/1386 loss 2.7127
+INFO:__main__:epoch 1 step 300/1386 loss 2.1947
+INFO:__main__:epoch 1 step 320/1386 loss 3.4925
+INFO:__main__:epoch 1 step 340/1386 loss 2.4115
+INFO:__main__:epoch 1 step 360/1386 loss 2.9429
+INFO:__main__:epoch 1 step 380/1386 loss 2.7107
+INFO:__main__:epoch 1 step 400/1386 loss 2.3741
+INFO:__main__:epoch 1 step 420/1386 loss 2.2235
+INFO:__main__:epoch 1 step 440/1386 loss 2.1579
+INFO:__main__:epoch 1 step 460/1386 loss 2.9633
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.760 m (p90 5.575, n=60)
+INFO:__main__:epoch 1 challenging coarse-minADE 2.760 m
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1/best (992 tensors)
+INFO:__main__:epoch 2 step 480/1386 loss 1.7963
+INFO:__main__:epoch 2 step 500/1386 loss 2.1311
+INFO:__main__:epoch 2 step 520/1386 loss 2.0407
+INFO:__main__:epoch 2 step 540/1386 loss 2.7384
+INFO:__main__:epoch 2 step 560/1386 loss 2.6681
+INFO:__main__:epoch 2 step 580/1386 loss 1.9988
+INFO:__main__:epoch 2 step 600/1386 loss 2.0485
+INFO:__main__:epoch 2 step 620/1386 loss 2.8169
+INFO:__main__:epoch 2 step 640/1386 loss 2.5761
+INFO:__main__:epoch 2 step 660/1386 loss 2.8055
+INFO:__main__:epoch 2 step 680/1386 loss 2.8577
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.644 m (p90 5.242, n=60)
+INFO:__main__:epoch 2 challenging coarse-minADE 2.644 m
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1/best (992 tensors)
+INFO:__main__:epoch 3 step 700/1386 loss 1.6307
+INFO:__main__:epoch 3 step 720/1386 loss 2.1578
+INFO:__main__:epoch 3 step 740/1386 loss 2.2403
+INFO:__main__:epoch 3 step 760/1386 loss 2.4728
+INFO:__main__:epoch 3 step 780/1386 loss 2.1452
+INFO:__main__:epoch 3 step 800/1386 loss 2.6006
+INFO:__main__:epoch 3 step 820/1386 loss 2.4820
+INFO:__main__:epoch 3 step 840/1386 loss 3.0608
+INFO:__main__:epoch 3 step 860/1386 loss 2.2725
+INFO:__main__:epoch 3 step 880/1386 loss 2.4832
+INFO:__main__:epoch 3 step 900/1386 loss 2.3522
+INFO:__main__:epoch 3 step 920/1386 loss 2.5699
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.352 m (p90 5.552, n=60)
+INFO:__main__:epoch 3 challenging coarse-minADE 2.352 m
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1/best (992 tensors)
+INFO:__main__:epoch 4 step 940/1386 loss 2.0330
+INFO:__main__:epoch 4 step 960/1386 loss 1.6339
+INFO:__main__:epoch 4 step 980/1386 loss 1.8590
+INFO:__main__:epoch 4 step 1000/1386 loss 2.5114
+INFO:__main__:epoch 4 step 1020/1386 loss 2.1224
+INFO:__main__:epoch 4 step 1040/1386 loss 2.2996
+INFO:__main__:epoch 4 step 1060/1386 loss 2.5509
+INFO:__main__:epoch 4 step 1080/1386 loss 1.8917
+INFO:__main__:epoch 4 step 1100/1386 loss 2.3956
+INFO:__main__:epoch 4 step 1120/1386 loss 2.7051
+INFO:__main__:epoch 4 step 1140/1386 loss 1.9444
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.680 m (p90 6.130, n=60)
+INFO:__main__:epoch 4 challenging coarse-minADE 2.680 m
+INFO:__main__:epoch 5 step 1160/1386 loss 2.4623
+INFO:__main__:epoch 5 step 1180/1386 loss 2.2387
+INFO:__main__:epoch 5 step 1200/1386 loss 1.7683
+INFO:__main__:epoch 5 step 1220/1386 loss 2.5849
+INFO:__main__:epoch 5 step 1240/1386 loss 1.6421
+INFO:__main__:epoch 5 step 1260/1386 loss 2.2366
+INFO:__main__:epoch 5 step 1280/1386 loss 2.0068
+INFO:__main__:epoch 5 step 1300/1386 loss 2.7045
+INFO:__main__:epoch 5 step 1320/1386 loss 2.0605
+INFO:__main__:epoch 5 step 1340/1386 loss 2.0438
+INFO:__main__:epoch 5 step 1360/1386 loss 2.3976
+INFO:__main__:epoch 5 step 1380/1386 loss 2.6823
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.779 m (p90 6.303, n=60)
+INFO:__main__:epoch 5 challenging coarse-minADE 2.779 m
+INFO:__main__:early stop: no improvement for 2 evals
+----------------------------------------------------------------
+Finished 2026-08-28T22:36:13+02:00
+Check what this actually used:  seff 183

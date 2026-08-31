@@ -1,0 +1,11 @@
+== 2026-08-31T12:01:45+02:00 host=ProArt
+GPU 0: NVIDIA RTX PRO 6000 Blackwell Workstation Edition (UUID: GPU-1e9d88da-6c84-dbf7-f179-fdca7207dae0)
+GPU 1: NVIDIA RTX 6000 Ada Generation (UUID: GPU-5be167c7-2d06-56dc-cacb-d299d6860070)
+Flash Attention 2 only supports torch.float16 and torch.bfloat16 dtypes, but the current dype in Qwen3VLForConditionalGeneration is bfloat16. You should run training or inference using Automatic Mixed-Precision via the `with torch.autocast(device_type='torch_device'):` decorator, or load the model with the `dtype` argument. Example: `model = AutoModel.from_pretrained("openai/whisper-tiny", attn_implementation="flash_attention_2", dtype=torch.float16)`
+Flash Attention 2 only supports torch.float16 and torch.bfloat16 dtypes, but the current dype in Qwen3VLModel is bfloat16. You should run training or inference using Automatic Mixed-Precision via the `with torch.autocast(device_type='torch_device'):` decorator, or load the model with the `dtype` argument. Example: `model = AutoModel.from_pretrained("openai/whisper-tiny", attn_implementation="flash_attention_2", dtype=torch.float16)`
+You are attempting to use Flash Attention 2 without specifying a torch dtype. This might lead to unexpected behaviour
+checking ['a93cd435-ceed-49cb-88f8-1021dc22c3e0', '334b366d-97d6-467e-8a54-c9c1e7ba10da', 'f045b9a9-287d-423a-8716-84b035b7d634']
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:00<00:00,  5.92it/s]Loading checkpoint shards:  60%|██████    | 3/5 [00:00<00:00, 11.58it/s]Loading checkpoint shards: 100%|██████████| 5/5 [00:00<00:00, 10.59it/s]Loading checkpoint shards: 100%|██████████| 5/5 [00:00<00:00, 10.24it/s]
+'('Connection broken: IncompleteRead(40033392 bytes read, 16892147 more expected)', IncompleteRead(40033392 bytes read, 16892147 more expected))' thrown while requesting GET https://huggingface.co/datasets/nvidia/PhysicalAI-Autonomous-Vehicles/resolve/main/camera/camera_front_wide_120fov/camera_front_wide_120fov.chunk_0319.zip
+Retrying in 1s [Retry 1/5].
+[2026-08-31T12:14:54.657] error: *** JOB 206 ON ProArt CANCELLED AT 2026-08-31T12:14:54 DUE to SIGNAL Terminated ***

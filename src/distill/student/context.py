@@ -12,6 +12,7 @@ What it produces, per window (D-028's format, `prompt.py` holds the template):
     pixel_values    processed camera frames, Edge's own patch layout
     image_grid_thw  [n_images, 3]
     coc_span        where the teacher's CoC text sits  -> text KD
+    struct_span     the `<|cot_end|><|traj_future_start|>` boundary tokens -> structural CE
     traj_span       where the 128 future bins sit      -> trajectory KD
     n_prompt        user/assistant boundary
 
@@ -201,6 +202,7 @@ class ContextBuilder:
             "pixel_values": pixel_values,
             "image_grid_thw": grid,
             "coc_span": a.coc_span,
+            "struct_span": a.struct_span,
             "traj_span": a.traj_span,
             "history_span": a.history_span,
             "n_prompt": a.n_prompt,

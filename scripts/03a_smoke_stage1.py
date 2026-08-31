@@ -120,10 +120,18 @@ def main() -> int:
         n_coc = int(batch["coc_pos"].sum(1).max())
         coc_logits, coc_tgt, coc_ok = losses.gather_targets(
             out["logits"], batch["input_ids"], batch["coc_pos"], n_coc)
+        n_struct = int(batch["struct_pos"].sum(1).max())
+        struct_logits, struct_tgt, struct_ok = losses.gather_targets(
+            out["logits"], batch["input_ids"], batch["struct_pos"], n_struct)
         traj_mask = batch["traj_mask"] & traj_ok
         print(f"  target positions: traj {int(traj_mask.sum())}/{traj_mask.numel()}  "
               f"coc {int(coc_ok.sum())} student tokens vs "
-              f"{int(batch['coc_mask'].sum())} teacher tokens (cross-family, D-011)")
+              f"{int(batch['coc_mask'].sum())} teacher tokens (cross-family, D-011)  "
+              f"struct {int(struct_ok.sum())} (cot_end + traj_future_start subwords)")
+        if int(struct_ok.sum()) == 0:
+            raise RuntimeError(
+                "no structural target positions — struct_span never landed; the "
+                "CoC terminator would be unsupervised, which is the run-1 bug")
         if int(traj_mask.sum()) == 0:
             raise RuntimeError(
                 "no trajectory target positions — traj_span never landed in the "
@@ -135,6 +143,7 @@ def main() -> int:
                                            batch["topk_idx"] + student.future_base,
                                            batch["topk_logp"], traj_mask),
             "text_kl": losses.text_kl_or_ce(coc_logits, coc_tgt, coc_ok, vocab_ok=True),
+            "struct_ce": losses.text_kl_or_ce(struct_logits, struct_tgt, struct_ok, vocab_ok=True),
             "feat": losses.feature_match(proj, batch["feats"]),
             "gt_ce": losses.gt_traj_ce(traj_logits,
                                        batch["gt_traj_tok"] + student.future_base,
