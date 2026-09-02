@@ -16,6 +16,7 @@ import functools
 import os
 import logging
 import math
+from datetime import datetime
 from pathlib import Path
 
 import torch
@@ -36,6 +37,30 @@ log = logging.getLogger(__name__)
 #: per-term log key -> config `loss_weights` key
 _WKEY = {"traj": "traj_kl", "text": "text_kl", "struct": "struct_ce",
          "feat": "feat", "gt": "gt_ce"}
+
+
+def _run_best_dir(cfg, stage: str = "stage1") -> Path:
+    """This run's own `best` checkpoint dir, so a second run never clobbers the
+    first (2026-08-31: job 207 was about to overwrite job 183's 2.352 m).
+    `SLURM_JOB_ID` names it when present, otherwise a timestamp."""
+    rid = os.environ.get("SLURM_JOB_ID") or datetime.now().strftime("%Y%m%d-%H%M%S")
+    return Path(cfg.paths.runs_root) / stage / f"run-{rid}" / "best"
+
+
+def _promote_best(run_best: Path) -> None:
+    """Point `<stage>/best` at this run's checkpoint via a relative symlink, so
+    stage 2 and the eval scripts keep resolving one stable path. A pre-isolation
+    real directory sitting at `best` is moved aside once."""
+    stage_root = run_best.parent.parent          # runs_root/<stage>
+    link = stage_root / "best"
+    if link.exists() and not link.is_symlink() and link.is_dir():
+        legacy = stage_root / f"legacy-best-{int(link.stat().st_mtime)}"
+        link.rename(legacy)
+        log.warning("moved pre-isolation checkpoint %s -> %s", link, legacy)
+    tmp = stage_root / f".best.{os.getpid()}.tmp"
+    tmp.unlink(missing_ok=True)
+    os.symlink(run_best.relative_to(stage_root), tmp)   # e.g. run-207/best
+    os.replace(tmp, link)
 
 
 @torch.no_grad()
@@ -178,6 +203,9 @@ def main(cfg_path: str):
     total_steps = steps_per_epoch * cfg.stage1.epochs
     warmup = int(total_steps * cfg.stage1.warmup_frac)
 
+    run_best = _run_best_dir(cfg)
+    log.info("checkpoints -> %s  (<stage>/best symlinks here)", run_best)
+
     best, patience, step = float("inf"), 0, 0
     for epoch in range(cfg.stage1.epochs):
         for i, batch in enumerate(dl):
@@ -264,13 +292,14 @@ def main(cfg_path: str):
                  "struct NLL %.3f", epoch, score, text_nll, struct_nll)
         if score < best:
             best, patience = score, 0
-            ckpt = Path(cfg.paths.runs_root) / "stage1" / "best"
+            # Per-run dir (see _run_best_dir); `<stage>/best` is repointed to it.
             # Merged, so stage 2 can load it into a student with no adapters
             # injected; non-destructive, so this epoch's training continues.
-            checkpoint.save(student, ckpt, stage="stage1", epoch=epoch,
+            checkpoint.save(student, run_best, stage="stage1", epoch=epoch,
                             coarse_minade=float(score))
-            torch.save(projections.state_dict(), ckpt / "projections.pt")
-            torch.save(lmap, ckpt / "layer_map.pt")
+            torch.save(projections.state_dict(), run_best / "projections.pt")
+            torch.save(lmap, run_best / "layer_map.pt")
+            _promote_best(run_best)
         else:
             patience += 1
             if patience >= cfg.stage1.early_stop_patience:

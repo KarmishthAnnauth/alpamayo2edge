@@ -53,3 +53,97 @@ INFO:__main__:epoch 0 step 60/1386 loss 7.1186 [traj 2.992 text 0.856 struct 0.1
 INFO:__main__:epoch 0 step 80/1386 loss 6.0852 [traj 1.818 text 1.232 struct 0.052 feat 0.140 gt 5.939]
 INFO:__main__:epoch 0 step 100/1386 loss 5.4090 [traj 1.369 text 1.255 struct 0.036 feat 0.136 gt 5.436]
 INFO:__main__:epoch 0 step 120/1386 loss 5.7279 [traj 1.945 text 0.397 struct 0.028 feat 0.132 gt 6.631]
+INFO:__main__:epoch 0 step 140/1386 loss 5.8885 [traj 1.228 text 1.429 struct 0.085 feat 0.122 gt 6.257]
+INFO:__main__:epoch 0 step 160/1386 loss 3.8695 [traj 1.046 text 0.088 struct 0.000 feat 0.121 gt 5.349]
+INFO:__main__:epoch 0 step 180/1386 loss 5.4653 [traj 1.551 text 0.595 struct 0.002 feat 0.127 gt 6.509]
+INFO:__main__:epoch 0 step 200/1386 loss 4.2736 [traj 1.170 text 0.533 struct 0.021 feat 0.109 gt 5.012]
+INFO:__main__:epoch 0 step 220/1386 loss 3.6044 [traj 1.074 text 0.068 struct 0.000 feat 0.104 gt 4.820]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.819 m (p90 6.757, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 0 challenging coarse-minADE 2.819 m | val CoC NLL 0.530 struct NLL 0.025
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1/best (992 tensors)
+INFO:__main__:epoch 1 step 240/1386 loss 4.4423 [traj 1.204 text 0.273 struct 0.046 feat 0.109 gt 5.775]
+INFO:__main__:epoch 1 step 260/1386 loss 4.0702 [traj 1.098 text 0.190 struct 0.002 feat 0.120 gt 5.443]
+INFO:__main__:epoch 1 step 280/1386 loss 4.5121 [traj 1.308 text 0.780 struct 0.010 feat 0.102 gt 4.735]
+INFO:__main__:epoch 1 step 300/1386 loss 3.5297 [traj 0.915 text 0.108 struct 0.000 feat 0.100 gt 4.913]
+INFO:__main__:epoch 1 step 320/1386 loss 4.6038 [traj 1.371 text 0.276 struct 0.053 feat 0.097 gt 5.763]
+INFO:__main__:epoch 1 step 340/1386 loss 4.4524 [traj 1.096 text 0.672 struct 0.067 feat 0.094 gt 5.207]
+INFO:__main__:epoch 1 step 360/1386 loss 5.3167 [traj 1.205 text 1.089 struct 0.001 feat 0.077 gt 5.967]
+INFO:__main__:epoch 1 step 380/1386 loss 4.0264 [traj 0.852 text 0.342 struct 0.003 feat 0.071 gt 5.590]
+INFO:__main__:epoch 1 step 400/1386 loss 3.7595 [traj 0.767 text 0.096 struct 0.021 feat 0.071 gt 5.702]
+INFO:__main__:epoch 1 step 420/1386 loss 3.1609 [traj 0.572 text 0.251 struct 0.017 feat 0.058 gt 4.601]
+INFO:__main__:epoch 1 step 440/1386 loss 4.6420 [traj 1.180 text 0.386 struct 0.002 feat 0.063 gt 6.088]
+INFO:__main__:epoch 1 step 460/1386 loss 3.7150 [traj 0.967 text 0.165 struct 0.001 feat 0.059 gt 5.106]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.328 m (p90 5.761, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 1 challenging coarse-minADE 2.328 m | val CoC NLL 0.490 struct NLL 0.015
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1/best (992 tensors)
+INFO:__main__:epoch 2 step 480/1386 loss 4.1944 [traj 0.912 text 0.163 struct 0.000 feat 0.053 gt 6.184]
+INFO:__main__:epoch 2 step 500/1386 loss 4.1485 [traj 0.827 text 0.758 struct 0.000 feat 0.055 gt 5.072]
+INFO:__main__:epoch 2 step 520/1386 loss 2.7271 [traj 0.733 text 0.255 struct 0.000 feat 0.056 gt 3.422]
+INFO:__main__:epoch 2 step 540/1386 loss 3.6786 [traj 0.677 text 0.352 struct 0.000 feat 0.046 gt 5.252]
+INFO:__main__:epoch 2 step 560/1386 loss 3.5802 [traj 0.851 text 0.186 struct 0.003 feat 0.052 gt 5.032]
+INFO:__main__:epoch 2 step 580/1386 loss 4.6257 [traj 1.106 text 0.786 struct 0.015 feat 0.050 gt 5.403]
+INFO:__main__:epoch 2 step 600/1386 loss 4.5036 [traj 0.961 text 0.443 struct 0.013 feat 0.047 gt 6.138]
+INFO:__main__:epoch 2 step 620/1386 loss 3.3135 [traj 0.996 text 0.208 struct 0.004 feat 0.049 gt 4.167]
+INFO:__main__:epoch 2 step 640/1386 loss 3.4045 [traj 0.852 text 0.257 struct 0.014 feat 0.046 gt 4.532]
+INFO:__main__:epoch 2 step 660/1386 loss 4.5889 [traj 1.503 text 0.176 struct 0.023 feat 0.058 gt 5.739]
+INFO:__main__:epoch 2 step 680/1386 loss 5.6195 [traj 1.254 text 1.012 struct 0.006 feat 0.047 gt 6.654]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.067 m (p90 4.897, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 2 challenging coarse-minADE 2.067 m | val CoC NLL 0.482 struct NLL 0.018
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1/best (992 tensors)
+INFO:__main__:epoch 3 step 700/1386 loss 4.0441 [traj 0.899 text 0.250 struct 0.000 feat 0.060 gt 5.731]
+INFO:__main__:epoch 3 step 720/1386 loss 3.5255 [traj 0.938 text 0.168 struct 0.007 feat 0.052 gt 4.781]
+INFO:__main__:epoch 3 step 740/1386 loss 4.4564 [traj 0.823 text 0.493 struct 0.013 feat 0.040 gt 6.228]
+INFO:__main__:epoch 3 step 760/1386 loss 3.9549 [traj 0.803 text 0.341 struct 0.000 feat 0.039 gt 5.583]
+INFO:__main__:epoch 3 step 780/1386 loss 3.3497 [traj 0.902 text 0.182 struct 0.001 feat 0.044 gt 4.488]
+INFO:__main__:epoch 3 step 800/1386 loss 3.8667 [traj 0.903 text 0.146 struct 0.000 feat 0.044 gt 5.592]
+INFO:__main__:epoch 3 step 820/1386 loss 2.7122 [traj 0.888 text 0.088 struct 0.031 feat 0.045 gt 3.397]
+INFO:__main__:epoch 3 step 840/1386 loss 2.8843 [traj 0.591 text 0.026 struct 0.041 feat 0.043 gt 4.449]
+INFO:__main__:epoch 3 step 860/1386 loss 3.5556 [traj 0.843 text 0.116 struct 0.066 feat 0.055 gt 5.072]
+INFO:__main__:epoch 3 step 880/1386 loss 3.3093 [traj 0.653 text 0.030 struct 0.000 feat 0.042 gt 5.209]
+INFO:__main__:epoch 3 step 900/1386 loss 3.2856 [traj 0.713 text 0.104 struct 0.002 feat 0.038 gt 4.896]
+INFO:__main__:epoch 3 step 920/1386 loss 3.5527 [traj 0.734 text 0.244 struct 0.000 feat 0.039 gt 5.110]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.109 m (p90 5.051, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 3 challenging coarse-minADE 2.109 m | val CoC NLL 0.546 struct NLL 0.014
+INFO:__main__:epoch 4 step 940/1386 loss 3.0357 [traj 0.580 text 0.029 struct 0.000 feat 0.041 gt 4.813]
+INFO:__main__:epoch 4 step 960/1386 loss 3.1662 [traj 0.746 text 0.079 struct 0.016 feat 0.047 gt 4.618]
+INFO:__main__:epoch 4 step 980/1386 loss 4.3779 [traj 1.114 text 0.099 struct 0.062 feat 0.047 gt 6.220]
+INFO:__main__:epoch 4 step 1000/1386 loss 3.6311 [traj 0.939 text 0.079 struct 0.000 feat 0.047 gt 5.179]
+INFO:__main__:epoch 4 step 1020/1386 loss 3.2616 [traj 0.600 text 0.025 struct 0.000 feat 0.036 gt 5.235]
+INFO:__main__:epoch 4 step 1040/1386 loss 3.3838 [traj 0.823 text 0.030 struct 0.003 feat 0.047 gt 5.010]
+INFO:__main__:epoch 4 step 1060/1386 loss 3.4215 [traj 0.788 text 0.068 struct 0.000 feat 0.042 gt 5.089]
+INFO:__main__:epoch 4 step 1080/1386 loss 3.6225 [traj 0.953 text 0.033 struct 0.000 feat 0.036 gt 5.237]
+INFO:__main__:epoch 4 step 1100/1386 loss 3.8727 [traj 0.879 text 0.143 struct 0.000 feat 0.051 gt 5.650]
+INFO:__main__:epoch 4 step 1120/1386 loss 3.3250 [traj 0.651 text 0.018 struct 0.000 feat 0.042 gt 5.270]
+INFO:__main__:epoch 4 step 1140/1386 loss 2.9158 [traj 0.590 text 0.043 struct 0.000 feat 0.048 gt 4.519]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.287 m (p90 4.788, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 4 challenging coarse-minADE 2.287 m | val CoC NLL 0.627 struct NLL 0.014
+INFO:__main__:epoch 5 step 1160/1386 loss 3.2227 [traj 0.730 text 0.039 struct 0.000 feat 0.041 gt 4.867]
+INFO:__main__:epoch 5 step 1180/1386 loss 3.4853 [traj 0.671 text 0.068 struct 0.001 feat 0.034 gt 5.457]
+INFO:__main__:epoch 5 step 1200/1386 loss 3.2259 [traj 0.998 text 0.044 struct 0.005 feat 0.051 gt 4.312]
+INFO:__main__:epoch 5 step 1220/1386 loss 3.2114 [traj 0.619 text 0.043 struct 0.001 feat 0.033 gt 5.065]
+INFO:__main__:epoch 5 step 1240/1386 loss 2.8449 [traj 0.743 text 0.056 struct 0.000 feat 0.044 gt 4.048]
+INFO:__main__:epoch 5 step 1260/1386 loss 3.3941 [traj 0.830 text 0.159 struct 0.009 feat 0.043 gt 4.759]
+INFO:__main__:epoch 5 step 1280/1386 loss 3.1069 [traj 0.599 text 0.025 struct 0.000 feat 0.036 gt 4.931]
+INFO:__main__:epoch 5 step 1300/1386 loss 2.6778 [traj 0.528 text 0.002 struct 0.000 feat 0.032 gt 4.263]
+INFO:__main__:epoch 5 step 1320/1386 loss 3.6090 [traj 0.815 text 0.026 struct 0.000 feat 0.041 gt 5.496]
+INFO:__main__:epoch 5 step 1340/1386 loss 3.6422 [traj 0.944 text 0.036 struct 0.001 feat 0.047 gt 5.276]
+INFO:__main__:epoch 5 step 1360/1386 loss 2.9932 [traj 0.902 text 0.028 struct 0.000 feat 0.043 gt 4.083]
+INFO:__main__:epoch 5 step 1380/1386 loss 3.5525 [traj 0.831 text 0.081 struct 0.000 feat 0.038 gt 5.243]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.228 m (p90 5.054, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 5 challenging coarse-minADE 2.228 m | val CoC NLL 0.654 struct NLL 0.015
+INFO:__main__:early stop: no improvement for 3 evals
+----------------------------------------------------------------
+Finished 2026-08-31T21:58:58+02:00
+Check what this actually used:  seff 207

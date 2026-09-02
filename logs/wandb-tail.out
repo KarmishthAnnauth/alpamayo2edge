@@ -1,0 +1,42 @@
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/vla/.netrc.
+wandb: Currently logged in as: karmishthannauth27 (karmishthannauth27-technical-university-of-munich) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run stage1-job207
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /home/vla/projects/alpamayo2edge/wandb/run-20260831_132442-stage1-job207
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run stage1-job207
+wandb: ⭐️ View project at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: 🚀 View run at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job207
+wandb: updating run metadata
+wandb: uploading history steps 68-68, summary
+wandb: 
+wandb: Run history:
+wandb:                epoch ▁▁▁▁▁▂▂▂▂▂▂▂▂▄▄▄▄▄▄▄▅▅▅▅▅▅▅▅▅▇▇▇████████
+wandb: gate/coarse_minADE_m █▃▁▁▃▂
+wandb:           gate/epoch ▁▂▄▅▇█
+wandb:     gate/val_coc_nll ▃▁▁▄▇█
+wandb:  gate/val_struct_nll █▂▄▁▁▂
+wandb:            loss/feat █▆▄▄▄▄▄▃▃▃▂▂▂▂▂▂▁▁▁▁▁▂▁▁▁▂▂▂▁▂▁▂▂▁▁▁▁▁▁▁
+wandb:           loss/gt_ce █▅▇▅▄▄▅▆▅▅▄▆▄▅▄▅▅▄▅▃▁▃▄▄▄▄▃▆▄▄▄▅▅▃▄▄▄▃▅▄
+wandb:       loss/struct_ce ▅█▁▃▂▁▃▂▁▁▁▁▁▂▂▂▃▁▁▂▁▁▁▄▄▁▁▂▆▁▁▁▁▁▁▁▁▁▁▁
+wandb:         loss/text_kl █▁▃▃▄▂▂▁▁▂▃▁▂▁▂▂▁▁▃▁▂▂▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁
+wandb:           loss/total ▃█▆▆▆▃▂▃▄▄▂▄▃▃▂▄▂▂▄▆▃▂▃▁▁▂▂▄▂▂▃▂▂▂▂▂▂▂▂▂
+wandb:                   +1 ...
+wandb: 
+wandb: Run summary:
+wandb:                epoch 5
+wandb: gate/coarse_minADE_m 2.228
+wandb:           gate/epoch 5
+wandb:     gate/val_coc_nll 0.654
+wandb:  gate/val_struct_nll 0.015
+wandb:            loss/feat 0.038
+wandb:           loss/gt_ce 5.243
+wandb:       loss/struct_ce 0
+wandb:         loss/text_kl 0.081
+wandb:           loss/total 3.5525
+wandb:                   +1 ...
+wandb: 
+wandb: 🚀 View run stage1-job207 at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job207
+wandb: ⭐️ View project at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: Synced 4 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260831_132442-stage1-job207/logs

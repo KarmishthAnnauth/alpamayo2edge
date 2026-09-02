@@ -36,7 +36,9 @@ def main(cfg_path: str):
     traj_spec = torch.load(Path(cfg.paths.cache_root) / "traj_tokenizer_spec.pt",
                            weights_only=False)  # pickled callables, D-032
     student.extend_trajectory_vocab(traj_spec)
+    # `stage1/best` is a symlink to the winning run's dir (train_stage1._promote_best).
     stage1_ckpt = Path(cfg.paths.runs_root) / "stage1" / "best"
+    log.info("stage-1 checkpoint: %s -> %s", stage1_ckpt, stage1_ckpt.resolve())
     checkpoint.load_into(student, stage1_ckpt)
     if cfg.stage2.grad_checkpoint:
         student.model.gradient_checkpointing_enable()
