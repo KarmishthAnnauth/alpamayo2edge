@@ -46,6 +46,16 @@ def main() -> None:
     a = ap.parse_args()
 
     run = wandb.init(project=a.project, name=a.name, id=a.name, resume="allow")
+    if not a.once:
+        # The sbatch sidecar boots this right before the training call, so the
+        # alert lands when the SLURM job actually dispatches (mail is disabled
+        # cluster-side; --mail-type is a no-op). Delivery is opt-in per wandb
+        # account: Settings -> Alerts -> email/Slack. Never let it stop the tail.
+        try:
+            run.alert(title=f"{a.name} started",
+                      text=f"stage-1 training dispatched; tailing {a.log.name}")
+        except Exception as e:                                          # noqa: BLE001
+            print(f"wandb_tail: start alert failed ({e})")
     seen: set[int] = set()
     last_step = 0
     done = False
@@ -92,6 +102,12 @@ def main() -> None:
             break
         time.sleep(a.poll)
 
+    if done and not a.once:
+        try:
+            run.alert(title=f"{a.name} finished",
+                      text="log shows early stop / Finished - check the gate curve")
+        except Exception as e:                                          # noqa: BLE001
+            print(f"wandb_tail: finish alert failed ({e})")
     run.finish()
 
 
