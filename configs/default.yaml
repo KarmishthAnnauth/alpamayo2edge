@@ -12,7 +12,7 @@ paths:
   # NOT: regenerating it is ~21h of GPU + network, so it sits on /data despite
   # being "generated" data. Clips are still streamed, never materialised (D-019).
   dataset_root: /bulk/users/vla/alpamayo2edge/data/physicalai-av
-  cache_root: /data/vla/alpamayo2edge/distill_cache
+  cache_root: /bulk/users/vla/alpamayo2edge/distill_cache
   runs_root: /data/vla/alpamayo2edge/runs
   # Local snapshot of nvidia/Alpamayo-1.5-10B (21 GB, 5 shards). from_pretrained takes
   # a path, so this skips the re-download. Its config.json still points
