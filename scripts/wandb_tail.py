@@ -7,9 +7,17 @@ when train_stage1.py itself has no wandb wiring.
     wandb login                                  # one-time, paste key from wandb.ai/authorize
     python scripts/wandb_tail.py logs/a2e-stage1-207.out --name stage1-job207
 
+`scripts/03_train_stage1.sh` launches this automatically in the background for
+its own job, so a submitted run is watchable without anyone starting it by hand.
+Run it manually only for an old log or to re-sync a run.
+
 Resumable: re-running with the same --name re-scans from the top and de-dupes by
 step, so a killed sidecar loses nothing. Exits when the log shows the run is
 done (early stop / Finished) or --once is passed.
+
+Metrics: loss/{total,traj_kl,text_kl,struct_ce,feat,gt_ce} per step (all
+unweighted), gate/{coarse_minADE_m,val_coc_nll,val_struct_nll} per epoch, and
+weights/gt_ce per epoch when the log carries the anneal schedule (run 3+).
 """
 from __future__ import annotations
 import argparse
@@ -24,7 +32,7 @@ STEP_RE = re.compile(
     r"struct ([\d.]+) feat ([\d.]+) gt ([\d.]+)\]")
 GATE_RE = re.compile(
     r"epoch (\d+) challenging coarse-minADE ([\d.]+) m \| val CoC NLL ([\d.]+) "
-    r"struct NLL ([\d.]+)")
+    r"struct NLL ([\d.]+)(?: \| gt_ce_w ([\d.]+))?")
 DONE_RE = re.compile(r"early stop: no improvement|^Finished |labeling done")
 
 
@@ -68,12 +76,15 @@ def main() -> None:
                 if key in seen:  # reuse the set as a generic dedupe
                     continue
                 seen.add(key)  # type: ignore[arg-type]
-                run.log({
+                payload = {
                     "gate/coarse_minADE_m": float(g.group(2)),
                     "gate/val_coc_nll": float(g.group(3)),
                     "gate/val_struct_nll": float(g.group(4)),
                     "gate/epoch": int(g.group(1)),
-                }, step=last_step)
+                }
+                if g.group(5) is not None:      # gt_ce anneal schedule (run 3+)
+                    payload["weights/gt_ce"] = float(g.group(5))
+                run.log(payload, step=last_step)
             if DONE_RE.search(line):
                 done = True
 

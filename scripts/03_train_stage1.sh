@@ -84,6 +84,30 @@ if free < 65:            # measured peak is 58.3 GiB at micro_batch 4
     sys.exit(f"only {free:.1f} GiB free on {p.name}; need ~60 GiB.")
 GUARD
 
+# --- W&B sidecar ----------------------------------------------------------
+# Tails THIS job's stdout/err log to wandb.ai so the run is watchable from
+# anywhere (phone included) without a process babysitting the node. Fully
+# best-effort: backgrounded, never error-checked, and scripts/wandb_tail.py is
+# a pure log parser (no torch, no CUDA) - nothing here can perturb training.
+# Creds come from ~/.netrc (one-time `wandb login`). Skips itself if wandb is
+# missing so a bare `bash scripts/03_train_stage1.sh` still runs.
+JOB_LOG="logs/${SLURM_JOB_NAME:-a2e-stage1}-${SLURM_JOB_ID:-manual}.out"
+WANDB_RUN="stage1-job${SLURM_JOB_ID:-manual}"
+if python3 -c "import wandb" 2>/dev/null; then
+    python3 scripts/wandb_tail.py "$JOB_LOG" --name "$WANDB_RUN" &
+    WANDB_TAIL_PID=$!
+    finish_wandb() {
+        kill "$WANDB_TAIL_PID" 2>/dev/null || true
+        wait "$WANDB_TAIL_PID" 2>/dev/null || true
+        # final sweep: flush the last gate row + the "Finished"/"early stop" line
+        python3 scripts/wandb_tail.py "$JOB_LOG" --name "$WANDB_RUN" --once || true
+    }
+    trap finish_wandb EXIT
+    echo "wandb sidecar: run $WANDB_RUN (pid $WANDB_TAIL_PID)"
+else
+    echo "wandb sidecar: skipped (wandb not importable)"
+fi
+
 echo "----------------------------------------------------------------"
 PYTHONPATH=src python3 -m distill.train_stage1 --config configs/default.yaml
 echo "----------------------------------------------------------------"

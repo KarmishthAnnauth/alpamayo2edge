@@ -288,8 +288,12 @@ def main(cfg_path: str):
         # two CE terms, teacher-forced, on the held-out val split.
         text_nll, struct_nll = _coc_nll(cfg, student,
                                         max_windows=cfg.eval.get("gate_max_windows", 64))
+        # `gt_ce` is annealed over the run (losses.stage_weights); log the current
+        # weight next to the gate so the schedule is visible per epoch (wandb_tail).
+        gt_ce_w = losses.stage_weights(cfg.stage1, step, total_steps).get("gt_ce", 0.0)
         log.info("epoch %d challenging coarse-minADE %.3f m | val CoC NLL %.3f "
-                 "struct NLL %.3f", epoch, score, text_nll, struct_nll)
+                 "struct NLL %.3f | gt_ce_w %.3f",
+                 epoch, score, text_nll, struct_nll, gt_ce_w)
         if score < best:
             best, patience = score, 0
             # Per-run dir (see _run_best_dir); `<stage>/best` is repointed to it.
