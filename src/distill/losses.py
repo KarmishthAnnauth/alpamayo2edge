@@ -131,14 +131,24 @@ def flow_matching_gt(v_student: torch.Tensor, a0: torch.Tensor, a1: torch.Tensor
 
 
 def stage_weights(cfg_stage, step: int, total_steps: int) -> dict[str, float]:
-    """Time-varying loss weights: feature warmup (stage 1) and GT annealing
-    (stage 2) from the config fractions."""
+    """Time-varying loss weights: feature warmup + GT-CE anneal (stage 1) and
+    flow->GT annealing (stage 2), from the config fractions."""
     w = dict(cfg_stage.loss_weights.raw)
     frac = step / max(total_steps, 1)
     if "feat" in w:
         warm = cfg_stage.get("feat_warmup_frac", 0.0) or 0.0
         if warm > 0:
             w["feat"] *= min(frac / warm, 1.0)
+    if "gt_ce" in w:
+        # Job 207: `gt_ce` raw sat flat near 5 nats (perplexity ~90, mostly
+        # irreducible future uncertainty) while `traj_kl` fell to ~0.5, so a
+        # fixed weight drifted from ~half the loss early to ~80% late and
+        # smothered the teacher-distribution signal. Anneal linearly from the
+        # configured weight down to `gt_ce_min` over the run so `traj_kl` is the
+        # primary trajectory term by the end; early stop can truncate the ramp.
+        gt_min = cfg_stage.get("gt_ce_min", None)
+        if gt_min is not None:
+            w["gt_ce"] += (float(gt_min) - w["gt_ce"]) * min(max(frac, 0.0), 1.0)
     if "flow_distill" in w:
         anneal = cfg_stage.get("anneal_to_gt_frac", 0.0) or 0.0
         if anneal > 0 and frac > 1 - anneal:

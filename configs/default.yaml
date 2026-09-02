@@ -124,7 +124,10 @@ student:
                                              # read - the trainer hardcoded uniform)
 
 stage1:
-  epochs: 6                                  # small data: early-stop on challenging-split coarse minADE
+  epochs: 8                                  # run 3: was 6. curated_10000 is ~2.5x the windows/epoch,
+                                             # so the overfit onset (207: epoch 2/6) should move later;
+                                             # give early-stop room to find the real peak. ~4h/epoch ->
+                                             # ~33h < the 2-day SLURM cap. Still early-stops on the gate.
   micro_batch: 4                             # was 2 under full FT; LoRA freed ~35GB (D-024).
   grad_accum: 8                              # effective batch held at 32. Raise micro_batch
                                              # further once the first run reports real usage.
@@ -156,14 +159,23 @@ stage1:
     feat: 0.5                                # left as-is: D-033 option 1. Only raise (to ~5.0,
                                              # with layer_map.mode: uniform) if lr does not
                                              # break the plateau.
-    gt_ce: 0.5                               # run 2: was 0.25. Harder GT anchor - the token
-                                             # path is still above the teacher's coarse ADE,
-                                             # and the teacher's own distribution is imperfect.
+    gt_ce: 0.25                              # run 3: was 0.5. This is the START weight - it is
+                                             # annealed to `gt_ce_min` over the run (stage_weights).
+                                             # 207: raw `gt_ce` sat flat ~5 nats while `traj_kl`
+                                             # fell to ~0.5, so a fixed 0.5 went from ~60% of the
+                                             # loss at the epoch-2 peak to ~80% by early-stop and
+                                             # buried the teacher-distribution signal. The 0.25->0.5
+                                             # bump (run 2) tracked a *worse*-shaped gate.
     struct_ce: 0.5                           # run 2, NEW: CE on the `<|cot_end|>` +
                                              # `<|traj_future_start|>` subword positions. Run 1
                                              # never supervised these, so the student could not
                                              # terminate its CoC and fell back to the base
                                              # model's `</think>` (job 202). eval_phase1.md §1.
+  gt_ce_min: 0.06                            # run 3, NEW: `gt_ce` anneals linearly 0.25 -> 0.06
+                                             # across the run so `traj_kl` (the teacher-distribution
+                                             # KL) is the primary trajectory term by the end while
+                                             # the GT anchor still counts early. Remove to hold
+                                             # `gt_ce` fixed at its `loss_weights` value.
   feat_warmup_frac: 0.1
   early_stop_patience: 3                     # run 2: was 2. Run-1 peak was epoch 3/6 on a
                                              # noisy gate; a higher lr may move it. (evals
