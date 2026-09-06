@@ -146,8 +146,28 @@ def _build_layer_map(cfg, student, dl, feat_layers, n_student_layers, pool_len):
     return cka_map(s_feats, t_feats)
 
 
-def main(cfg_path: str):
+def main(cfg_path: str, micro_batch: int | None = None,
+         grad_accum: int | None = None):
     cfg = load_config(cfg_path)
+    # Overrides so a smaller card can run the SAME config rather than a forked
+    # copy of it that drifts. Only these two: they trade memory against step
+    # count and, held at a constant product, leave the effective batch — and so
+    # the optimisation the run is actually testing — unchanged. The launcher is
+    # responsible for keeping micro_batch * grad_accum at the config's value;
+    # this warns if it does not, because a silently different effective batch
+    # makes the gate incomparable to every previous run.
+    if micro_batch or grad_accum:
+        was = cfg.stage1.micro_batch * cfg.stage1.grad_accum
+        if micro_batch:
+            cfg.raw["stage1"]["micro_batch"] = int(micro_batch)
+        if grad_accum:
+            cfg.raw["stage1"]["grad_accum"] = int(grad_accum)
+        now = cfg.stage1.micro_batch * cfg.stage1.grad_accum
+        log.info("micro_batch/grad_accum overridden -> %d x %d (effective %d)",
+                 cfg.stage1.micro_batch, cfg.stage1.grad_accum, now)
+        if now != was:
+            log.warning("EFFECTIVE BATCH CHANGED %d -> %d; this run's gate is "
+                        "not comparable to runs at the config's batch", was, now)
     torch.backends.cuda.matmul.allow_tf32 = True
 
     student = EdgeStudent(cfg).cuda()
@@ -357,6 +377,11 @@ def main(cfg_path: str):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default="configs/default.yaml")
+    ap.add_argument("--micro-batch", type=int, default=None,
+                    help="override stage1.micro_batch (smaller card); keep "
+                         "micro_batch * grad_accum at the config's value")
+    ap.add_argument("--grad-accum", type=int, default=None,
+                    help="override stage1.grad_accum, to hold the effective batch")
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO)
-    main(a.config)
+    main(a.config, micro_batch=a.micro_batch, grad_accum=a.grad_accum)
