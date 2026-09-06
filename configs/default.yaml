@@ -99,13 +99,21 @@ student:
       enabled: true                          # false = full-FT ablation; does NOT
                                              # fit 48GB (43.5GB of states before
                                              # activations) - 500-clip diagnostic only
-      rank: 96                               # was 48. The capacity diagnostic ANSWERED: job 243
-                                             # (r96) reached 2.414 m and was still improving at
-                                             # the epoch cap; job 232 (r48, otherwise identical)
-                                             # peaked at 2.463 m and early-stopped at epoch 3.
-                                             # More capacity helped and did not overfit sooner,
-                                             # so it stays for run 4. Base stays frozen either
-                                             # way, so none of the full-FT forgetting risk.
+      rank: 96                               # was 48. Kept for run 4, but NOT because the
+                                             # capacity diagnostic cleanly answered - it did not.
+                                             # Job 243 (r96 + MLP targets) reached 2.414 m; job
+                                             # 232 (r48, attention-only) reached 2.463 m. Those
+                                             # runs differ in THREE ways, not one: rank, targets
+                                             # (19.3M -> 99.1M adapter params), and dataset size
+                                             # - 243 ran 240 steps on ~500 clips (30 steps/epoch)
+                                             # while 232 ran ~4140 on the full 9477-clip split
+                                             # (593 steps/epoch). 243 got the better gate from
+                                             # 1/20th the data and 1/20th the steps, which is
+                                             # suggestive but attributable to none of the three.
+                                             # Kept because it is the better number we have and
+                                             # the base stays frozen either way (no full-FT
+                                             # forgetting risk). Run 4 is the first full-data run
+                                             # at these settings; a real ablation is still owed.
       alpha: 192                             # 2x rank, the framework's own ratio - scaled with rank
       targets: [q_proj, k_proj, v_proj, o_proj, mlp.up_proj, mlp.down_proj]
       # path-qualified: up_proj/down_proj are leaf names shared by both towers.
@@ -128,13 +136,21 @@ student:
                                              # read - the trainer hardcoded uniform)
 
 stage1:
-  epochs: 12                                 # run 4: was 8. Job 243 did NOT early-stop - it hit the
-                                             # epoch cap still improving monotonically (epoch 6
-                                             # 2.456 -> epoch 7 2.414), so 8 was measuring the cap,
-                                             # not the peak. ~4h/epoch -> ~48h, which is AT the 2-day
-                                             # SLURM cap: the run is expected to early-stop on the
-                                             # gate (patience 3) well before it, but if it does not,
-                                             # the per-epoch `best` checkpoint is what survives.
+  epochs: 12                                 # run 4: was 8. A CEILING, not a target - on full data
+                                             # `early_stop_patience` is what actually ends the run.
+                                             # Job 232, the only full-data run at these settings,
+                                             # early-stopped at epoch 6 with its best at epoch 3,
+                                             # so 8 was already not binding. 12 exists because run
+                                             # 4 reshapes the trajectory supervision and the
+                                             # overfit onset may move later; it costs nothing if it
+                                             # does not. (An earlier version of this comment cited
+                                             # job 243 "still improving at the cap" - that was the
+                                             # ~500-clip diagnostic, 240 total steps, undertrained
+                                             # rather than unconverged. It says nothing about where
+                                             # a full-data run peaks.)
+                                             # Budget: 9477 train clips -> 593 steps/epoch at
+                                             # ~3.8 h/epoch (measured, job 232) -> 45.6 h for the
+                                             # full 12, inside the 68 h the sbatch now asks for.
   micro_batch: 4                             # was 2 under full FT; LoRA freed ~35GB (D-024).
   grad_accum: 8                              # effective batch held at 32. Raise micro_batch
                                              # further once the first run reports real usage.

@@ -17,9 +17,11 @@
 #SBATCH --time=2-20:00:00          # under main's 3-day cap. Exceeding it KILLS the job.
                                    # Per-epoch "best" checkpointing means a kill costs at
                                    # most the current epoch, not the run.
-                                   # Run 4: was 2-00:00:00, which stage1.epochs 12 at
-                                   # ~4h/epoch would have hit at epoch 11. 68h leaves ~40%
-                                   # headroom over the 48h the epochs alone need.
+                                   # Run 4: was 2-00:00:00. 9477 train clips -> 593
+                                   # steps/epoch at ~3.8 h/epoch (measured, job 232), so
+                                   # stage1.epochs 12 needs 45.6 h and would have hit the
+                                   # old 48 h wall around epoch 12. 68 h leaves ~50%
+                                   # headroom; early stop should end it near epoch 6.
 #SBATCH --output=logs/%x-%j.out    # logs/ MUST already exist or the job dies silently
 #
 # NOTE: deliberately NO --requeue, unlike the template and sbatch_label.sh.

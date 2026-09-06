@@ -1028,12 +1028,14 @@ sharply peaked and displaced. Neither model was ever going to drive this term do
   *kept* — its minADE is 1.7 m and not worth inheriting whole, its reasoning is. Do not
   raise them: 243 drove train `text` to 0.003 while val CoC NLL **rose** 0.648 -> 0.921,
   so the CoC is already overfitting and more weight makes that worse.
-* **`stage1.epochs: 8 -> 12`**, `--time 2-00:00:00 -> 2-20:00:00`. Job 243 did not
-  early-stop; it hit the cap still improving monotonically (2.456 -> 2.414), so 8 was
-  measuring the cap rather than the peak.
-* **LoRA `rank: 96` stays.** The run-3 capacity diagnostic answered: 243 (r96) reached
-  2.414 m still improving; 232 (r48, otherwise identical) peaked at 2.463 m and
-  early-stopped at epoch 3. More capacity helped and did not overfit sooner.
+* **`stage1.epochs: 8 -> 12`**, `--time 2-00:00:00 -> 2-20:00:00`. A ceiling, not a
+  target: on full data `early_stop_patience` ends the run, and job 232 early-stopped at
+  epoch 6 with its best at epoch 3, so 8 was already not binding. 12 exists because run 4
+  reshapes the trajectory supervision and the overfit onset may move later. Budget: 9477
+  train clips -> 593 steps/epoch at ~3.8 h/epoch (measured, job 232) -> 45.6 h inside 68 h.
+* **LoRA `rank: 96` stays, but the capacity question is still OPEN** - see the correction
+  below. Kept because it is the better gate number we have, not because it was shown to
+  cause it.
 
 `gt_soft` floors at the target's own entropy, ~= ln(sigma * sqrt(2*pi*e)) = 3.21 nats at
 sigma 6 — **not** 0, and not comparable to 243's ~6.0. The old one-hot CE is still computed
@@ -1048,3 +1050,41 @@ Run 4 changes the trajectory supervision *and* the epoch budget at once. That is
 between the two without a follow-up. The per-dim and soft-target changes are separable
 (`traj_kl_accel: 1.0` and `gt_soft_sigma_bins: 0.01` recover run-3 behaviour) if it matters
 later.
+
+### Correction, same day: 232 and 243 are not comparable, and one of them was a 500-clip run
+
+The first version of this entry (commit 8a8ba0e) argued that LoRA rank 96 was validated by
+job 243 beating job 232, and justified `epochs: 12` by 243 never early-stopping. Both
+claims were wrong, and `sacct` is what exposed it — 243's elapsed time was 3h22m against
+232's 26h36m, which is not a rank difference.
+
+| | total steps | steps/epoch | elapsed | h/epoch | outcome |
+|---|---|---|---|---|---|
+| 232 (r48, attention-only, 19.3M adapter) | 4744 | 593 | 26:36 | 3.8 | early stop ep 6, best ep 3 = 2.463 m |
+| 243 (r96, +MLP targets, 99.1M adapter)   | 240  | 30  | 03:22 | 0.4 | hit epoch cap = 2.414 m |
+
+30 steps/epoch x 8 accum x 4 micro = 960 windows ~= 500 clips x 2 — job 243 was the
+**500-clip diagnostic**, exactly what the `rank: 96` config comment said it was before that
+comment got rewritten into a conclusion. The split files were regenerated 2026-09-05 17:29,
+*after* 243 finished, and now hold 9477 train clips (593 steps/epoch, matching 232).
+
+So the two runs differ in three ways — rank, LoRA targets, and a 20x difference in both
+data and optimizer steps. 243 reaching a better gate from 1/20th of each is interesting and
+worth an actual ablation; it is not evidence for rank 96 specifically. **Run 4 is the first
+full-data run at r96 + MLP targets.**
+
+What this does NOT touch, checked rather than assumed:
+
+* The cache measurements above (curvature vs accel mass, teacher NLL on GT) are taken from
+  the label cache directly. No training run is involved and they are unaffected.
+* **The flat-`gt_ce` finding reproduces on full data.** Job 232's log: `gt` starts at 8.301
+  and then bounces 5.1–7.5 for four epochs with no downward trend, while `traj` falls
+  7.207 -> 0.368. That is the same pattern 243 showed, on 20x the data. The one-hot target's
+  shape is the problem, not the run size.
+* **The CoC overfit reproduces on full data.** 232's val CoC NLL bottoms at 0.455 (epoch 2)
+  and rises to 0.761 by epoch 6, so holding `text_kl` at 1.0 rather than raising it is
+  right on the full split too.
+
+Lesson for the next entry: `sacct -j <ids> --format=Elapsed` before comparing two runs.
+Both of these logs record the gate number prominently and the step count only in passing,
+which is how a 20x data difference got read as a rank effect.
