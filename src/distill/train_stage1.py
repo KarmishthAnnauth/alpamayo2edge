@@ -35,8 +35,13 @@ from .eval.coarse_minade import coarse_minade
 log = logging.getLogger(__name__)
 
 #: per-term log key -> config `loss_weights` key
-_WKEY = {"traj": "traj_kl", "text": "text_kl", "struct": "struct_ce",
-         "feat": "feat", "gt": "gt_ce"}
+_WKEY = {"traj": "traj_kl", "traj_accel": "traj_kl_accel", "text": "text_kl",
+         "struct": "struct_ce", "feat": "feat", "gt_soft": "gt_ce"}
+
+#: logged but NOT summed into the loss. `gt` is the run-1..3 one-hot `gt_ce`,
+#: kept so the curve stays comparable across runs now that `gt_soft` carries the
+#: gradient; it shares `gt_ce`'s weight key and would otherwise double-count.
+_DIAG = ("gt",)
 
 
 def _run_best_dir(cfg, stage: str = "stage1") -> Path:
@@ -244,30 +249,65 @@ def main(cfg_path: str):
                 struct_logits, struct_tgt, struct_ok = losses.gather_targets(
                     out["logits"], batch["input_ids"], batch["struct_pos"], n_struct)
                 traj_mask = batch["traj_mask"] & traj_ok
+                # The 128-token future stream is 64 waypoints x 2 action dims,
+                # interleaved, in the teacher's EMISSION order: even = curvature,
+                # odd = accel (D-031's swap, re-verified against `gt_traj`'s
+                # columns at r = 0.999/1.000). `gather_targets` preserves that
+                # order — `nonzero` is sorted and position 0 can never be a
+                # trajectory token — so the compact layout keeps the same parity.
+                #
+                # They are split because the teacher is worth distilling on one
+                # and not the other. Cache measurement, 400 clips / 102k
+                # positions, teacher mass within +/-w bins of the GT bin:
+                #
+                #        +/-2    +/-10   +/-20   +/-100
+                #   curv 0.420   0.708   0.806   0.931
+                #   acc  0.028   0.094   0.170   0.577
+                #
+                # Its path shape is good; its speed profile is close to
+                # uninformative about GT even at a +/-100-bin tolerance. That is
+                # the `traj_kl` vs `gt_ce` fight, and it lives almost entirely in
+                # the accel half of the stream — so weight the halves apart
+                # rather than turning the whole teacher down (run 4).
+                dim0 = torch.zeros_like(traj_mask)
+                dim0[:, 0::2] = True
+                curv_mask, acc_mask = traj_mask & dim0, traj_mask & ~dim0
                 # The teacher cached REGION-RELATIVE bins (D-014); the student's
                 # logits are over its whole extended vocabulary, so the top-k
                 # indices need the appended-row offset before they can index it.
                 topk_idx = batch["topk_idx"] + student.future_base
 
                 # Per-term, unweighted — so the log can attribute the curve
-                # (eval_phase1.md §4). `gt` uses the cached GT bins, NOT `traj_tgt`:
+                # (eval_phase1.md §4). The GT terms use the cached GT bins
+                # (`gt_bins`), NOT `traj_tgt`:
                 # `traj_tgt` is read back out of `input_ids`, which carry the
                 # TEACHER's tokens, so passing it there made `gt` a hard-label
                 # restatement of `traj` instead of an independent anchor. Same
                 # appended-row offset as `topk_idx`.
+                gt_bins = batch["gt_traj_tok"] + student.future_base
                 terms = {
                     "traj": losses.traj_topk_kl(
-                        traj_logits, topk_idx, batch["topk_logp"], traj_mask),
+                        traj_logits, topk_idx, batch["topk_logp"], curv_mask),
+                    "traj_accel": losses.traj_topk_kl(
+                        traj_logits, topk_idx, batch["topk_logp"], acc_mask),
                     "text": losses.text_kl_or_ce(
                         coc_logits, coc_tgt, coc_ok, vocab_ok=True),
                     "struct": losses.text_kl_or_ce(
                         struct_logits, struct_tgt, struct_ok, vocab_ok=True),
                     "feat": losses.feature_match(proj, batch["feats"]),
-                    "gt": losses.gt_traj_ce(
-                        traj_logits, batch["gt_traj_tok"] + student.future_base,
-                        traj_mask),
+                    # Distance-aware, because a one-hot over 3000 bins is what
+                    # kept this term flat at ~6 nats for all of job 243. Floors
+                    # near ln(sigma*sqrt(2*pi*e)), NOT 0 — see gt_traj_soft_ce.
+                    "gt_soft": losses.gt_traj_soft_ce(
+                        traj_logits, gt_bins, traj_mask,
+                        sigma_bins=float(cfg.stage1.get("gt_soft_sigma_bins", 6.0)),
+                        lo=student.future_base,
+                        hi=student.future_base + student.n_future_bins),
                 }
-                loss = sum(w.get(_WKEY[k], 0.0) * v for k, v in terms.items())
+                loss = sum(w.get(_WKEY[k], 0.0) * v
+                           for k, v in terms.items() if k not in _DIAG)
+                with torch.no_grad():   # run-1..3 comparability only (_DIAG)
+                    terms["gt"] = losses.gt_traj_ce(traj_logits, gt_bins, traj_mask)
             (loss / cfg.stage1.grad_accum).backward()
             if (i + 1) % cfg.stage1.grad_accum == 0:
                 set_lr(opt, cosine_lr(step, total_steps, warmup))

@@ -28,8 +28,18 @@ from pathlib import Path
 import wandb
 
 STEP_RE = re.compile(
-    r"epoch (\d+) step (\d+)/(\d+) loss ([\d.]+) \[traj ([\d.]+) text ([\d.]+) "
-    r"struct ([\d.]+) feat ([\d.]+) gt ([\d.]+)\]")
+    r"epoch (\d+) step (\d+)/(\d+) loss ([\d.]+) \[([^\]]*)\]")
+#: `<term> <value>` pairs inside the breakdown bracket. Parsed by NAME, not by
+#: capture-group position: run 4 added `traj_accel` and `gt_soft` to the
+#: breakdown, and the positional regex this replaced would have silently
+#: mislabelled every series after `traj` rather than failing.
+TERM_RE = re.compile(r"(\w+) (-?[\d.]+)")
+#: breakdown term -> W&B metric. `gt` keeps `loss/gt_ce` so the one-hot GT curve
+#: stays continuous with runs 1-3; run 4's trained term is `loss/gt_ce_soft`.
+TERM_METRIC = {"traj": "loss/traj_kl", "traj_accel": "loss/traj_kl_accel",
+               "text": "loss/text_kl", "struct": "loss/struct_ce",
+               "feat": "loss/feat", "gt_soft": "loss/gt_ce_soft",
+               "gt": "loss/gt_ce"}
 GATE_RE = re.compile(
     r"epoch (\d+) challenging coarse-minADE ([\d.]+) m \| val CoC NLL ([\d.]+) "
     r"struct NLL ([\d.]+)(?: \| gt_ce_w ([\d.]+))?")
@@ -70,15 +80,11 @@ def main() -> None:
                     continue
                 seen.add(step)
                 last_step = max(last_step, step)
-                run.log({
-                    "epoch": int(m.group(1)),
-                    "loss/total": float(m.group(4)),
-                    "loss/traj_kl": float(m.group(5)),
-                    "loss/text_kl": float(m.group(6)),
-                    "loss/struct_ce": float(m.group(7)),
-                    "loss/feat": float(m.group(8)),
-                    "loss/gt_ce": float(m.group(9)),
-                }, step=step)
+                payload = {"epoch": int(m.group(1)),
+                           "loss/total": float(m.group(4))}
+                for term, val in TERM_RE.findall(m.group(5)):
+                    payload[TERM_METRIC.get(term, f"loss/{term}")] = float(val)
+                run.log(payload, step=step)
                 continue
             g = GATE_RE.search(line)
             if g:

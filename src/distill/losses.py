@@ -111,8 +111,55 @@ def gt_traj_ce(student_logits: torch.Tensor, gt_token_ids: torch.Tensor,
     Passing the targets `gather_targets` returns instead reads the TEACHER's tokens
     back out of `input_ids` and quietly turns this into a hard-label copy of
     `traj_topk_kl` - which is exactly what it was until 2026-08-23.
+
+    Run 4 demoted this to a DIAGNOSTIC: `gt_traj_soft_ce` is what carries the
+    gradient. Kept because it is the number runs 1-3 logged, so the curve stays
+    comparable across runs. See that function for why.
     """
     ce = F.cross_entropy(student_logits.transpose(1, 2), gt_token_ids, reduction="none")
+    return (ce * mask).sum() / mask.sum().clamp_min(1)
+
+
+def gt_traj_soft_ce(student_logits: torch.Tensor, gt_token_ids: torch.Tensor,
+                    mask: torch.Tensor, sigma_bins: float,
+                    lo: int, hi: int) -> torch.Tensor:
+    """Distance-aware GT trajectory anchor: CE against a Gaussian over the bins
+    NEIGHBOURING the GT bin, rather than a one-hot on the GT bin itself.
+
+    Why this exists (run-4 cache measurement, 400 clips / 102k positions). The
+    future region is 3000 bins, so uniform NLL is ln(3000) = 8.01 nats. Job 243's
+    `gt_ce` sat flat at ~6.0 nats for all 8 epochs while `traj_kl` fell 4.4 ->
+    0.38: a one-hot target over bins that fine is nearly unlearnable, because
+    nothing in the loss knows that bin 1498 and bin 1502 are the same trajectory
+    to within a few centimetres. Upweighting a signal shaped like that buys
+    gradient variance, not accuracy - which is exactly what runs 2 and 3 bought.
+
+    A Gaussian target restores the metric the bin index already carries. It is
+    ordinary CE, so it composes with everything else here; as `sigma_bins` -> 0
+    it degenerates back to `gt_traj_ce`.
+
+    NOTE ON THE LOGGED VALUE: this term has a non-zero floor, unlike the one-hot
+    CE. A student matching the target exactly still pays the target's own entropy,
+    ~= ln(sigma * sqrt(2*pi*e)) = 3.21 nats at sigma_bins=6. Do not read `gt_soft`
+    plateauing near ~3.2 as a failure to learn, and do not compare it to job 243's
+    ~6.0 - compare the `gt` diagnostic for that.
+
+    `lo`/`hi` bound the student's future region (`future_base`,
+    `future_base + n_future_bins`). Offsets landing outside are dropped and the
+    target is renormalised over what remains, so waypoints near a region edge
+    stay proper distributions instead of quietly leaking mass onto the history
+    bins or the special tokens that sit immediately above them.
+    """
+    half = max(1, int(round(3.0 * sigma_bins)))                  # +/-3 sigma
+    off = torch.arange(-half, half + 1, device=student_logits.device)   # (W,)
+    bins = gt_token_ids.unsqueeze(-1) + off                      # (B, T, W)
+    in_range = (bins >= lo) & (bins < hi)
+    q = torch.exp(-0.5 * (off.float() / sigma_bins) ** 2)        # (W,)
+    q = q.expand_as(bins) * in_range
+    q = q / q.sum(-1, keepdim=True).clamp_min(1e-12)
+    logp = F.log_softmax(student_logits, dim=-1)                 # full-vocab denominator
+    logp_w = torch.gather(logp, -1, bins.clamp(lo, hi - 1))      # (B, T, W)
+    ce = -(q * logp_w).sum(-1)                                   # (B, T)
     return (ce * mask).sum() / mask.sum().clamp_min(1)
 
 
@@ -140,15 +187,24 @@ def stage_weights(cfg_stage, step: int, total_steps: int) -> dict[str, float]:
         if warm > 0:
             w["feat"] *= min(frac / warm, 1.0)
     if "gt_ce" in w:
-        # Job 207: `gt_ce` raw sat flat near 5 nats (perplexity ~90, mostly
-        # irreducible future uncertainty) while `traj_kl` fell to ~0.5, so a
-        # fixed weight drifted from ~half the loss early to ~80% late and
-        # smothered the teacher-distribution signal. Anneal linearly from the
-        # configured weight down to `gt_ce_min` over the run so `traj_kl` is the
-        # primary trajectory term by the end; early stop can truncate the ramp.
-        gt_min = cfg_stage.get("gt_ce_min", None)
-        if gt_min is not None:
-            w["gt_ce"] += (float(gt_min) - w["gt_ce"]) * min(max(frac, 0.0), 1.0)
+        # Linear ramp from the configured `loss_weights.gt_ce` to `gt_ce_end`
+        # across the run; early stop can truncate it. The ramp runs in whichever
+        # direction the two endpoints imply.
+        #
+        # Runs 2-3 ramped it DOWN (the old key name, `gt_ce_min`, still reads):
+        # raw `gt_ce` sat flat while `traj_kl` fell, so a fixed weight drifted to
+        # ~80% of the loss and smothered the teacher-distribution signal.
+        #
+        # Run 4 ramps it UP. The cache measurement behind that (see
+        # `gt_traj_soft_ce`) says the flatness was the one-hot target's shape,
+        # not a genuinely dominant term - and separately, that the teacher's
+        # own accel distribution is close to uninformative about GT (only 17% of
+        # its mass within +/-20 bins). So the GT anchor should END as the primary
+        # trajectory signal, with the teacher leading early while the student is
+        # still learning the token geometry at all.
+        gt_end = cfg_stage.get("gt_ce_end", cfg_stage.get("gt_ce_min", None))
+        if gt_end is not None:
+            w["gt_ce"] += (float(gt_end) - w["gt_ce"]) * min(max(frac, 0.0), 1.0)
     if "flow_distill" in w:
         anneal = cfg_stage.get("anneal_to_gt_frac", 0.0) or 0.0
         if anneal > 0 and frac > 1 - anneal:

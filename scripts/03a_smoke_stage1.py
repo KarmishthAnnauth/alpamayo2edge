@@ -137,24 +137,49 @@ def main() -> int:
                 "no trajectory target positions — traj_span never landed in the "
                 "context; the losses would be taken over an empty mask and read 0")
 
+        # Mirrors train_stage1's terms block exactly — including run 4's per-dim
+        # split of the teacher KL and the soft GT anchor. If the two drift apart
+        # this stops being a pre-flight check and starts validating a loss the
+        # 48h job will not run. See train_stage1.py for why the split exists.
+        dim0 = torch.zeros_like(traj_mask)
+        dim0[:, 0::2] = True                     # even = curvature, odd = accel
+        curv_mask, acc_mask = traj_mask & dim0, traj_mask & ~dim0
+        topk_idx = batch["topk_idx"] + student.future_base
+        gt_bins = batch["gt_traj_tok"] + student.future_base
         w = losses.stage_weights(cfg.stage1, step=0, total_steps=1000)
         terms = {
-            "traj_kl": losses.traj_topk_kl(traj_logits,
-                                           batch["topk_idx"] + student.future_base,
-                                           batch["topk_logp"], traj_mask),
+            "traj_kl": losses.traj_topk_kl(traj_logits, topk_idx,
+                                           batch["topk_logp"], curv_mask),
+            "traj_kl_accel": losses.traj_topk_kl(traj_logits, topk_idx,
+                                                 batch["topk_logp"], acc_mask),
             "text_kl": losses.text_kl_or_ce(coc_logits, coc_tgt, coc_ok, vocab_ok=True),
             "struct_ce": losses.text_kl_or_ce(struct_logits, struct_tgt, struct_ok, vocab_ok=True),
             "feat": losses.feature_match(proj, batch["feats"]),
-            "gt_ce": losses.gt_traj_ce(traj_logits,
-                                       batch["gt_traj_tok"] + student.future_base,
-                                       traj_mask),
+            "gt_ce": losses.gt_traj_soft_ce(
+                traj_logits, gt_bins, traj_mask,
+                sigma_bins=float(cfg.stage1.get("gt_soft_sigma_bins", 6.0)),
+                lo=student.future_base,
+                hi=student.future_base + student.n_future_bins),
         }
-        print("  loss term      raw        weight   contribution")
+        if int(curv_mask.sum()) == 0 or int(acc_mask.sum()) == 0:
+            raise RuntimeError(
+                f"per-dim split is degenerate: {int(curv_mask.sum())} curvature / "
+                f"{int(acc_mask.sum())} accel positions. The future stream must "
+                "interleave the two action dims (D-031); one empty half means "
+                "traj_kl_accel would silently weight nothing")
+        print("  loss term        raw        weight   contribution")
         for k, v in terms.items():
-            print(f"    {k:<10} {float(v):9.4f}   {w[k]:5.2f}   {w[k] * float(v):9.4f}")
+            print(f"    {k:<12} {float(v):9.4f}   {w[k]:5.2f}   {w[k] * float(v):9.4f}")
             if not torch.isfinite(v):
                 raise RuntimeError(f"{k} is not finite")
         loss = sum(w[k] * v for k, v in terms.items())
+        # Diagnostic only, exactly as the trainer logs it: the run-1..3 one-hot
+        # CE, for curve comparability. `gt_ce` above floors at the soft target's
+        # own entropy (~3.21 nats at sigma 6), NOT at 0 — see gt_traj_soft_ce.
+        with torch.no_grad():
+            print(f"    {'gt_ce (1hot)':<12} "
+                  f"{float(losses.gt_traj_ce(traj_logits, gt_bins, traj_mask)):9.4f}"
+                  "       —   diagnostic, not summed")
 
     print("== backward ==")
     loss.backward()

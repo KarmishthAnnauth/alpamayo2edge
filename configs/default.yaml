@@ -99,12 +99,16 @@ student:
       enabled: true                          # false = full-FT ablation; does NOT
                                              # fit 48GB (43.5GB of states before
                                              # activations) - 500-clip diagnostic only
-      rank: 48                               # 32-64: more behaviour to absorb than stage 2
-      alpha: 96                              # 2x rank, the framework's own ratio
-      targets: [q_proj, k_proj, v_proj, o_proj]
-      # Escalation if attention-only underfits - MUST be path-qualified, since
-      # up_proj/down_proj are leaf names shared by both towers:
-      #   targets: [..., mlp.up_proj, mlp.down_proj]
+      rank: 96                               # was 48. The capacity diagnostic ANSWERED: job 243
+                                             # (r96) reached 2.414 m and was still improving at
+                                             # the epoch cap; job 232 (r48, otherwise identical)
+                                             # peaked at 2.463 m and early-stopped at epoch 3.
+                                             # More capacity helped and did not overfit sooner,
+                                             # so it stays for run 4. Base stays frozen either
+                                             # way, so none of the full-FT forgetting risk.
+      alpha: 192                             # 2x rank, the framework's own ratio - scaled with rank
+      targets: [q_proj, k_proj, v_proj, o_proj, mlp.up_proj, mlp.down_proj]
+      # path-qualified: up_proj/down_proj are leaf names shared by both towers.
     stage2:                                  # generation/diffusion tower
       enabled: true
       rank: 16                               # Cosmos3-Edge.yaml's shipped default
@@ -124,10 +128,13 @@ student:
                                              # read - the trainer hardcoded uniform)
 
 stage1:
-  epochs: 8                                  # run 3: was 6. curated_10000 is ~2.5x the windows/epoch,
-                                             # so the overfit onset (207: epoch 2/6) should move later;
-                                             # give early-stop room to find the real peak. ~4h/epoch ->
-                                             # ~33h < the 2-day SLURM cap. Still early-stops on the gate.
+  epochs: 12                                 # run 4: was 8. Job 243 did NOT early-stop - it hit the
+                                             # epoch cap still improving monotonically (epoch 6
+                                             # 2.456 -> epoch 7 2.414), so 8 was measuring the cap,
+                                             # not the peak. ~4h/epoch -> ~48h, which is AT the 2-day
+                                             # SLURM cap: the run is expected to early-stop on the
+                                             # gate (patience 3) well before it, but if it does not,
+                                             # the per-epoch `best` checkpoint is what survives.
   micro_batch: 4                             # was 2 under full FT; LoRA freed ~35GB (D-024).
   grad_accum: 8                              # effective batch held at 32. Raise micro_batch
                                              # further once the first run reports real usage.
@@ -150,32 +157,74 @@ stage1:
   # is config.activation_checkpointing.mode, which Cosmos3OmniModel.__init__ forces
   # to "none"; wiring that up is the real fix and is stage-2 work.
   grad_checkpoint: false
+  # Run 4 splits the teacher's trajectory KL by ACTION DIM and makes the GT
+  # anchor distance-aware. Measured on the cache (400 clips, 102k trajectory
+  # positions, no GPU): teacher probability mass within +/-w bins of the GT bin,
+  # over the 3000-bin future region --
+  #
+  #                +/-2    +/-10   +/-20   +/-100
+  #   curvature    0.420   0.708   0.806   0.931
+  #   accel        0.028   0.094   0.170   0.577
+  #
+  # The teacher's path shape is worth distilling; its speed profile is close to
+  # uninformative about GT even at a +/-100-bin tolerance. That - not the
+  # trajectory KL as a whole - is what has been fighting `gt_ce`, and it is
+  # exactly half the token stream. Teacher minADE is 1.7 m, so its trajectory is
+  # a ceiling we do not want to inherit whole; its CoC is not, hence text_kl and
+  # struct_ce below are untouched.
   loss_weights:
-    traj_kl: 1.0
+    traj_kl: 1.0                             # EVEN positions = curvature (D-031 emission
+                                             # order, re-verified against `gt_traj`'s columns
+                                             # at r = 0.999/1.000). Held at 1.0: this half of
+                                             # the teacher is good and is the low-variance
+                                             # signal that taught runs 1-3 the token geometry.
+    traj_kl_accel: 0.1                       # run 4, NEW: ODD positions = accel. 10x down, not
+                                             # 0: it still regularises against the one-sample
+                                             # variance of the GT anchor, and job 243 was never
+                                             # teacher-limited (it stopped at the epoch cap
+                                             # still improving, 2.456 -> 2.414, not at 1.7).
     text_kl: 1.0                             # run 2: was 0.5. Run-1 CoC content was already
                                              # on-topic (job 202) - the real problem was
                                              # termination (see struct_ce) not content, so
-                                             # 2x not 4x: keep traj_kl the primary signal.
+                                             # 2x not 4x. UNCHANGED in run 4: this is the
+                                             # teacher signal we are keeping. Do not raise it -
+                                             # 243 drove train `text` to 0.003 while val CoC NLL
+                                             # ROSE 0.648 -> 0.921, i.e. the CoC is already
+                                             # overfitting and more weight makes that worse.
     feat: 0.5                                # left as-is: D-033 option 1. Only raise (to ~5.0,
                                              # with layer_map.mode: uniform) if lr does not
                                              # break the plateau.
-    gt_ce: 0.25                              # run 3: was 0.5. This is the START weight - it is
-                                             # annealed to `gt_ce_min` over the run (stage_weights).
-                                             # 207: raw `gt_ce` sat flat ~5 nats while `traj_kl`
-                                             # fell to ~0.5, so a fixed 0.5 went from ~60% of the
-                                             # loss at the epoch-2 peak to ~80% by early-stop and
-                                             # buried the teacher-distribution signal. The 0.25->0.5
-                                             # bump (run 2) tracked a *worse*-shaped gate.
+    gt_ce: 0.5                               # START weight; ramps to `gt_ce_end` (stage_weights).
+                                             # Applies to the SOFT target (losses.gt_traj_soft_ce)
+                                             # - runs 1-3 weighted a one-hot over 3000 bins, which
+                                             # is why raw `gt_ce` sat flat at ~6.0 nats for all 8
+                                             # epochs of 243 against a uniform of ln(3000) = 8.01.
+                                             # The teacher's own exact-bin NLL on GT is ~7.8 nats,
+                                             # so that target was never the dominant term runs 2-3
+                                             # treated it as - it was the wrongly shaped one.
     struct_ce: 0.5                           # run 2, NEW: CE on the `<|cot_end|>` +
                                              # `<|traj_future_start|>` subword positions. Run 1
                                              # never supervised these, so the student could not
                                              # terminate its CoC and fell back to the base
                                              # model's `</think>` (job 202). eval_phase1.md §1.
-  gt_ce_min: 0.06                            # run 3, NEW: `gt_ce` anneals linearly 0.25 -> 0.06
-                                             # across the run so `traj_kl` (the teacher-distribution
-                                             # KL) is the primary trajectory term by the end while
-                                             # the GT anchor still counts early. Remove to hold
-                                             # `gt_ce` fixed at its `loss_weights` value.
+                                             # UNCHANGED in run 4 (already 0.000 by epoch 2).
+  gt_ce_end: 1.5                             # run 4: `gt_ce` now ramps UP, 0.5 -> 1.5 (was
+                                             # `gt_ce_min`, 0.25 -> 0.06, i.e. the other
+                                             # direction). Teacher leads early while the student
+                                             # is still learning the token geometry at all; GT
+                                             # is the primary trajectory signal by the end.
+                                             # Remove to hold `gt_ce` fixed. The old
+                                             # `gt_ce_min` key is still read as a fallback.
+  gt_soft_sigma_bins: 6.0                    # run 4, NEW: sigma of the Gaussian the GT anchor
+                                             # targets, in bins, truncated at +/-3 sigma and
+                                             # renormalised at the region edges. 6 bins is well
+                                             # inside the +/-10 window where the teacher already
+                                             # concentrates 71% of its curvature mass, so it
+                                             # sharpens rather than blurs what runs 1-3 learned.
+                                             # NB the logged `gt_soft` floors at the target's own
+                                             # entropy, ~3.21 nats - NOT 0, and not comparable to
+                                             # 243's ~6.0. The `gt` term logs the old one-hot CE
+                                             # untrained, for exactly that comparison.
   feat_warmup_frac: 0.1
   early_stop_patience: 3                     # run 2: was 2. Run-1 peak was epoch 3/6 on a
                                              # noisy gate; a higher lr may move it. (evals

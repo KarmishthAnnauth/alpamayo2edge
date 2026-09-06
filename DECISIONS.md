@@ -965,3 +965,86 @@ is *feasible* cleanly, but it changes every sequence length and the vocab contra
 its own review, and the subword-CE fix is sufficient to teach termination. Revisit if the
 subwords prove hard to learn (watch `struct_ce` in the run-2 log and re-run job 202's
 inspection).
+
+---
+
+## D-035 [VERIFIED 2026-09-06] The teacher's trajectory KL is worth keeping on curvature and not on accel — and the GT anchor was the wrong SHAPE, not the wrong weight
+
+Runs 2 and 3 both treated `traj_kl` vs `gt_ce` as a weight problem and moved the dial in
+opposite directions (run 2 raised `gt_ce` 0.25 -> 0.5, run 3 put it back and annealed it
+*down* to 0.06). Neither helped, because neither was the problem. Two cache-only
+measurements settle it — no GPU, no model, 400 clips / 102,400 trajectory positions.
+
+### 1. The fight is almost entirely in the accel half of the token stream
+
+The 128-token future is 64 waypoints x 2 action dims, interleaved, in the teacher's
+emission order: **even = curvature, odd = accel** (D-031's swap). Re-verified
+independently here by correlating the cached bins against `gt_traj`'s columns — token
+dim0 vs col1 r = 0.9992, token dim1 vs col0 r = 1.0000 — so D-031 is holding in the
+10k-clip cache and this is not the transpose bug recurring.
+
+Teacher probability mass within +/-w bins of the GT bin, over the 3000-bin future region:
+
+| window | curvature (dim0) | accel (dim1) |
+|--------|------------------|--------------|
+| +/-2   | 0.420            | 0.028        |
+| +/-10  | 0.708            | 0.094        |
+| +/-20  | 0.806            | 0.170        |
+| +/-100 | 0.931            | 0.577        |
+
+The teacher's **path shape is good** and worth distilling. Its **speed profile is close to
+uninformative about GT** — even a +/-100-bin tolerance captures only 58% of its mass.
+Path shape is far more predictable than a speed profile from a 4-frame context, so this is
+the expected shape of the result, not an artifact. Half the stream was fighting `gt_ce`
+and the other half was not, and a global weight cannot express that.
+
+### 2. `gt_ce` was flat because a one-hot over 3000 bins is nearly unlearnable
+
+Job 243's raw `gt_ce` sat at ~6.0 nats for all 8 epochs while `traj_kl` fell 4.4 -> 0.38.
+Uniform over the region is ln(3000) = 8.01, so the "flat, therefore dominant" reading runs
+2-3 acted on was wrong — the term had barely moved off uniform. Nothing in a one-hot CE
+knows that bin 1498 and bin 1502 are the same trajectory to within centimetres, so a single
+GT sample per context carries no local shape and the model must average many samples to
+recover it. For scale, the teacher's own exact-bin NLL on GT is ~7.8 nats, and its
+full-sequence `gt_ce` bounds *optimistically* at 12.3 nats — worse than uniform, i.e.
+sharply peaked and displaced. Neither model was ever going to drive this term down.
+
+### Fix (run 4)
+
+* **`traj_kl` split by action dim.** `loss_weights.traj_kl: 1.0` on even/curvature
+  positions, new `loss_weights.traj_kl_accel: 0.1` on odd/accel. Two `traj_topk_kl` calls
+  over complementary masks; logged separately so the halves are attributable.
+  Accel is downweighted 10x, not zeroed: it still regularises against the one-sample
+  variance of the GT anchor.
+* **`losses.gt_traj_soft_ce`** — CE against a Gaussian over the bins neighbouring GT
+  (`stage1.gt_soft_sigma_bins: 6.0`, truncated at +/-3 sigma, renormalised at the region
+  edges so it cannot leak onto the history bins immediately above). Restores the metric the
+  bin index already carries. It does not change the loss *value* separation on a Gaussian
+  student — it changes where the gradient goes, from 1 bin in 3000 to 37.
+* **`gt_ce` now ramps UP**, 0.5 -> 1.5 (`stage1.gt_ce_end`, was `gt_ce_min` 0.25 -> 0.06;
+  the old key is still read). Teacher leads early while the student is still learning the
+  token geometry at all; GT is the primary trajectory signal by the end.
+* **CoC untouched.** `text_kl: 1.0`, `struct_ce: 0.5`. This is the teacher signal being
+  *kept* — its minADE is 1.7 m and not worth inheriting whole, its reasoning is. Do not
+  raise them: 243 drove train `text` to 0.003 while val CoC NLL **rose** 0.648 -> 0.921,
+  so the CoC is already overfitting and more weight makes that worse.
+* **`stage1.epochs: 8 -> 12`**, `--time 2-00:00:00 -> 2-20:00:00`. Job 243 did not
+  early-stop; it hit the cap still improving monotonically (2.456 -> 2.414), so 8 was
+  measuring the cap rather than the peak.
+* **LoRA `rank: 96` stays.** The run-3 capacity diagnostic answered: 243 (r96) reached
+  2.414 m still improving; 232 (r48, otherwise identical) peaked at 2.463 m and
+  early-stopped at epoch 3. More capacity helped and did not overfit sooner.
+
+`gt_soft` floors at the target's own entropy, ~= ln(sigma * sqrt(2*pi*e)) = 3.21 nats at
+sigma 6 — **not** 0, and not comparable to 243's ~6.0. The old one-hot CE is still computed
+under `no_grad` and logged as `gt` for exactly that comparison. `scripts/wandb_tail.py`
+now parses the breakdown by term NAME rather than capture-group position, which the two new
+terms would otherwise have silently mislabelled.
+
+### Confounded on purpose
+
+Run 4 changes the trajectory supervision *and* the epoch budget at once. That is deliberate
+— it is the final phase-1 run, not an ablation — but it means a gain cannot be attributed
+between the two without a follow-up. The per-dim and soft-target changes are separable
+(`traj_kl_accel: 1.0` and `gt_soft_sigma_bins: 0.01` recover run-3 behaviour) if it matters
+later.

@@ -14,9 +14,12 @@
                                    # the vision tower's activations are the real cost
 #SBATCH --cpus-per-task=8          # -> DataLoader workers, via $SLURM_CPUS_PER_TASK
 #SBATCH --mem=64G                  # total for the job; exceeding it KILLS the job
-#SBATCH --time=2-00:00:00          # under main's 3-day cap. Exceeding it KILLS the job.
+#SBATCH --time=2-20:00:00          # under main's 3-day cap. Exceeding it KILLS the job.
                                    # Per-epoch "best" checkpointing means a kill costs at
                                    # most the current epoch, not the run.
+                                   # Run 4: was 2-00:00:00, which stage1.epochs 12 at
+                                   # ~4h/epoch would have hit at epoch 11. 68h leaves ~40%
+                                   # headroom over the 48h the epochs alone need.
 #SBATCH --output=logs/%x-%j.out    # logs/ MUST already exist or the job dies silently
 #
 # NOTE: deliberately NO --requeue, unlike the template and sbatch_label.sh.
