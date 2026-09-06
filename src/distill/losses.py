@@ -43,6 +43,32 @@ def gather_targets(logits: torch.Tensor, input_ids: torch.Tensor,
     return out, tgt, valid
 
 
+def traj_topk_kl_per_pos(student_logits: torch.Tensor, topk_idx: torch.Tensor,
+                         topk_logp: torch.Tensor) -> torch.Tensor:
+    """Per-position KL(teacher || student), (B, L), before any masking.
+
+    Split out from `traj_topk_kl` for run 4, which reduces the SAME positions
+    under two different masks (curvature and accel). Calling the reducing
+    version twice would run `log_softmax` over the full ~135k-row vocabulary
+    twice and keep both outputs alive for backward — ~276 MB of activation each
+    at micro_batch 4 — for a quantity that does not depend on the mask at all.
+    """
+    eps = 1e-9
+    logp_s = F.log_softmax(student_logits, dim=-1)
+    logp_s_k = torch.gather(logp_s, -1, topk_idx.clamp_min(0))       # (B,L,K)
+    p_t_k = topk_logp.exp()                                          # (B,L,K)
+    p_t_tail = (1 - p_t_k.sum(-1)).clamp_min(0.0)                    # (B,L)
+    p_s_tail = (1 - logp_s_k.exp().sum(-1)).clamp_min(eps)           # (B,L)
+    kl = (p_t_k * (topk_logp - logp_s_k)).sum(-1) \
+        + p_t_tail * (torch.log(p_t_tail + eps) - torch.log(p_s_tail))
+    return kl.clamp_min(0.0)  # numerical guard
+
+
+def masked_mean(per_pos: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    """Mean of a (B, L) per-position loss over a (B, L) boolean mask."""
+    return (per_pos * mask).sum() / mask.sum().clamp_min(1)
+
+
 def traj_topk_kl(student_logits: torch.Tensor, topk_idx: torch.Tensor,
                  topk_logp: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
     """KL(teacher || student) on discrete trajectory tokens over K+1 buckets:
@@ -56,17 +82,12 @@ def traj_topk_kl(student_logits: torch.Tensor, topk_idx: torch.Tensor,
     student that exactly matches the teacher still pay a constant penalty for
     its own out-of-top-k mass, and the optimum shifts to concentrating all
     mass on the support. With the tail bucket, exact match => KL = 0.
+
+    Reduce two masks over one forward with `traj_topk_kl_per_pos` + `masked_mean`
+    instead of calling this twice — see that function.
     """
-    eps = 1e-9
-    logp_s = F.log_softmax(student_logits, dim=-1)
-    logp_s_k = torch.gather(logp_s, -1, topk_idx.clamp_min(0))       # (B,L,K)
-    p_t_k = topk_logp.exp()                                          # (B,L,K)
-    p_t_tail = (1 - p_t_k.sum(-1)).clamp_min(0.0)                    # (B,L)
-    p_s_tail = (1 - logp_s_k.exp().sum(-1)).clamp_min(eps)           # (B,L)
-    kl = (p_t_k * (topk_logp - logp_s_k)).sum(-1) \
-        + p_t_tail * (torch.log(p_t_tail + eps) - torch.log(p_s_tail))
-    kl = kl.clamp_min(0.0)  # numerical guard
-    return (kl * mask).sum() / mask.sum().clamp_min(1)
+    return masked_mean(
+        traj_topk_kl_per_pos(student_logits, topk_idx, topk_logp), mask)
 
 
 def text_kl_or_ce(student_logits: torch.Tensor, target_ids: torch.Tensor,

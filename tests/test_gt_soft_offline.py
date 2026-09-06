@@ -124,3 +124,35 @@ def test_legacy_gt_ce_min_key_still_ramps_downward():
     cfg = Cfg({"loss_weights": {"gt_ce": 0.25}, "gt_ce_min": 0.06})
     assert losses.stage_weights(cfg, 0, 100)["gt_ce"] == pytest.approx(0.25)
     assert losses.stage_weights(cfg, 100, 100)["gt_ce"] == pytest.approx(0.06)
+
+
+def test_split_reduction_matches_two_full_calls():
+    """The per-position refactor must not change the numbers it replaced.
+
+    Run 4 reduces one forward under two masks instead of calling `traj_topk_kl`
+    twice; if those disagree, the split silently retunes both weights.
+    """
+    B, L, V, K = 2, 8, 60, 5
+    torch.manual_seed(0)
+    logits = torch.randn(B, L, V)
+    idx = torch.randint(0, V, (B, L, K))
+    logp = torch.log_softmax(torch.randn(B, L, K), -1) + torch.log(torch.tensor(0.9))
+    mask = torch.ones(B, L, dtype=torch.bool)
+    dim0 = torch.zeros_like(mask); dim0[:, 0::2] = True
+
+    per_pos = losses.traj_topk_kl_per_pos(logits, idx, logp)
+    for m in (mask & dim0, mask & ~dim0, mask):
+        assert torch.allclose(losses.masked_mean(per_pos, m),
+                              losses.traj_topk_kl(logits, idx, logp, m), atol=1e-6)
+
+
+def test_even_odd_masks_partition_the_trajectory_positions():
+    """Every valid position lands in exactly one half — a parity slip would put
+    the accel weight on curvature and leave half the stream unsupervised."""
+    mask = torch.tensor([[True] * 6 + [False] * 2, [True] * 8])
+    dim0 = torch.zeros_like(mask); dim0[:, 0::2] = True
+    curv, acc = mask & dim0, mask & ~dim0
+    assert not (curv & acc).any()                 # disjoint
+    assert ((curv | acc) == mask).all()           # and covering
+    assert int(curv.sum()) == 7 and int(acc.sum()) == 7
+    assert curv[0, 0] and acc[0, 1]               # position 0 is curvature

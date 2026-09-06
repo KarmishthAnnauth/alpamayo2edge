@@ -147,11 +147,11 @@ def main() -> int:
         topk_idx = batch["topk_idx"] + student.future_base
         gt_bins = batch["gt_traj_tok"] + student.future_base
         w = losses.stage_weights(cfg.stage1, step=0, total_steps=1000)
+        traj_kl_pos = losses.traj_topk_kl_per_pos(traj_logits, topk_idx,
+                                                  batch["topk_logp"])
         terms = {
-            "traj_kl": losses.traj_topk_kl(traj_logits, topk_idx,
-                                           batch["topk_logp"], curv_mask),
-            "traj_kl_accel": losses.traj_topk_kl(traj_logits, topk_idx,
-                                                 batch["topk_logp"], acc_mask),
+            "traj_kl": losses.masked_mean(traj_kl_pos, curv_mask),
+            "traj_kl_accel": losses.masked_mean(traj_kl_pos, acc_mask),
             "text_kl": losses.text_kl_or_ce(coc_logits, coc_tgt, coc_ok, vocab_ok=True),
             "struct_ce": losses.text_kl_or_ce(struct_logits, struct_tgt, struct_ok, vocab_ok=True),
             "feat": losses.feature_match(proj, batch["feats"]),

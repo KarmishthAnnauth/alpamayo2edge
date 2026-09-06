@@ -285,11 +285,14 @@ def main(cfg_path: str):
                 # restatement of `traj` instead of an independent anchor. Same
                 # appended-row offset as `topk_idx`.
                 gt_bins = batch["gt_traj_tok"] + student.future_base
+                # One forward, two reductions: the per-position KL does not
+                # depend on the mask, and it carries a full-vocab log_softmax
+                # (~276 MB of retained activation at micro_batch 4).
+                traj_kl_pos = losses.traj_topk_kl_per_pos(
+                    traj_logits, topk_idx, batch["topk_logp"])
                 terms = {
-                    "traj": losses.traj_topk_kl(
-                        traj_logits, topk_idx, batch["topk_logp"], curv_mask),
-                    "traj_accel": losses.traj_topk_kl(
-                        traj_logits, topk_idx, batch["topk_logp"], acc_mask),
+                    "traj": losses.masked_mean(traj_kl_pos, curv_mask),
+                    "traj_accel": losses.masked_mean(traj_kl_pos, acc_mask),
                     "text": losses.text_kl_or_ce(
                         coc_logits, coc_tgt, coc_ok, vocab_ok=True),
                     "struct": losses.text_kl_or_ce(
