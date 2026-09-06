@@ -46,6 +46,20 @@ GATE_RE = re.compile(
 DONE_RE = re.compile(r"early stop: no improvement|^Finished |labeling done")
 
 
+class _DryRun:
+    """Stand-in for a wandb run: prints what would be logged. --dry-run only."""
+
+    def log(self, payload, step=None):
+        print(f"step {step}: " + "  ".join(
+            f"{k}={v}" for k, v in sorted(payload.items())))
+
+    def alert(self, **kw):
+        pass
+
+    def finish(self):
+        pass
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("log", type=Path)
@@ -53,9 +67,18 @@ def main() -> None:
     ap.add_argument("--name", required=True, help="W&B run name AND resume id")
     ap.add_argument("--poll", type=float, default=30.0)
     ap.add_argument("--once", action="store_true", help="one pass, then exit")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="parse and print, create no W&B run. Use to check the "
+                         "log format still parses before committing a long job "
+                         "to it - the metric names here are derived from the "
+                         "trainer's breakdown line and silently follow it.")
     a = ap.parse_args()
 
-    run = wandb.init(project=a.project, name=a.name, id=a.name, resume="allow")
+    if a.dry_run:
+        run = _DryRun()
+        a.once = True
+    else:
+        run = wandb.init(project=a.project, name=a.name, id=a.name, resume="allow")
     if not a.once:
         # The sbatch sidecar boots this right before the training call, so the
         # alert lands when the SLURM job actually dispatches (mail is disabled
