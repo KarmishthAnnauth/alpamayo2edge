@@ -32,8 +32,22 @@ data:
   # 4-camera reference set = the Alpamayo 1.5 load_physical_aiavdataset default and the
   # configuration NVIDIA's own ablation notebook tops out at (D-023). All 7 ring cameras
   # remain addressable (camera index map covers 0..6) if we ever want the ablation.
-  cameras: [camera_cross_left_120fov, camera_front_wide_120fov, camera_cross_right_120fov,
-            camera_front_tele_30fov]
+  # RUN 5: single camera. NVIDIA's own camera-number ablation
+  # (alpamayo1.5/notebooks/inference_cam_num.ipynb) defines exactly this as its
+  # "1 cam" configuration, and its configs nest 1 (front wide) subset 2 (+ front
+  # tele) subset 4 - so front wide is the vendor's base, and `+ front_tele_30fov`
+  # is the principled next rung if one view proves too little. `front_wide_120fov`
+  # is also the only entry whose CAMERA_DISPLAY_NAME is the plain "Front camera"
+  # (student/prompt.py), which is the label the model was trained to read.
+  #
+  # The 4-camera labels are REUSED as-is - no relabelling (measured, 2395 cached
+  # CoC traces): 80.1% are anchored to ahead/our-lane, 14.7% use left/right as an
+  # EGO MANEUVER direction ("turn right"), and only 0.7% reference a side object
+  # with no ahead-anchor. For comparison 0.9% say "behind", which the 4-camera set
+  # could not see either (it has no rear camera) and run 253 trained through
+  # without trouble. Trajectory targets from a wider-view teacher are privileged
+  # distillation, which is standard and if anything raises target quality.
+  cameras: [camera_front_wide_120fov]
   context_frames: 4                          # frames per camera (teacher convention)
   student_resolution: [360, 640]             # Edge control resolution (H, W)
   # Write the student's own inputs (JPEG frames + ego history) during the
@@ -207,30 +221,47 @@ stage1:
                                              # 243 drove train `text` to 0.003 while val CoC NLL
                                              # ROSE 0.648 -> 0.921, i.e. the CoC is already
                                              # overfitting and more weight makes that worse.
-    feat: 0.5                                # left as-is: D-033 option 1. Only raise (to ~5.0,
-                                             # with layer_map.mode: uniform) if lr does not
-                                             # break the plateau.
-    gt_ce: 0.5                               # START weight; ramps to `gt_ce_end` (stage_weights).
-                                             # Applies to the SOFT target (losses.gt_traj_soft_ce)
-                                             # - runs 1-3 weighted a one-hot over 3000 bins, which
-                                             # is why raw `gt_ce` sat flat at ~6.0 nats for all 8
-                                             # epochs of 243 against a uniform of ln(3000) = 8.01.
-                                             # The teacher's own exact-bin NLL on GT is ~7.8 nats,
-                                             # so that target was never the dominant term runs 2-3
-                                             # treated it as - it was the wrongly shaped one.
+    feat: 0.0                                # RUN 5: OFF, and this one is forced by the camera
+                                             # change rather than chosen. Feature KD pools the
+                                             # student's prompt into `feat_pool_len` segments
+                                             # (pool_prompt_segments) and compares them to the
+                                             # teacher's cached 8 - but the cached segments span
+                                             # 16 image groups (4 cameras x 4 frames) and a
+                                             # 1-camera student's span 4, so the two no longer
+                                             # cover the same content and the match is noise.
+                                             # Nothing is lost: D-033 found feature KD inert and
+                                             # run 253 confirmed it on full data (decayed 0.179
+                                             # -> 0.029, ~0.5% of the loss). Restore to 0.5 only
+                                             # together with a re-labelling pass at 1 camera.
+    gt_ce: 0.0                               # RUN 5: OFF. Ground truth moves to phase 2 (user,
+                                             # 2026-09-12), so stage 1 is now PURE teacher
+                                             # distillation - traj_kl + text_kl + struct_ce and
+                                             # nothing else. `gt_ce_end` is deleted below, not
+                                             # just zeroed here: stage_weights ramps `gt_ce`
+                                             # TOWARD `gt_ce_end`, so leaving the end weight at
+                                             # 1.5 would ramp 0.0 -> 1.5 and reintroduce the term
+                                             # it is meant to remove.
+                                             # Applies to the SOFT target (losses.gt_traj_soft_ce);
+                                             # `gt_soft` and `gt` both keep logging under no_grad
+                                             # so run 5's curve stays readable against 253's.
+                                             # CONSEQUENCE, flagged not hidden: nothing now
+                                             # supervises the speed profile. D-035 measured the
+                                             # teacher's accel mass at 2.8% within +/-2 bins of
+                                             # the GT bin, which is why `traj_kl_accel` is down at
+                                             # 0.1 - so accel supervision in run 5 is 0.1x a
+                                             # near-uninformative target. Expect the gate
+                                             # (minADE, a GT metric) to WORSEN against 253's
+                                             # 2.232 m; that is the trade, not a regression.
     struct_ce: 0.5                           # run 2, NEW: CE on the `<|cot_end|>` +
                                              # `<|traj_future_start|>` subword positions. Run 1
                                              # never supervised these, so the student could not
                                              # terminate its CoC and fell back to the base
                                              # model's `</think>` (job 202). eval_phase1.md §1.
                                              # UNCHANGED in run 4 (already 0.000 by epoch 2).
-  gt_ce_end: 1.5                             # run 4: `gt_ce` now ramps UP, 0.5 -> 1.5 (was
-                                             # `gt_ce_min`, 0.25 -> 0.06, i.e. the other
-                                             # direction). Teacher leads early while the student
-                                             # is still learning the token geometry at all; GT
-                                             # is the primary trajectory signal by the end.
-                                             # Remove to hold `gt_ce` fixed. The old
-                                             # `gt_ce_min` key is still read as a fallback.
+  # RUN 5: `gt_ce_end` DELETED (was 1.5, run 4's upward ramp). With `gt_ce: 0.0`
+  # above, stage_weights would otherwise ramp the GT anchor straight back in.
+  # Do not reinstate either key without the other. The old `gt_ce_min` fallback
+  # name must stay absent for the same reason.
   gt_soft_sigma_bins: 6.0                    # run 4, NEW: sigma of the Gaussian the GT anchor
                                              # targets, in bins, truncated at +/-3 sigma and
                                              # renormalised at the region edges. 6 bins is well
@@ -242,6 +273,25 @@ stage1:
                                              # 243's ~6.0. The `gt` term logs the old one-hot CE
                                              # untrained, for exactly that comparison.
   feat_warmup_frac: 0.1
+  select_on: coc_nll                         # RUN 5, NEW: which metric picks the best
+                                             # checkpoint and drives early stop.
+                                             # `coc_nll` | `minade` (runs 1-4 behaviour).
+                                             # minADE is a pure-GT metric and run 5 took
+                                             # `gt_ce` out of the loss, so selecting on it
+                                             # would optimise for something stage 1 no
+                                             # longer trains toward - the CoC is what this
+                                             # phase delivers. It is also the noisier of
+                                             # the two: measured 2.317 +/- 0.078 m over
+                                             # three seeds on ONE fixed checkpoint
+                                             # (runs/camera_ablation/4cam-baseline.json),
+                                             # because the gate samples k modes at
+                                             # temperature without seeding. `_coc_nll` is
+                                             # teacher-forced CE - deterministic.
+                                             # Job 253 is the cautionary case: its best
+                                             # CoC (0.509, epoch 2) was never saved because
+                                             # 2.850 m did not beat the epoch-0 minADE.
+                                             # minADE is still computed and logged every
+                                             # epoch regardless of this setting.
   early_stop_patience: 3                     # run 2: was 2. Run-1 peak was epoch 3/6 on a
                                              # noisy gate; a higher lr may move it. (evals
                                              # without coarse-minADE improvement)

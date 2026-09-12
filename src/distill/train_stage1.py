@@ -318,15 +318,26 @@ def main(cfg_path: str, micro_batch: int | None = None,
                     "struct": losses.text_kl_or_ce(
                         struct_logits, struct_tgt, struct_ok, vocab_ok=True),
                     "feat": losses.feature_match(proj, batch["feats"]),
-                    # Distance-aware, because a one-hot over 3000 bins is what
-                    # kept this term flat at ~6 nats for all of job 243. Floors
-                    # near ln(sigma*sqrt(2*pi*e)), NOT 0 — see gt_traj_soft_ce.
-                    "gt_soft": losses.gt_traj_soft_ce(
+                }
+                # Distance-aware, because a one-hot over 3000 bins is what kept
+                # this term flat at ~6 nats for all of job 243. Floors near
+                # ln(sigma*sqrt(2*pi*e)), NOT 0 — see gt_traj_soft_ce.
+                #
+                # Computed under no_grad when `gt_ce` is off (run 5 moves GT to
+                # phase 2). `gt_traj_soft_ce` carries its own FULL-VOCAB
+                # log_softmax — the same ~276 MB of retained activation at
+                # micro_batch 4 that `traj_topk_kl_per_pos` is split out to avoid
+                # paying twice — and under a zero weight that graph would be built
+                # and traversed for a term contributing exactly nothing. It stays
+                # in the log either way, so run 5's GT curve is still readable
+                # against 253's even though nothing trains on it.
+                gt_soft_w = w.get(_WKEY["gt_soft"], 0.0)
+                with torch.enable_grad() if gt_soft_w else torch.no_grad():
+                    terms["gt_soft"] = losses.gt_traj_soft_ce(
                         traj_logits, gt_bins, traj_mask,
                         sigma_bins=float(cfg.stage1.get("gt_soft_sigma_bins", 6.0)),
                         lo=student.future_base,
-                        hi=student.future_base + student.n_future_bins),
-                }
+                        hi=student.future_base + student.n_future_bins)
                 loss = sum(w.get(_WKEY[k], 0.0) * v
                            for k, v in terms.items() if k not in _DIAG)
                 with torch.no_grad():   # run-1..3 comparability only (_DIAG)
@@ -354,23 +365,48 @@ def main(cfg_path: str, micro_batch: int | None = None,
         # `gt_ce` is annealed over the run (losses.stage_weights); log the current
         # weight next to the gate so the schedule is visible per epoch (wandb_tail).
         gt_ce_w = losses.stage_weights(cfg.stage1, step, total_steps).get("gt_ce", 0.0)
+        # Which metric drives best-checkpoint and early stop (`stage1.select_on`).
+        # Run 5 selects on `coc_nll`, for two reasons:
+        #   1. minADE is a pure-GT metric, and run 5 removed `gt_ce` from the loss
+        #      (GT moves to phase 2) - so selecting on it optimises for something
+        #      stage 1 no longer trains toward. The CoC is what phase 1 delivers.
+        #   2. minADE is measured by UNSEEDED temperature sampling over k modes
+        #      (eval/coarse_minade.py), and measured 2.317 +/- 0.078 m across three
+        #      seeds on one fixed checkpoint. `_coc_nll` is teacher-forced CE - no
+        #      sampling, so it is deterministic and a far steadier selector.
+        # Run 253 is the cautionary case: its best CoC (0.509, epoch 2) was never
+        # saved because 2.850 m was not a minADE improvement, and the epoch-3 save
+        # that did land carried a worse CoC (0.595).
+        # minADE is still computed and logged every epoch either way - switching
+        # `select_on` back to `minade` restores run-1..4 behaviour exactly.
+        sel_key = str(cfg.stage1.get("select_on", "minade"))
+        sel_metrics = {"minade": score, "coc_nll": text_nll}
+        if sel_key not in sel_metrics:
+            raise ValueError(f"stage1.select_on must be one of {sorted(sel_metrics)}, "
+                             f"got {sel_key!r}")
+        sel = sel_metrics[sel_key]
         log.info("epoch %d challenging coarse-minADE %.3f m | val CoC NLL %.3f "
-                 "struct NLL %.3f | gt_ce_w %.3f",
-                 epoch, score, text_nll, struct_nll, gt_ce_w)
-        if score < best:
-            best, patience = score, 0
+                 "struct NLL %.3f | gt_ce_w %.3f | select_on %s=%.3f%s",
+                 epoch, score, text_nll, struct_nll, gt_ce_w, sel_key, sel,
+                 "  <- new best" if sel < best else "")
+        if sel < best:
+            best, patience = sel, 0
             # Per-run dir (see _run_best_dir); `<stage>/best` is repointed to it.
             # Merged, so stage 2 can load it into a student with no adapters
             # injected; non-destructive, so this epoch's training continues.
+            # `coarse_minade` stays in the meta under its original name whatever
+            # selected the checkpoint - 05a_inspect_coc.py and 08_camera_ablation.py
+            # both read that key. `val_coc_nll`/`select_on` are additive.
             checkpoint.save(student, run_best, stage="stage1", epoch=epoch,
-                            coarse_minade=float(score))
+                            coarse_minade=float(score), val_coc_nll=float(text_nll),
+                            select_on=sel_key)
             torch.save(projections.state_dict(), run_best / "projections.pt")
             torch.save(lmap, run_best / "layer_map.pt")
             _promote_best(run_best)
         else:
             patience += 1
             if patience >= cfg.stage1.early_stop_patience:
-                log.info("early stop: no improvement for %d evals", patience)
+                log.info("early stop: no %s improvement for %d evals", sel_key, patience)
                 return
 
 

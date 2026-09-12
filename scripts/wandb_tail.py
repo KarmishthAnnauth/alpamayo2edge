@@ -43,7 +43,10 @@ TERM_METRIC = {"traj": "loss/traj_kl", "traj_accel": "loss/traj_kl_accel",
 GATE_RE = re.compile(
     r"epoch (\d+) challenging coarse-minADE ([\d.]+) m \| val CoC NLL ([\d.]+) "
     r"struct NLL ([\d.]+)(?: \| gt_ce_w ([\d.]+))?")
-DONE_RE = re.compile(r"early stop: no improvement|^Finished |labeling done")
+# `no .*?improvement` because run 5 names the metric in the message
+# ("early stop: no coc_nll improvement..."); the bare run-1..4 wording
+# still matches, so old logs replay unchanged.
+DONE_RE = re.compile(r"early stop: no .*?improvement|^Finished |labeling done")
 
 
 class _DryRun:
