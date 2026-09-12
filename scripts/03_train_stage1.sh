@@ -85,8 +85,15 @@ free, total = (x / 2**30 for x in torch.cuda.mem_get_info())
 print(f"   device 0             = {p.name}  {total:.1f} GiB total, {free:.1f} GiB free")
 if "RTX PRO 6000" not in p.name:
     sys.exit(f"pinned the wrong card: {p.name}")
-if free < 65:            # measured peak is 58.3 GiB at micro_batch 4
-    sys.exit(f"only {free:.1f} GiB free on {p.name}; need ~60 GiB.")
+# Run 5 (1 camera) measures 26.9 GiB peak at micro_batch 4, down from 58.3 GiB
+# at 4 cameras - image tokens dominate activations and there are 4x fewer. The
+# old 65 GiB floor was calibrated for the 4-camera run; leaving it would abort
+# this job whenever a co-tenant holds ~40 GiB of the card, which on a shared
+# box is routine. 34 GiB = the measured peak plus ~25% headroom. Raise it back
+# toward 65 if data.cameras ever goes back to the 4-camera set.
+if free < 34:
+    sys.exit(f"only {free:.1f} GiB free on {p.name}; need ~34 GiB "
+             f"(measured peak 26.9 GiB at micro_batch 4, 1 camera).")
 GUARD
 
 # --- W&B sidecar ----------------------------------------------------------
