@@ -1154,3 +1154,121 @@ Termination is 1.000 everywhere (D-034 holds). Two separable failures:
 Judge run 6 on `05b_eval_coc.py`, not the gate: val maneuver accuracy up, the train->val
 gap down, LANE_CHANGE / ACCELERATE rates toward the teacher's, false-clear down - and
 object precision NOT down (the over-correction signature). `select_on: coc_nll` stays.
+
+### D-036 outcome — run 6 (job 314, commit 32fb7b1, 2026-09-13)
+
+Early-stopped after epoch 4; best = epoch 1 (`run-314/best`, val CoC NLL 0.566). Gate:
+
+| epoch | minADE_6 | val CoC NLL |
+|------:|---------:|------------:|
+| 0 | 3.764 | 0.568 |
+| 1 | 3.616 | **0.566** |
+| 2 | 3.347 | 0.624 |
+| 3 | 3.254 | 0.688 |
+| 4 | 3.476 | 0.703 |
+
+Free-running CoC (`05b_eval_coc.py`, 500 windows/split, 1 camera), best epoch vs run 5's:
+
+| | run-313 ep1 | run-314 ep0 | **run-314 ep1** | teacher |
+|---|---:|---:|---:|---:|
+| maneuver acc, val | 0.580 | 0.465 | **0.605** | |
+| maneuver acc, train | 0.695 | 0.528 | 0.656 | |
+| **train - val gap** | 0.115 | 0.063 | **0.051** | |
+| token F1 | 0.624 | 0.561 | **0.652** | |
+| object recall / precision | 0.726 / 0.818 | 0.767 / 0.728 | 0.758 / 0.819 | |
+| false-clear | 0.123 | 0.092 | 0.113 | |
+| LANE_CHANGE emitted | 1 | 44 | 4 | 16 |
+| FOLLOW / KEEP emitted | 86 / 62 (n=298) | 105 / 73 | 181 / 136 | 145 / 94 |
+| direction silent / wrong | 47% / 14% | 46% / 18% | 67% / 8% | |
+
+**Decision 1 (LoRA r48 attention-only): confirmed.** At the same epoch the train->val
+maneuver gap halved (0.115 -> 0.051) with val *higher* and train *lower* - the
+capacity/data-mismatch signature. Every aggregate beats run 5's best. Keep r48.
+
+**Decision 2 (maneuver sampler, alpha 0.5): did not work, and not for a reason alpha
+fixes.** Epoch 0 over-emitted the up-weighted classes 2.5-3.5x (LANE_CHANGE 44 vs 16,
+TURN 61 vs 21, YIELD 39 vs 11; precision 0.818 -> 0.728) - the reweighted *marginal*,
+learned first. By epoch 1 the conditional had taken over and the model collapsed back
+onto FOLLOW/KEEP, further than run 5 (1.25x / 1.45x the teacher's rate), with direction
+silence at 67%. Confusions at epoch 1 are all committed -> passive on semantically close
+pairs (ADAPT_SPEED->KEEP 19, NUDGE->FOLLOW 15, NUDGE->KEEP 13, LANE_CHANGE->FOLLOW 10):
+the student is not seeing the cue that separates them, so the conditional mode is the
+generic answer whatever the training marginal. The only arm that ever emitted
+LANE_CHANGE near the teacher's rate is run-253 at 4 cameras (50%). The collapse is a
+perception limit to test with input (cameras, resolution), not a frequency to reweight.
+Set `maneuver_sampling.enabled: false` for run 7; keep the module for a later ablation.
+
+**Also learned:** val CoC NLL turned at epoch 1 and rose faster than in run 5
+(+0.058/epoch) while free-running content at epoch 1 was *better* - NLL is token-level
+and moves on phrasing; it is not the same thing as content overfit and is a poor
+early-stop signal for it. And because only `best/` is saved, epochs 2-4 could not be
+free-run scored at all. Run 7 needs maneuver accuracy in the epoch gate (~4 min/epoch at
+200 windows) and per-epoch checkpoints, so the selection and the stop see the deliverable.
+
+## D-037 [DECIDED 2026-09-14] The CoC collapse is an under-sharpened conditional; fix it with GRPO on the AR tower, not a better CE
+
+### Why the text loss cannot fix it
+
+`losses.text_kl_or_ce` is plain hard-label CE on ONE sampled teacher trace per window -
+Phase A caches no logits (`labeler.py:184-185`), so the "text_kl" the log prints is not a
+KL. The trajectory path gets the teacher's top-32 logits and a real KL; the CoC gets a coin
+flip per window. Measured on run-314 epoch 1 (`05c_coc_ce_by_position.py`, val, 200 windows):
+
+| teacher's first word | student p on it | n |
+|---|---:|---:|
+| keep | 0.75 | 85 |
+| stop | 0.56 | 20 |
+| turn | 0.25 | 9 |
+| nudge | 0.18 | 27 |
+| adapt | 0.15 | 17 |
+| change (lane) | 0.02 | 5 |
+
+The maneuver verb is 19.4% of all CoC cross-entropy at 7.2% of tokens - the heaviest
+position the optimiser sees, so "template drowns it out" is not the story. The student holds
+0.1-0.25 on the committed verb and the rest on "keep". Decoding the same checkpoint at T=1.0
+(`05b --temperature`) brings LANE_CHANGE emission from 0.25x to 1.11x the teacher's rate
+while maneuver accuracy falls 0.605 -> 0.538: the mass is there, the conditional is not
+sharp. CE learns the expectation of a noisy target and cannot sharpen it.
+
+### What the vendors' recipes say (alpamayo-recipes, cosmos-framework)
+
+- Alpamayo's public SFT supervises `traj_future` only; the CoC is NOT a CE target. The
+  model card: "RL post-trained with reasoning reward applied to the chain-of-causation".
+  `recipes/alpamayo1_x_rl`: GRPO, `n_generation` 12, T=0.6/top_p 0.98, gated ADE reward,
+  joint mode with a pluggable `BaseReasoningGrader`.
+- Cosmos3-Edge's own reasoner SFT (`videophy2_sft_edge.py`): FULL-parameter, lr 1e-6,
+  weight decay 0.05, SigLIP2 frozen, projector + LM trained. Ours is LoRA on decoder
+  attention only; the projector never trains. Untested alternative, fits the Blackwell.
+- `loss/cross_entropy.py:weighted_cross_entropy_loss(exponent)`: per-sample vs per-token
+  normalisation. Ours is per-token. Minor.
+
+### The teacher on one camera (`09b_teacher_coc_diversity.py`, val, 40 windows, K=8)
+
+Run 5 set `data.cameras` to one camera and the teacher's loader follows it
+(`preprocess.py:84`), so this probe is the 4-camera-labelled teacher re-run on ONE camera:
+mean majority share 0.806, 27.5% split scenes; where the cached label is a committed
+maneuver (n=24) the fresh samples agree 0.48 and say FOLLOW/KEEP 0.40. The 11B teacher,
+handed the student's input, exhibits the student's collapse. The 4-camera rerun (queued)
+separates the camera effect from sampling diversity. Whatever it says, RL on one camera can
+sharpen the conditional only up to what one view supports.
+
+### Decision: phase 1.5, GRPO on the CoC (`train_grpo_coc.py`, `stage1_rl`, `03c_grpo_coc.sh`)
+
+Policy = `run-314/best` merged + fresh zero-init LoRA (r48, attention); reference = the same
+weights with `_lora_alpha` set to 0 for the forward (no second model). Rollouts via
+`generate_coc_text` at T=0.6/top_p 0.98 - the setting the student is judged at. Reward =
+`eval/coc_score` against the cached trace: +1 maneuver, +0.5 direction, +0.5 x object
+recall, -1 false-clear, -1 no terminator or >48 tokens. Group-normalised advantages,
+zero-variance groups skipped; per-token PG + 0.03 x KL (k3) + 0.1 x the existing CE as an
+anchor against reward-hacking the rule grader. lr 1e-5 on the adapters only. Free-running
+val check (100 windows) every 25 steps; best-by-maneuver-accuracy saved.
+
+Job 315 (G=8, uniform prompts): 35 s/step, but 69-81% of groups zero-variance - the
+documented "group collapse" on easy FOLLOW scenes. Restarted as job 316 with G=16 and
+prompts drawn by teacher maneuver class (D-036's weights, `prompt_alpha` 0.5; for GRPO this
+is efficiency, not bias - advantages are within-group): skip 0.44 -> 0.31, 85-103 s/step,
+~12 h for 500 steps. Step-0 baseline on the 99-window val check: 0.62-0.64 maneuver
+accuracy (the +/-0.02 between two runs of the same checkpoint is that check's noise).
+
+Not phase 2: DiffGRPO on the flow head with closed-loop reward is unchanged. This is the
+AR tower's CoC, which is what the expert's KV attends.

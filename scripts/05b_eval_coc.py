@@ -72,6 +72,12 @@ def main() -> int:
                          "would measure the train/test mismatch instead of the model.")
     ap.add_argument("--n", type=int, default=300)
     ap.add_argument("--max-new-tokens", type=int, default=256)
+    ap.add_argument("--temperature", type=float, default=None,
+                    help="decode temperature; default = teacher.gen_temperature (0.6, the "
+                         "teacher's own). `generate_coc_text` reads cfg.teacher.gen_*, so "
+                         "sweeping this shows whether the rare-maneuver mass is still in "
+                         "the student's distribution or gone from it.")
+    ap.add_argument("--top-p", type=float, default=None, help="default = teacher.gen_top_p")
     ap.add_argument("--dump", default=None, help="JSONL of every (student, teacher) pair")
     ap.add_argument("--out", default=None, help="JSON summary")
     a = ap.parse_args()
@@ -82,6 +88,12 @@ def main() -> int:
     if a.cameras:
         cfg.raw["data"]["cameras"] = [c.strip() for c in a.cameras.split(",") if c.strip()]
     log.info("cameras: %s", list(cfg.data.raw["cameras"]))
+    if a.temperature is not None:
+        cfg.raw["teacher"]["gen_temperature"] = float(a.temperature)
+    if a.top_p is not None:
+        cfg.raw["teacher"]["gen_top_p"] = float(a.top_p)
+    log.info("decode: temperature=%.2f top_p=%.2f", float(cfg.teacher.get("gen_temperature", 1.0)),
+             float(cfg.teacher.get("gen_top_p", 1.0)))
 
     student = EdgeStudent(cfg).cuda()
     student.extend_trajectory_vocab(torch.load(
@@ -126,6 +138,8 @@ def main() -> int:
     res = {
         "checkpoint": str(ckpt), "epoch": meta.get("epoch"), "split": a.split,
         "cameras": list(cfg.data.raw["cameras"]),
+        "temperature": float(cfg.teacher.get("gen_temperature", 1.0)),
+        "top_p": float(cfg.teacher.get("gen_top_p", 1.0)),
         "n_generated": n, "n_scored": len(rows), "n_teacher_empty": empty_teacher,
         "termination_rate": term / max(n, 1),
         "parse_rate": _mean([r["parsed"] for r in rows]),

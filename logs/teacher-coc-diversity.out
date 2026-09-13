@@ -1,0 +1,59 @@
+   pinned NVIDIA RTX 6000 Ada Generation  47 GiB total, 44 GiB free
+== 2026-09-14T01:02:15+02:00 teacher diversity probe, commit 32fb7b1
+Flash Attention 2 only supports torch.float16 and torch.bfloat16 dtypes, but the current dype in Qwen3VLForConditionalGeneration is bfloat16. You should run training or inference using Automatic Mixed-Precision via the `with torch.autocast(device_type='torch_device'):` decorator, or load the model with the `dtype` argument. Example: `model = AutoModel.from_pretrained("openai/whisper-tiny", attn_implementation="flash_attention_2", dtype=torch.float16)`
+Flash Attention 2 only supports torch.float16 and torch.bfloat16 dtypes, but the current dype in Qwen3VLModel is bfloat16. You should run training or inference using Automatic Mixed-Precision via the `with torch.autocast(device_type='torch_device'):` decorator, or load the model with the `dtype` argument. Example: `model = AutoModel.from_pretrained("openai/whisper-tiny", attn_implementation="flash_attention_2", dtype=torch.float16)`
+You are attempting to use Flash Attention 2 without specifying a torch dtype. This might lead to unexpected behaviour
+Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:00<00:00,  5.73it/s]Loading checkpoint shards:  60%|██████    | 3/5 [00:00<00:00, 10.84it/s]Loading checkpoint shards: 100%|██████████| 5/5 [00:00<00:00,  9.93it/s]Loading checkpoint shards: 100%|██████████| 5/5 [00:00<00:00,  9.63it/s]
+teacher CoC diversity: 20 clips from val, K=8, T=0.60 top_p=0.98
+[1/20] 08404a3f/00 cached=FOLLOW       majority=KEEP         share=1.00 H=-0.00 agree=0.00
+[1/20] 08404a3f/01 cached=STOP         majority=STOP         share=1.00 H=-0.00 agree=1.00
+[2/20] 7e281384/00 cached=NUDGE        majority=NUDGE        share=1.00 H=-0.00 agree=1.00
+[2/20] 7e281384/01 cached=NUDGE        majority=NUDGE        share=1.00 H=-0.00 agree=1.00
+[3/20] 4cec062a/00 cached=None         majority=STOP         share=0.38 H=1.49 agree=-
+[3/20] 4cec062a/01 cached=LANE_CHANGE  majority=FOLLOW       share=1.00 H=-0.00 agree=0.00
+[4/20] a8f9f22c/00 cached=FOLLOW       majority=KEEP         share=1.00 H=-0.00 agree=0.00
+[4/20] a8f9f22c/01 cached=TURN         majority=TURN         share=0.75 H=0.74 agree=0.75
+[5/20] 0d627580/00 cached=FOLLOW       majority=FOLLOW       share=1.00 H=-0.00 agree=1.00
+[5/20] 0d627580/01 cached=FOLLOW       majority=FOLLOW       share=1.00 H=-0.00 agree=1.00
+[6/20] 1cc95c4a/00 cached=STOP         majority=STOP         share=0.75 H=0.56 agree=0.75
+[6/20] 1cc95c4a/01 cached=FOLLOW       majority=FOLLOW       share=1.00 H=-0.00 agree=1.00
+[7/20] 077b8f09/00 cached=ADAPT_SPEED  majority=ADAPT_SPEED  share=1.00 H=-0.00 agree=1.00
+[7/20] 077b8f09/01 cached=NUDGE        majority=NUDGE        share=0.75 H=0.74 agree=0.75
+[8/20] f4fd9d9a/00 cached=FOLLOW       majority=FOLLOW       share=0.75 H=0.74 agree=0.75
+[8/20] f4fd9d9a/01 cached=ADAPT_SPEED  majority=FOLLOW       share=0.75 H=0.74 agree=0.00
+[9/20] 7f148f57/00 cached=FOLLOW       majority=KEEP         share=1.00 H=-0.00 agree=0.00
+[9/20] 7f148f57/01 cached=KEEP         majority=KEEP         share=0.75 H=0.74 agree=0.75
+[10/20] f0ea3c5b/00 cached=FOLLOW       majority=FOLLOW       share=0.38 H=1.32 agree=0.38
+[10/20] f0ea3c5b/01 cached=ACCELERATE   majority=TURN         share=0.50 H=0.97 agree=0.38
+No <traj_future_start> token found in generated sequences for sequence 0
+[11/20] 8a46f593/00 cached=LANE_CHANGE  majority=LANE_CHANGE  share=0.50 H=1.21 agree=0.50
+[11/20] 8a46f593/01 cached=FOLLOW       majority=FOLLOW       share=1.00 H=-0.00 agree=1.00
+[12/20] 3f9e4491/00 cached=YIELD        majority=FOLLOW       share=0.88 H=0.38 agree=0.12
+[12/20] 3f9e4491/01 cached=FOLLOW       majority=FOLLOW       share=1.00 H=-0.00 agree=1.00
+[13/20] 6b08e88f/00 cached=YIELD        majority=FOLLOW       share=0.62 H=0.66 agree=0.38
+[13/20] 6b08e88f/01 cached=ACCELERATE   majority=KEEP         share=1.00 H=-0.00 agree=0.00
+[14/20] 14fdb345/00 cached=TURN         majority=KEEP         share=0.88 H=0.38 agree=0.00
+[14/20] 14fdb345/01 cached=TURN         majority=STOP         share=0.50 H=1.04 agree=0.25
+[15/20] 83181dee/00 cached=YIELD        majority=KEEP         share=1.00 H=-0.00 agree=0.00
+[15/20] 83181dee/01 cached=NUDGE        majority=NUDGE        share=0.50 H=0.69 agree=0.50
+[16/20] c6614b28/00 cached=NUDGE        majority=NUDGE        share=1.00 H=-0.00 agree=1.00
+[16/20] c6614b28/01 cached=NUDGE        majority=NUDGE        share=0.50 H=0.69 agree=0.50
+[17/20] 2a0ec5c4/00 cached=FOLLOW       majority=KEEP         share=1.00 H=-0.00 agree=0.00
+[17/20] 2a0ec5c4/01 cached=ACCELERATE   majority=FOLLOW       share=1.00 H=-0.00 agree=0.00
+[18/20] 774722bf/00 cached=FOLLOW       majority=FOLLOW       share=0.62 H=0.66 agree=0.62
+No <traj_future_start> token found in generated sequences for sequence 0
+No <traj_future_start> token found in generated sequences for sequence 0
+[18/20] 774722bf/01 cached=None         majority=ACCELERATE   share=0.25 H=1.56 agree=-
+[19/20] f330b408/00 cached=STOP         majority=STOP         share=0.88 H=0.38 agree=0.88
+[19/20] f330b408/01 cached=FOLLOW       majority=FOLLOW       share=1.00 H=-0.00 agree=1.00
+[20/20] fff0ff24/00 cached=STOP         majority=STOP         share=0.75 H=0.56 agree=0.75
+[20/20] fff0ff24/01 cached=NUDGE        majority=YIELD        share=0.62 H=0.90 agree=0.00
+
+windows: 40   K=8
+  mean majority share      0.806
+  mean entropy (nats)      0.429   (0 = deterministic; ln2=0.69 = 50/50)
+  split scenes (<75% maj)  11 / 40 = 27.5%
+  cached label COMMITTED (n=24): fresh samples agree 0.48 of the time; samples say FOLLOW/KEEP 0.40
+  cached label FOLLOW/KEEP (n=14): fresh samples agree 0.61
+-> /data/vla/alpamayo2edge/runs/teacher_coc_diversity.jsonl
+Finished 2026-09-14T01:36:11+02:00

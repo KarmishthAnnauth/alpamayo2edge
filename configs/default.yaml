@@ -328,6 +328,51 @@ stage1:
     enabled: true
     alpha: 0.5
 
+# PHASE 1.5 (D-037): GRPO on the AR tower's chain-of-causation. Separate from
+# phase 2's DiffGRPO on the flow head. Why RL here at all: `text_kl` is hard-label
+# CE on ONE sampled teacher trace, and 05c/05b measured the student holding only
+# ~0.1-0.25 on the teacher's verb where the teacher commits (nudge / adapt / lane
+# change) - an under-sharpened conditional that CE cannot sharpen and that
+# group-relative reward can. It is also how the teacher got its own CoC
+# (Alpamayo 1.5: RL with a reasoning reward on the chain-of-causation).
+# Runs on one GPU, no vLLM: 2B student, ~14-token rollouts, cache-only inputs.
+#   python -m distill.train_grpo_coc --smoke        # Ada, ~15 min
+#   sbatch scripts/03c_grpo_coc.sh                  # Blackwell
+stage1_rl:
+  init_ckpt: /data/vla/alpamayo2edge/runs/stage1/run-314/best   # the policy AND the reference
+  run_name: rl-run-1
+  group_size: 16                             # G rollouts per prompt. Was 8 (recipe: 12): job
+                                             # 315's first steps skipped 69-81% of groups as
+                                             # zero-variance at G=8, uniform prompts, 35 s/step.
+                                             # Doubling G is the cheapest way to buy variance.
+  prompts_per_step: 16                       # 16 x 16 = 256 sequences per optimizer step
+  prompt_alpha: 0.5                          # draw prompts ~ (1/freq of teacher maneuver)^alpha
+                                             # (data/sampling.py, run 6's weights). For GRPO this
+                                             # is efficiency, not bias: advantages are within-group,
+                                             # so it only changes WHICH groups exist, not what a
+                                             # group teaches. 0 = uniform.
+  steps: 500                                 # ~35 s/step measured at G=8; expect ~60 s at G=16
+  lr: 1.0e-5                                 # RL, not SFT: LoRA at 3e-4 would leave the
+                                             # reference in a few steps and the KL would not hold it
+  grad_clip: 1.0
+  kl_beta: 0.03                              # k3 estimator against the adapters-off reference
+  ce_aux: 0.1                                # the existing teacher-forced CE as an anchor:
+                                             # the grader is rule-based and a student CAN learn a
+                                             # magic phrase; this plus the KL is what stops it
+  temperature: 0.6                           # rollouts at the setting the student is judged at
+  top_p: 0.98                                #   (teacher release defaults, 05b's defaults)
+  max_new_tokens: 64
+  eval_every: 25                             # free-running val check (maneuver acc, false-clear,
+  eval_windows: 100                          #   precision, mix); best-by-maneuver-acc is saved
+  seed: 0
+  reward:                                    # rule grader = eval/coc_score against the cached trace
+    maneuver: 1.0                            # canonical maneuver class agrees
+    direction: 0.5                           # ego left/right/straight agrees (where the teacher states one)
+    objects: 0.5                             # x object recall over hazard classes
+    false_clear: 1.0                         # SUBTRACTED: teacher saw a hazard, student named none and proceeds
+    fail: -1.0                               # no terminator, or longer than max_tokens
+    max_tokens: 48                           # == teacher.max_coc_tokens
+
 stage2:
   supervision: teacher_flow                  # teacher_flow (D-007) | gt_flow (ablation baseline)
   epochs: 8
