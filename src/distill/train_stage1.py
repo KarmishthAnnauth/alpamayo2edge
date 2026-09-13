@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 
 from .config import load_config
 from .data.dataset import Stage1Dataset, collate_stage1, move_batch
@@ -199,7 +199,22 @@ def main(cfg_path: str, micro_batch: int | None = None,
     # ends up oversubscribed (slurm_tutorial/07 "three mistakes", #1). Falls back
     # to 4 outside a job.
     n_workers = int(os.environ.get("SLURM_CPUS_PER_TASK", 4))
-    dl = DataLoader(train_ds, batch_size=cfg.stage1.micro_batch, shuffle=True,
+    # Maneuver-stratified draws (D-036, `stage1.maneuver_sampling`): each window's
+    # probability follows the teacher's maneuver class for it, parsed once here
+    # from the cached CoC. Uniform shuffling gave the student the teacher's
+    # marginal (54% FOLLOW/KEEP) and it learned exactly that. `num_samples` is the
+    # split size, so an "epoch" is still len(train_ds) draws and steps/epoch, the
+    # LR schedule and the gate cadence are unchanged; draws are with replacement.
+    ms = cfg.stage1.get("maneuver_sampling")
+    sampler = None
+    if ms is not None and bool(ms.get("enabled", False)):
+        from .data.sampling import log_mix, maneuver_weights
+        alpha = float(ms.get("alpha", 0.5))
+        weights, mix = maneuver_weights(train_ds.shards, alpha)
+        log_mix(mix, alpha)
+        sampler = WeightedRandomSampler(weights, num_samples=len(train_ds), replacement=True)
+    dl = DataLoader(train_ds, batch_size=cfg.stage1.micro_batch,
+                    shuffle=sampler is None, sampler=sampler,
                     num_workers=n_workers, pin_memory=True,
                     collate_fn=functools.partial(collate_stage1, pad_id=pad_id))
 

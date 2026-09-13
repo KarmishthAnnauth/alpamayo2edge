@@ -1,0 +1,556 @@
+Job 253 on ProArt, started 2026-09-07T05:54:28+02:00
+Submitted from: /home/vla/projects/alpamayo2edge
+GPU:            NVIDIA RTX PRO 6000 Blackwell Workstation Edition,NVIDIA RTX 6000 Ada Generation
+Commit:         133b2c7
+Scratch:        /bulk/scratch/vla/253
+----------------------------------------------------------------
+   CUDA_VISIBLE_DEVICES = GPU-1e9d88da-6c84-dbf7-f179-fdca7207dae0
+   CPUs allocated       = 8
+   device 0             = NVIDIA RTX PRO 6000 Blackwell Workstation Edition  95.0 GiB total, 93.2 GiB free
+wandb sidecar: run stage1-job253 (pid 1811010)
+----------------------------------------------------------------
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/vla/.netrc.
+wandb: Currently logged in as: karmishthannauth27 (karmishthannauth27-technical-university-of-munich) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run stage1-job253
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /home/vla/projects/alpamayo2edge/wandb/run-20260907_055431-stage1-job253
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run stage1-job253
+wandb: ⭐️ View project at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: 🚀 View run at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job253
+INFO:megatron.core.msc_utils:The multistorageclient package is available.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/distributed/fsdp/src/megatron_fsdp/utils.py:108: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+INFO:megatron.core.distributed.fsdp.src.megatron_fsdp.megatron_fsdp:Detected Megatron Core, using Megatron-FSDP with Megatron.
+INFO:megatron.core.distributed.fsdp.src.megatron_fsdp.param_and_grad_buffer:Detected Megatron Core, using Megatron-FSDP with Megatron.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/__init__.py:24: UserWarning: Transformer Engine and Apex are not installed. Falling back to Torch optimizers.
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/optimizer.py:28: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/clip_grads.py:29: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier, multi_tensor_l2norm, and multi_tensor_scale
+  warnings.warn(
+[09-07 05:54:37|INFO|cosmos_framework/model/generator/omni_mot_model.py:124:__init__] OmniMoTModel: config {'tokenizer': {'bucket_name': 'bucket', 'object_store_credential_path_pretrained': 'credentials/gcp_training.secret', 'vae_path': 'pretrained/tokenizers/video/wan2pt2/Wan2.2_VAE.pth', 'chunk_duration': 93, 'keep_decoder_cache': False, 'use_streaming_encode': False, 'encode_chunk_frames': {'256': 68, '480': 24, '720': 8, '768': 8}, 'encode_exact_durations': [17, 61, 73], 'spatial_compression_factor': 16, 'temporal_compression_factor': 4, 'temporal_window': None, 'encode_bucket_multiple': None, 'causal': True, '_target_': 'cosmos_framework.model.generator.tokenizers.wan2pt2_vae_4x16x16.Wan2pt2VAEInterface'}, 'load_vision_tokenizer': True, 'lidar_tokenizer': None, 'lidar_state_ch': None, 'lidar_fps': None, 'net': None, 'ema': {'enabled': False, 'rate': 0.1, 'iteration_shift': 0, '_type': 'cosmos_framework.configs.base.defaults.ema.EMAConfig'}, 'parallelism': {'data_parallel_shard_degree': -1, 'data_parallel_replicate_degree': 1, 'context_parallel_shard_degree': 1, 'cfg_parallel_shard_degree': 1, 'enable_inference_mode': True, 'fsdp_master_dtype': 'float32', 'fsdp_reduce_dtype': None, '_type': 'cosmos_framework.configs.base.defaults.parallelism.ParallelismConfig'}, 'attention_io_layout': 'sequence_sharded', 'compile': {'enabled': False, 'compiled_region': 'language', 'compile_dynamic': True, 'use_cuda_graphs': False, 'ar_post_saturation_mode': 'default', 'max_autotune_pointwise': False, 'coordinate_descent_tuning': False, '_type': 'cosmos_framework.configs.base.defaults.compile.CompileConfig'}, 'quantization': {'method': None, 'fp8_granularity': 'per_row', 'modelopt_fp8_checkpoint_path': None, 'mixed_precision_first_steps': 0, 'mixed_precision_last_steps': 0, 'mixed_precision_reasoner_policy': 'high_precision', 'mixed_precision_w8a16_cache': 'none', 'include_regex': [], 'exclude_regex': [], 'modelopt_fp8_target_fqns': [], '_type': 'cosmos_framework.configs.base.defaults.quantization.QuantizationConfig'}, 'activation_checkpointing': {'mode': 'none', 'preserve_rng_state': True, 'determinism_check': 'default', 'save_ops_regex': ['fmha'], '_type': 'cosmos_framework.configs.base.defaults.activation_checkpointing.ActivationCheckpointingConfig'}, 'precision': 'bfloat16', 'lora_enabled': False, 'lora_rank': 16, 'lora_alpha': 32, 'lora_target_modules': 'q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen', 'rectified_flow_training_config': {'shift': {'256': 3, '480': 5, '720': 10}, 'shift_image': None, 'use_dynamic_shift': False, 'train_time_image_distribution': 'logitnormal', 'train_time_video_distribution': 'waver', 'train_time_action_distribution': 'logitnormal', 'train_time_sound_distribution': 'logitnormal', 'train_time_weight': 'uniform', 'loss_scale': 10.0, 'image_loss_scale': None, 'sound_loss_scale': 2.0, 'lidar_loss_scale': None, 'use_discrete_rf': False, 'action_loss_weight': 10.0, 'independent_action_schedule': False, 'shift_action': None, 'independent_sound_schedule': False, 'shift_sound': None, 'normalize_loss_by_active': False, 'sample_level_loss_averaging': False, 'high_sigma_ratio': 0.05, 'high_sigma_timesteps_max': 1000, 'high_sigma_timesteps_min': 995, 'use_high_sigma_strategy': False, 'use_high_sigma_strategy_action': False, 'use_high_sigma_strategy_sound': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowTrainingConfig'}, 'rectified_flow_inference_config': {'scheduler_type': 'unipc', 'num_train_timesteps': 1000, 'shift': 1, 'use_dynamic_shifting': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowInferenceConfig'}, 'fixed_step_sampler_config': None, 'vlm_config': {'model_name': 'nvidia/Cosmos3-Edge-Reasoner', 'safetensors_path': '', 'pretrained_weights': {'enabled': False, 'backbone_path': 's3://bucket/cosmos3/pretrained/huggingface/nvidia/Cosmos3-Edge-Reasoner-590c1c0/', 'credentials_path': 'credentials/gcp_checkpoint.secret', 'enable_gcs_patch_in_boto3': True, 'checkpoint_format': None, '_type': 'cosmos_framework.configs.base.defaults.reasoner.PretrainedWeightsConfig'}, 'model_instance': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLTextForCausalLM', 'config': {'_target_': 'cosmos_framework.configs.base.defaults.reasoner.create_vlm_config', 'base_config': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLMoTConfig.from_json_file', 'json_file': 'cosmos_framework/model/generator/reasoner/nemotron_3_dense_vl/configs/Nemotron-2B-Dense-VL.json'}, 'include_visual': None, 'qk_norm_for_text': False, 'use_und_k_norm_for_gen': True}}, 'tokenizer': {'repository': None, 'revision': None, 'subdir': '', '_target_': 'cosmos_framework.data.generator.processors.build_processor_lazy', 'tokenizer_type': '/bulk/users/vla/alpamayo2edge/cosmos3-edge'}, 'layer_module': None, 'qk_norm': False, 'tie_word_embeddings': False, 'use_system_prompt': False, '_type': 'cosmos_framework.configs.base.defaults.reasoner.VLMConfig'}, 'diffusion_expert_config': {'timestep_range': 1.0, 'load_weights_from_pretrained': False, 'enable_vision_modality_embeddings': False, 'enable_media_modality_embedding': False, 'enable_sound_modality_embedding': True, 'patch_spatial': 2, 'max_vae_latent_side_after_patchify': 20, 'enable_fps_modulation': True, 'base_fps': 24, 'sound_base_temporal_compression_factor': None, 'vision_temporal_position_mode': 'latent_index', 'unified_3d_mrope_reset_spatial_ids': True, 'unified_3d_mrope_temporal_modality_margin': 15000, '_type': 'cosmos_framework.configs.base.defaults.model_config.DiffusionExpertConfig'}, 'input_video_key': 'video', 'input_image_key': 'images', 'input_caption_key': 'ai_caption', 'state_ch': 48, 'state_t': 300, 'latent_downsample_factor': 16, 'resolution': '480', 'max_num_tokens_after_packing': 74000, 'joint_attn_implementation': 'two_way', 'flex_attention': {'enabled': False, 'backend': 'auto', 'mask': {'attention_scope': 'all_views'}}, 'natten_parameter_list': None, 'video_temporal_causal': False, 'causal_training_strategy': 'none', 'lbl': {'method': 'local', 'coeff_und': None, 'coeff_gen': None, '_type': 'cosmos_framework.configs.base.defaults.model_config.LBLConfig'}, 'vision_gen': True, 'action_gen': True, 'max_action_dim': 64, 'num_embodiment_domains': 32, 'sound_gen': False, 'sound_tokenizer': None, 'sound_dim': None, 'sound_latent_fps': 25, 'enable_input_bias': True, 'log_enc_time_every_n': 100, 'exclude_reasoner_weights_from_checkpoint': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.OmniMoTModelConfig'}
+[09-07 05:54:37|WARNING|cosmos_framework/model/generator/omni_mot_model.py:150:set_precision] OmniMoTModel: precision torch.bfloat16
+This processor does not use the `size` parameter. It will be ignored.
+[09-07 05:54:38|INFO|cosmos_framework/data/generator/processors/base.py:131:__init__] Successfully loaded processor from local cache
+[09-07 05:54:38|INFO|cosmos_framework/utils/checkpoint_db.py:338:download] Downloading checkpoint Wan2.2/vae(e62a2e6ed7ca430883e1c6a554374e68)
+[09-07 05:54:38|INFO|cosmos_framework/utils/checkpoint_db.py:171:_hf_download] uv run --isolated --project /home/vla/projects/cosmos-framework/cosmos_framework/utils/hf_cli --locked --no-default-groups hf download --format=json Wan-AI/Wan2.2-TI2V-5B --repo-type model --revision 921dbaf3f1674a56f47e83fb80a34bac8a8f203e Wan2.2_VAE.pth
+Installed 16 packages in 4ms
+[09-07 05:54:42|INFO|cosmos_framework/model/generator/tokenizers/wan2pt2_vae_4x16x16.py:1056:_video_vae] loading /bulk/users/vla/alpamayo2edge/hf-cache/models--Wan-AI--Wan2.2-TI2V-5B/snapshots/921dbaf3f1674a56f47e83fb80a34bac8a8f203e/Wan2.2_VAE.pth
+[09-07 05:54:42|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_tokenizers: 4.41 s
+[09-07 05:54:42|INFO|cosmos_framework/utils/generator/parallelism.py:110:_validate] dp_shard auto-inferred to world_size = 1
+[09-07 05:54:42|INFO|cosmos_framework/utils/generator/parallelism.py:124:_validate] dp_replicate is set to -1, will be automatically determined based on world_size 1 // dp_shard 1.
+[09-07 05:54:42|INFO|cosmos_framework/utils/generator/parallelism.py:129:_validate] dp_replicate is set to 1.
+`torch_dtype` is deprecated! Use `dtype` instead!
+[09-07 05:54:42|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on meta to cuda and broadcast model states: 0.06 s
+[09-07 05:54:42|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on Creating PyTorch model and ema if enabled: 0.15 s
+[09-07 05:54:42|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_model: 0.15 s
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/torch/distributed/checkpoint/utils.py:483: UserWarning: torch.distributed is disabled, unavailable or uninitialized, assuming the intent is to load in a single process.
+  return func(*args, **kwargs)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+[09-07 05:54:44|INFO|../cosmos-framework/cosmos_framework/model/generator/mot/unified_mot.py:2656:_ensure_vision_tower] Edge vision tower: loading from checkpoint-local bundle /bulk/users/vla/alpamayo2edge/cosmos3-edge/vision_encoder
+INFO:__main__:layer map (student -> teacher): {5: 3, 21: 8, 22: 12, 23: 17, 24: 21, 25: 26, 26: 30, 27: 35}
+[09-07 05:55:03|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=96, alpha=192, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj', 'mlp.up_proj', 'mlp.down_proj']
+[09-07 05:55:03|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 168 modules wrapped, 99,090,432 trainable LoRA params, 2,818,812,416 frozen base params (3.396% trainable)
+INFO:__main__:LoRA: {'wrapped': 168, 'by_leaf': {'q_proj': 28, 'k_proj': 28, 'v_proj': 28, 'o_proj': 28, 'up_proj': 28, 'down_proj': 28}, 'lora_params': 99090432, 'example': ['0.self_attn.q_proj', '0.self_attn.k_proj', '0.self_attn.v_proj']}
+INFO:__main__:trainable 719.5M [group0(x1.0): 99.1M, group1(x8.0): 553.3M, group2(x8.0): 67.1M]
+INFO:__main__:checkpoints -> /data/vla/alpamayo2edge/runs/stage1/run-253/best  (<stage>/best symlinks here)
+/home/vla/projects/alpamayo2edge/src/distill/train_stage1.py:342: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  breakdown = " ".join(f"{k} {float(v):.3f}" for k, v in terms.items())
+INFO:__main__:epoch 0 step 20/7116 loss 13.1964 [traj 6.135 traj_accel 7.866 text 1.330 struct 0.391 feat 0.339 gt_soft 9.439 gt 9.004]
+INFO:__main__:epoch 0 step 40/7116 loss 7.2596 [traj 2.050 traj_accel 5.929 text 1.218 struct 0.027 feat 0.235 gt_soft 6.684 gt 6.488]
+INFO:__main__:epoch 0 step 60/7116 loss 8.5487 [traj 3.129 traj_accel 3.794 text 1.430 struct 0.009 feat 0.195 gt_soft 7.077 gt 7.032]
+INFO:__main__:epoch 0 step 80/7116 loss 4.4853 [traj 0.924 traj_accel 3.557 text 0.348 struct 0.004 feat 0.171 gt_soft 5.567 gt 5.022]
+INFO:__main__:epoch 0 step 100/7116 loss 4.1974 [traj 0.482 traj_accel 2.123 text 0.412 struct 0.010 feat 0.155 gt_soft 5.985 gt 5.841]
+INFO:__main__:epoch 0 step 120/7116 loss 4.7323 [traj 1.144 traj_accel 2.072 text 0.281 struct 0.050 feat 0.150 gt_soft 5.927 gt 5.640]
+INFO:__main__:epoch 0 step 140/7116 loss 3.5563 [traj 0.345 traj_accel 2.352 text 0.114 struct 0.018 feat 0.132 gt_soft 5.466 gt 4.775]
+INFO:__main__:epoch 0 step 160/7116 loss 5.8497 [traj 1.938 traj_accel 2.280 text 0.204 struct 0.001 feat 0.145 gt_soft 6.630 gt 6.261]
+INFO:__main__:epoch 0 step 180/7116 loss 3.7004 [traj 0.323 traj_accel 2.962 text 0.317 struct 0.010 feat 0.136 gt_soft 5.221 gt 4.040]
+INFO:__main__:epoch 0 step 200/7116 loss 5.0259 [traj 0.659 traj_accel 2.866 text 0.787 struct 0.003 feat 0.135 gt_soft 6.200 gt 5.816]
+INFO:__main__:epoch 0 step 220/7116 loss 5.7466 [traj 1.802 traj_accel 2.367 text 0.475 struct 0.005 feat 0.132 gt_soft 6.047 gt 5.749]
+INFO:__main__:epoch 0 step 240/7116 loss 5.7816 [traj 1.344 traj_accel 2.257 text 0.747 struct 0.039 feat 0.122 gt_soft 6.418 gt 6.062]
+INFO:__main__:epoch 0 step 260/7116 loss 6.0236 [traj 1.396 traj_accel 2.545 text 0.663 struct 0.010 feat 0.137 gt_soft 6.861 gt 6.510]
+INFO:__main__:epoch 0 step 280/7116 loss 4.1259 [traj 0.389 traj_accel 2.744 text 0.179 struct 0.006 feat 0.129 gt_soft 6.037 gt 5.473]
+INFO:__main__:epoch 0 step 300/7116 loss 4.2888 [traj 0.798 traj_accel 2.114 text 0.141 struct 0.000 feat 0.119 gt_soft 5.743 gt 5.513]
+INFO:__main__:epoch 0 step 320/7116 loss 4.4225 [traj 0.859 traj_accel 2.469 text 0.303 struct 0.001 feat 0.120 gt_soft 5.483 gt 5.103]
+INFO:__main__:epoch 0 step 340/7116 loss 3.9308 [traj 0.520 traj_accel 2.126 text 0.196 struct 0.000 feat 0.123 gt_soft 5.430 gt 4.967]
+INFO:__main__:epoch 0 step 360/7116 loss 4.4003 [traj 0.983 traj_accel 2.860 text 0.107 struct 0.053 feat 0.110 gt_soft 5.396 gt 5.191]
+INFO:__main__:epoch 0 step 380/7116 loss 4.8612 [traj 1.007 traj_accel 3.147 text 0.246 struct 0.022 feat 0.107 gt_soft 5.882 gt 5.563]
+INFO:__main__:epoch 0 step 400/7116 loss 5.0059 [traj 0.763 traj_accel 2.402 text 0.564 struct 0.002 feat 0.102 gt_soft 6.130 gt 5.997]
+INFO:__main__:epoch 0 step 420/7116 loss 4.6875 [traj 0.989 traj_accel 2.597 text 0.220 struct 0.014 feat 0.098 gt_soft 5.695 gt 5.201]
+INFO:__main__:epoch 0 step 440/7116 loss 4.0494 [traj 0.329 traj_accel 2.156 text 0.343 struct 0.000 feat 0.089 gt_soft 5.581 gt 4.776]
+INFO:__main__:epoch 0 step 460/7116 loss 4.3917 [traj 0.323 traj_accel 2.272 text 0.840 struct 0.011 feat 0.091 gt_soft 5.255 gt 4.040]
+INFO:__main__:epoch 0 step 480/7116 loss 6.5507 [traj 0.937 traj_accel 2.522 text 1.370 struct 0.000 feat 0.075 gt_soft 6.992 gt 6.966]
+INFO:__main__:epoch 0 step 500/7116 loss 4.6884 [traj 0.686 traj_accel 2.590 text 0.292 struct 0.059 feat 0.070 gt_soft 5.958 gt 5.665]
+INFO:__main__:epoch 0 step 520/7116 loss 4.7008 [traj 0.835 traj_accel 1.979 text 0.717 struct 0.054 feat 0.054 gt_soft 5.068 gt 4.090]
+INFO:__main__:epoch 0 step 540/7116 loss 4.3102 [traj 0.456 traj_accel 3.080 text 0.388 struct 0.002 feat 0.063 gt_soft 5.441 gt 4.975]
+INFO:__main__:epoch 0 step 560/7116 loss 5.0128 [traj 0.568 traj_accel 2.651 text 1.122 struct 0.025 feat 0.061 gt_soft 5.222 gt 4.430]
+INFO:__main__:epoch 0 step 580/7116 loss 4.1769 [traj 0.336 traj_accel 2.408 text 0.307 struct 0.002 feat 0.051 gt_soft 5.628 gt 5.201]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.750 m (p90 6.741, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 0 challenging coarse-minADE 2.750 m | val CoC NLL 0.558 struct NLL 0.026 | gt_ce_w 0.583
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1/run-253/best (992 tensors)
+INFO:__main__:epoch 1 step 600/7116 loss 4.0822 [traj 0.480 traj_accel 2.564 text 0.265 struct 0.060 feat 0.076 gt_soft 5.169 gt 4.394]
+INFO:__main__:epoch 1 step 620/7116 loss 4.6363 [traj 0.615 traj_accel 2.203 text 0.470 struct 0.003 feat 0.057 gt_soft 5.631 gt 5.358]
+INFO:__main__:epoch 1 step 640/7116 loss 3.4871 [traj 0.343 traj_accel 2.088 text 0.097 struct 0.000 feat 0.050 gt_soft 4.774 gt 3.654]
+INFO:__main__:epoch 1 step 660/7116 loss 5.0729 [traj 1.031 traj_accel 2.369 text 0.241 struct 0.002 feat 0.048 gt_soft 5.975 gt 5.772]
+INFO:__main__:epoch 1 step 680/7116 loss 4.4177 [traj 0.618 traj_accel 2.388 text 0.157 struct 0.005 feat 0.062 gt_soft 5.663 gt 5.344]
+INFO:__main__:epoch 1 step 700/7116 loss 4.4352 [traj 0.830 traj_accel 2.406 text 0.136 struct 0.004 feat 0.065 gt_soft 5.340 gt 5.092]
+INFO:__main__:epoch 1 step 720/7116 loss 5.9872 [traj 1.386 traj_accel 2.558 text 0.452 struct 0.001 feat 0.061 gt_soft 6.425 gt 6.151]
+INFO:__main__:epoch 1 step 740/7116 loss 5.8701 [traj 0.775 traj_accel 1.963 text 0.997 struct 0.000 feat 0.045 gt_soft 6.425 gt 6.274]
+INFO:__main__:epoch 1 step 760/7116 loss 4.5041 [traj 0.378 traj_accel 2.148 text 0.630 struct 0.020 feat 0.051 gt_soft 5.350 gt 5.011]
+INFO:__main__:epoch 1 step 780/7116 loss 4.4946 [traj 0.401 traj_accel 2.530 text 0.432 struct 0.000 feat 0.049 gt_soft 5.552 gt 5.276]
+INFO:__main__:epoch 1 step 800/7116 loss 4.1668 [traj 0.350 traj_accel 2.398 text 0.261 struct 0.002 feat 0.046 gt_soft 5.377 gt 4.571]
+INFO:__main__:epoch 1 step 820/7116 loss 4.3388 [traj 0.781 traj_accel 2.468 text 0.042 struct 0.008 feat 0.049 gt_soft 5.269 gt 4.965]
+INFO:__main__:epoch 1 step 840/7116 loss 4.5404 [traj 0.406 traj_accel 2.124 text 0.634 struct 0.016 feat 0.063 gt_soft 5.258 gt 4.376]
+INFO:__main__:epoch 1 step 860/7116 loss 5.0963 [traj 0.800 traj_accel 2.452 text 0.544 struct 0.007 feat 0.056 gt_soft 5.601 gt 5.557]
+INFO:__main__:epoch 1 step 880/7116 loss 5.6326 [traj 0.988 traj_accel 2.255 text 0.375 struct 0.007 feat 0.058 gt_soft 6.432 gt 6.160]
+INFO:__main__:epoch 1 step 900/7116 loss 4.8840 [traj 0.386 traj_accel 2.511 text 0.568 struct 0.007 feat 0.047 gt_soft 5.831 gt 5.590]
+INFO:__main__:epoch 1 step 920/7116 loss 4.7047 [traj 0.665 traj_accel 2.311 text 0.237 struct 0.001 feat 0.048 gt_soft 5.638 gt 5.199]
+INFO:__main__:epoch 1 step 940/7116 loss 4.9586 [traj 0.619 traj_accel 2.014 text 0.192 struct 0.001 feat 0.044 gt_soft 6.210 gt 6.209]
+INFO:__main__:epoch 1 step 960/7116 loss 5.4116 [traj 0.792 traj_accel 2.211 text 0.629 struct 0.000 feat 0.047 gt_soft 5.902 gt 5.715]
+INFO:__main__:epoch 1 step 980/7116 loss 5.0437 [traj 0.667 traj_accel 2.815 text 0.642 struct 0.007 feat 0.055 gt_soft 5.368 gt 5.017]
+INFO:__main__:epoch 1 step 1000/7116 loss 4.8541 [traj 0.658 traj_accel 2.417 text 0.199 struct 0.014 feat 0.055 gt_soft 5.810 gt 5.434]
+INFO:__main__:epoch 1 step 1020/7116 loss 5.5878 [traj 1.182 traj_accel 2.172 text 0.376 struct 0.001 feat 0.053 gt_soft 5.885 gt 5.760]
+INFO:__main__:epoch 1 step 1040/7116 loss 4.8634 [traj 0.546 traj_accel 2.090 text 0.535 struct 0.000 feat 0.044 gt_soft 5.496 gt 5.141]
+INFO:__main__:epoch 1 step 1060/7116 loss 5.4424 [traj 0.935 traj_accel 1.961 text 0.551 struct 0.000 feat 0.054 gt_soft 5.754 gt 5.473]
+INFO:__main__:epoch 1 step 1080/7116 loss 5.9380 [traj 1.068 traj_accel 2.747 text 0.326 struct 0.106 feat 0.050 gt_soft 6.432 gt 6.078]
+INFO:__main__:epoch 1 step 1100/7116 loss 4.3036 [traj 0.367 traj_accel 2.352 text 0.234 struct 0.004 feat 0.060 gt_soft 5.250 gt 4.885]
+INFO:__main__:epoch 1 step 1120/7116 loss 4.3795 [traj 0.288 traj_accel 1.921 text 0.292 struct 0.000 feat 0.050 gt_soft 5.451 gt 4.904]
+INFO:__main__:epoch 1 step 1140/7116 loss 4.2078 [traj 0.399 traj_accel 2.132 text 0.282 struct 0.001 feat 0.041 gt_soft 4.989 gt 4.462]
+INFO:__main__:epoch 1 step 1160/7116 loss 5.0815 [traj 0.714 traj_accel 2.264 text 0.424 struct 0.001 feat 0.042 gt_soft 5.574 gt 5.302]
+INFO:__main__:epoch 1 step 1180/7116 loss 4.9418 [traj 0.415 traj_accel 2.213 text 0.559 struct 0.001 feat 0.043 gt_soft 5.596 gt 5.217]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 3.001 m (p90 7.419, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 1 challenging coarse-minADE 3.001 m | val CoC NLL 0.513 struct NLL 0.018 | gt_ce_w 0.666
+INFO:__main__:epoch 2 step 1200/7116 loss 4.3805 [traj 0.517 traj_accel 1.938 text 0.299 struct 0.012 feat 0.043 gt_soft 5.001 gt 4.525]
+INFO:__main__:epoch 2 step 1220/7116 loss 4.5395 [traj 0.354 traj_accel 1.822 text 0.570 struct 0.000 feat 0.037 gt_soft 5.086 gt 4.414]
+INFO:__main__:epoch 2 step 1240/7116 loss 5.0192 [traj 0.567 traj_accel 2.386 text 0.122 struct 0.034 feat 0.035 gt_soft 6.017 gt 5.635]
+INFO:__main__:epoch 2 step 1260/7116 loss 4.5261 [traj 0.312 traj_accel 2.064 text 0.462 struct 0.007 feat 0.036 gt_soft 5.206 gt 4.630]
+INFO:__main__:epoch 2 step 1280/7116 loss 5.2423 [traj 0.500 traj_accel 2.512 text 0.532 struct 0.007 feat 0.042 gt_soft 5.789 gt 5.138]
+INFO:__main__:epoch 2 step 1300/7116 loss 5.1551 [traj 0.813 traj_accel 2.102 text 0.270 struct 0.125 feat 0.051 gt_soft 5.530 gt 5.261]
+INFO:__main__:epoch 2 step 1320/7116 loss 4.4376 [traj 0.333 traj_accel 1.817 text 0.322 struct 0.016 feat 0.040 gt_soft 5.213 gt 4.693]
+INFO:__main__:epoch 2 step 1340/7116 loss 4.7749 [traj 0.524 traj_accel 2.028 text 0.100 struct 0.001 feat 0.041 gt_soft 5.708 gt 5.265]
+INFO:__main__:epoch 2 step 1360/7116 loss 4.8561 [traj 0.448 traj_accel 2.051 text 0.223 struct 0.003 feat 0.046 gt_soft 5.725 gt 5.428]
+INFO:__main__:epoch 2 step 1380/7116 loss 4.8638 [traj 0.626 traj_accel 2.034 text 0.269 struct 0.010 feat 0.046 gt_soft 5.387 gt 4.848]
+INFO:__main__:epoch 2 step 1400/7116 loss 4.0935 [traj 0.371 traj_accel 1.973 text 0.041 struct 0.000 feat 0.041 gt_soft 4.971 gt 4.393]
+INFO:__main__:epoch 2 step 1420/7116 loss 6.2407 [traj 0.868 traj_accel 2.021 text 0.483 struct 0.020 feat 0.051 gt_soft 6.653 gt 6.318]
+INFO:__main__:epoch 2 step 1440/7116 loss 6.5817 [traj 0.933 traj_accel 2.182 text 0.696 struct 0.000 feat 0.053 gt_soft 6.703 gt 6.564]
+INFO:__main__:epoch 2 step 1460/7116 loss 4.6921 [traj 0.426 traj_accel 2.322 text 0.243 struct 0.001 feat 0.040 gt_soft 5.347 gt 4.627]
+INFO:__main__:epoch 2 step 1480/7116 loss 4.9110 [traj 0.447 traj_accel 2.567 text 0.276 struct 0.000 feat 0.035 gt_soft 5.528 gt 5.062]
+INFO:__main__:epoch 2 step 1500/7116 loss 5.4690 [traj 0.910 traj_accel 2.454 text 0.289 struct 0.040 feat 0.044 gt_soft 5.605 gt 5.398]
+INFO:__main__:epoch 2 step 1520/7116 loss 5.3613 [traj 0.867 traj_accel 1.934 text 0.352 struct 0.041 feat 0.041 gt_soft 5.477 gt 5.056]
+INFO:__main__:epoch 2 step 1540/7116 loss 4.5196 [traj 0.460 traj_accel 2.406 text 0.342 struct 0.005 feat 0.048 gt_soft 4.818 gt 4.335]
+INFO:__main__:epoch 2 step 1560/7116 loss 5.0006 [traj 0.409 traj_accel 2.008 text 0.264 struct 0.014 feat 0.043 gt_soft 5.699 gt 5.502]
+INFO:__main__:epoch 2 step 1580/7116 loss 5.1547 [traj 0.621 traj_accel 2.424 text 0.145 struct 0.034 feat 0.045 gt_soft 5.688 gt 5.498]
+INFO:__main__:epoch 2 step 1600/7116 loss 5.6473 [traj 0.759 traj_accel 2.261 text 0.318 struct 0.001 feat 0.041 gt_soft 5.966 gt 5.884]
+INFO:__main__:epoch 2 step 1620/7116 loss 5.0503 [traj 0.386 traj_accel 2.383 text 0.753 struct 0.008 feat 0.038 gt_soft 5.017 gt 4.420]
+INFO:__main__:epoch 2 step 1640/7116 loss 5.0282 [traj 0.449 traj_accel 2.373 text 0.100 struct 0.000 feat 0.047 gt_soft 5.776 gt 5.350]
+INFO:__main__:epoch 2 step 1660/7116 loss 4.5738 [traj 0.337 traj_accel 1.916 text 0.034 struct 0.000 feat 0.035 gt_soft 5.448 gt 4.726]
+INFO:__main__:epoch 2 step 1680/7116 loss 5.6481 [traj 0.465 traj_accel 2.186 text 0.654 struct 0.014 feat 0.043 gt_soft 5.818 gt 5.489]
+INFO:__main__:epoch 2 step 1700/7116 loss 4.7842 [traj 0.380 traj_accel 1.574 text 0.343 struct 0.011 feat 0.039 gt_soft 5.250 gt 4.591]
+INFO:__main__:epoch 2 step 1720/7116 loss 4.6311 [traj 0.359 traj_accel 2.318 text 0.096 struct 0.000 feat 0.039 gt_soft 5.291 gt 4.854]
+INFO:__main__:epoch 2 step 1740/7116 loss 4.9719 [traj 0.497 traj_accel 2.312 text 0.323 struct 0.000 feat 0.040 gt_soft 5.240 gt 4.753]
+INFO:__main__:epoch 2 step 1760/7116 loss 5.7667 [traj 0.699 traj_accel 2.253 text 0.182 struct 0.000 feat 0.044 gt_soft 6.208 gt 6.008]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.850 m (p90 6.594, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 2 challenging coarse-minADE 2.850 m | val CoC NLL 0.509 struct NLL 0.016 | gt_ce_w 0.750
+INFO:__main__:epoch 3 step 1780/7116 loss 5.4777 [traj 0.452 traj_accel 3.102 text 0.306 struct 0.017 feat 0.037 gt_soft 5.843 gt 5.646]
+INFO:__main__:epoch 3 step 1800/7116 loss 4.5671 [traj 0.373 traj_accel 2.000 text 0.087 struct 0.000 feat 0.033 gt_soft 5.167 gt 4.424]
+INFO:__main__:epoch 3 step 1820/7116 loss 5.2388 [traj 0.844 traj_accel 2.189 text 0.248 struct 0.016 feat 0.044 gt_soft 5.159 gt 5.023]
+INFO:__main__:epoch 3 step 1840/7116 loss 5.5221 [traj 0.740 traj_accel 2.229 text 0.101 struct 0.022 feat 0.046 gt_soft 5.834 gt 5.698]
+INFO:__main__:epoch 3 step 1860/7116 loss 5.4943 [traj 0.387 traj_accel 2.046 text 0.508 struct 0.001 feat 0.032 gt_soft 5.751 gt 5.421]
+INFO:__main__:epoch 3 step 1880/7116 loss 4.7636 [traj 0.333 traj_accel 1.627 text 0.357 struct 0.000 feat 0.033 gt_soft 5.097 gt 4.576]
+INFO:__main__:epoch 3 step 1900/7116 loss 5.3939 [traj 0.701 traj_accel 2.005 text 0.077 struct 0.000 feat 0.039 gt_soft 5.733 gt 5.539]
+INFO:__main__:epoch 3 step 1920/7116 loss 5.6279 [traj 0.966 traj_accel 2.333 text 0.055 struct 0.000 feat 0.041 gt_soft 5.655 gt 5.131]
+INFO:__main__:epoch 3 step 1940/7116 loss 5.8220 [traj 0.638 traj_accel 1.982 text 0.474 struct 0.000 feat 0.043 gt_soft 5.812 gt 5.652]
+INFO:__main__:epoch 3 step 1960/7116 loss 5.0478 [traj 0.456 traj_accel 1.961 text 0.191 struct 0.000 feat 0.041 gt_soft 5.397 gt 4.928]
+INFO:__main__:epoch 3 step 1980/7116 loss 4.4009 [traj 0.342 traj_accel 2.020 text 0.062 struct 0.001 feat 0.044 gt_soft 4.849 gt 3.703]
+INFO:__main__:epoch 3 step 2000/7116 loss 4.9171 [traj 0.458 traj_accel 2.477 text 0.164 struct 0.010 feat 0.034 gt_soft 5.155 gt 4.866]
+INFO:__main__:epoch 3 step 2020/7116 loss 5.0655 [traj 0.542 traj_accel 2.190 text 0.092 struct 0.007 feat 0.043 gt_soft 5.343 gt 4.986]
+INFO:__main__:epoch 3 step 2040/7116 loss 4.9930 [traj 0.495 traj_accel 2.208 text 0.175 struct 0.000 feat 0.041 gt_soft 5.189 gt 4.958]
+INFO:__main__:epoch 3 step 2060/7116 loss 5.7877 [traj 1.035 traj_accel 2.004 text 0.380 struct 0.000 feat 0.042 gt_soft 5.260 gt 4.574]
+INFO:__main__:epoch 3 step 2080/7116 loss 4.2520 [traj 0.434 traj_accel 2.072 text 0.036 struct 0.000 feat 0.040 gt_soft 4.488 gt 3.928]
+INFO:__main__:epoch 3 step 2100/7116 loss 5.6715 [traj 0.682 traj_accel 2.448 text 0.166 struct 0.000 feat 0.044 gt_soft 5.731 gt 5.586]
+INFO:__main__:epoch 3 step 2120/7116 loss 5.7365 [traj 0.636 traj_accel 1.995 text 0.116 struct 0.002 feat 0.041 gt_soft 5.971 gt 5.681]
+INFO:__main__:epoch 3 step 2140/7116 loss 5.5883 [traj 0.707 traj_accel 2.063 text 0.225 struct 0.000 feat 0.045 gt_soft 5.531 gt 4.929]
+INFO:__main__:epoch 3 step 2160/7116 loss 5.9989 [traj 0.933 traj_accel 2.274 text 0.254 struct 0.041 feat 0.044 gt_soft 5.654 gt 5.349]
+INFO:__main__:epoch 3 step 2180/7116 loss 5.8550 [traj 0.700 traj_accel 2.442 text 0.163 struct 0.003 feat 0.038 gt_soft 5.863 gt 5.733]
+INFO:__main__:epoch 3 step 2200/7116 loss 4.9062 [traj 0.493 traj_accel 2.025 text 0.115 struct 0.001 feat 0.046 gt_soft 5.033 gt 4.550]
+INFO:__main__:epoch 3 step 2220/7116 loss 6.6974 [traj 0.926 traj_accel 2.130 text 0.153 struct 0.001 feat 0.044 gt_soft 6.631 gt 5.866]
+INFO:__main__:epoch 3 step 2240/7116 loss 5.2139 [traj 0.431 traj_accel 2.120 text 0.470 struct 0.006 feat 0.038 gt_soft 5.006 gt 4.348]
+INFO:__main__:epoch 3 step 2260/7116 loss 5.5728 [traj 0.588 traj_accel 2.081 text 0.130 struct 0.000 feat 0.038 gt_soft 5.661 gt 5.298]
+INFO:__main__:epoch 3 step 2280/7116 loss 4.8105 [traj 0.357 traj_accel 2.130 text 0.067 struct 0.001 feat 0.036 gt_soft 5.065 gt 4.193]
+INFO:__main__:epoch 3 step 2300/7116 loss 4.8147 [traj 0.360 traj_accel 2.011 text 0.176 struct 0.000 feat 0.038 gt_soft 4.932 gt 4.381]
+INFO:__main__:epoch 3 step 2320/7116 loss 5.3067 [traj 0.437 traj_accel 2.155 text 0.214 struct 0.003 feat 0.040 gt_soft 5.350 gt 5.127]
+INFO:__main__:epoch 3 step 2340/7116 loss 4.6028 [traj 0.469 traj_accel 2.052 text 0.142 struct 0.002 feat 0.035 gt_soft 4.547 gt 4.151]
+INFO:__main__:epoch 3 step 2360/7116 loss 5.2019 [traj 0.282 traj_accel 1.550 text 0.305 struct 0.113 feat 0.044 gt_soft 5.269 gt 4.786]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.232 m (p90 5.369, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 3 challenging coarse-minADE 2.232 m | val CoC NLL 0.595 struct NLL 0.016 | gt_ce_w 0.833
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1/run-253/best (992 tensors)
+INFO:__main__:epoch 4 step 2380/7116 loss 6.0310 [traj 0.561 traj_accel 2.445 text 0.143 struct 0.000 feat 0.031 gt_soft 6.073 gt 5.557]
+INFO:__main__:epoch 4 step 2400/7116 loss 5.6695 [traj 0.657 traj_accel 2.395 text 0.158 struct 0.018 feat 0.042 gt_soft 5.477 gt 5.005]
+INFO:__main__:epoch 4 step 2420/7116 loss 5.3769 [traj 0.531 traj_accel 2.083 text 0.168 struct 0.002 feat 0.041 gt_soft 5.295 gt 4.780]
+INFO:__main__:epoch 4 step 2440/7116 loss 4.8497 [traj 0.373 traj_accel 2.302 text 0.080 struct 0.006 feat 0.031 gt_soft 4.923 gt 4.077]
+INFO:__main__:epoch 4 step 2460/7116 loss 5.3579 [traj 0.462 traj_accel 2.169 text 0.275 struct 0.000 feat 0.034 gt_soft 5.188 gt 4.846]
+INFO:__main__:epoch 4 step 2480/7116 loss 5.9878 [traj 0.648 traj_accel 1.899 text 0.081 struct 0.001 feat 0.038 gt_soft 5.953 gt 5.584]
+INFO:__main__:epoch 4 step 2500/7116 loss 5.7012 [traj 0.379 traj_accel 2.256 text 0.046 struct 0.000 feat 0.032 gt_soft 5.914 gt 5.479]
+INFO:__main__:epoch 4 step 2520/7116 loss 5.4452 [traj 0.657 traj_accel 1.985 text 0.331 struct 0.001 feat 0.041 gt_soft 4.962 gt 4.379]
+INFO:__main__:epoch 4 step 2540/7116 loss 5.2700 [traj 0.473 traj_accel 2.026 text 0.189 struct 0.012 feat 0.036 gt_soft 5.114 gt 4.505]
+INFO:__main__:epoch 4 step 2560/7116 loss 5.6124 [traj 0.634 traj_accel 1.962 text 0.157 struct 0.000 feat 0.036 gt_soft 5.359 gt 4.902]
+INFO:__main__:epoch 4 step 2580/7116 loss 5.6230 [traj 0.521 traj_accel 2.434 text 0.114 struct 0.000 feat 0.043 gt_soft 5.475 gt 5.141]
+INFO:__main__:epoch 4 step 2600/7116 loss 5.2652 [traj 0.558 traj_accel 2.589 text 0.071 struct 0.014 feat 0.038 gt_soft 5.029 gt 4.700]
+INFO:__main__:epoch 4 step 2620/7116 loss 5.4242 [traj 0.524 traj_accel 1.874 text 0.085 struct 0.000 feat 0.040 gt_soft 5.309 gt 4.995]
+INFO:__main__:epoch 4 step 2640/7116 loss 6.3358 [traj 1.044 traj_accel 2.104 text 0.169 struct 0.001 feat 0.034 gt_soft 5.620 gt 5.218]
+INFO:__main__:epoch 4 step 2660/7116 loss 5.6262 [traj 0.484 traj_accel 2.110 text 0.246 struct 0.000 feat 0.041 gt_soft 5.340 gt 5.042]
+INFO:__main__:epoch 4 step 2680/7116 loss 5.0619 [traj 0.399 traj_accel 2.506 text 0.205 struct 0.000 feat 0.033 gt_soft 4.782 gt 3.738]
+INFO:__main__:epoch 4 step 2700/7116 loss 5.7550 [traj 0.472 traj_accel 1.874 text 0.102 struct 0.001 feat 0.037 gt_soft 5.659 gt 5.301]
+INFO:__main__:epoch 4 step 2720/7116 loss 5.8703 [traj 0.545 traj_accel 2.114 text 0.148 struct 0.003 feat 0.034 gt_soft 5.608 gt 5.259]
+INFO:__main__:epoch 4 step 2740/7116 loss 5.6568 [traj 0.411 traj_accel 1.984 text 0.104 struct 0.000 feat 0.038 gt_soft 5.565 gt 5.347]
+INFO:__main__:epoch 4 step 2760/7116 loss 5.5291 [traj 0.429 traj_accel 2.305 text 0.030 struct 0.000 feat 0.034 gt_soft 5.432 gt 5.283]
+INFO:__main__:epoch 4 step 2780/7116 loss 6.5456 [traj 0.581 traj_accel 2.394 text 0.213 struct 0.003 feat 0.049 gt_soft 6.161 gt 6.075]
+INFO:__main__:epoch 4 step 2800/7116 loss 5.4995 [traj 0.534 traj_accel 1.939 text 0.088 struct 0.000 feat 0.037 gt_soft 5.222 gt 4.644]
+INFO:__main__:epoch 4 step 2820/7116 loss 6.6358 [traj 0.720 traj_accel 2.287 text 0.523 struct 0.001 feat 0.038 gt_soft 5.741 gt 5.385]
+INFO:__main__:epoch 4 step 2840/7116 loss 6.5728 [traj 0.632 traj_accel 1.863 text 0.175 struct 0.000 feat 0.044 gt_soft 6.182 gt 6.153]
+INFO:__main__:epoch 4 step 2860/7116 loss 5.3662 [traj 0.397 traj_accel 2.262 text 0.041 struct 0.000 feat 0.041 gt_soft 5.191 gt 4.763]
+INFO:__main__:epoch 4 step 2880/7116 loss 5.8817 [traj 0.413 traj_accel 2.056 text 0.013 struct 0.000 feat 0.031 gt_soft 5.787 gt 5.368]
+INFO:__main__:epoch 4 step 2900/7116 loss 6.2466 [traj 0.942 traj_accel 2.161 text 0.091 struct 0.000 feat 0.051 gt_soft 5.479 gt 4.934]
+INFO:__main__:epoch 4 step 2920/7116 loss 6.3186 [traj 0.488 traj_accel 2.045 text 0.150 struct 0.010 feat 0.037 gt_soft 5.991 gt 5.897]
+INFO:__main__:epoch 4 step 2940/7116 loss 5.6131 [traj 0.400 traj_accel 1.955 text 0.033 struct 0.000 feat 0.036 gt_soft 5.440 gt 5.045]
+INFO:__main__:epoch 4 step 2960/7116 loss 5.7944 [traj 0.618 traj_accel 1.987 text 0.023 struct 0.001 feat 0.035 gt_soft 5.390 gt 5.164]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.555 m (p90 5.456, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 4 challenging coarse-minADE 2.555 m | val CoC NLL 0.602 struct NLL 0.015 | gt_ce_w 0.916
+INFO:__main__:epoch 5 step 2980/7116 loss 4.9115 [traj 0.409 traj_accel 2.069 text 0.003 struct 0.000 feat 0.030 gt_soft 4.656 gt 3.899]
+INFO:__main__:epoch 5 step 3000/7116 loss 5.2200 [traj 0.395 traj_accel 2.403 text 0.024 struct 0.000 feat 0.034 gt_soft 4.930 gt 4.485]
+INFO:__main__:epoch 5 step 3020/7116 loss 5.5652 [traj 0.464 traj_accel 1.751 text 0.088 struct 0.000 feat 0.034 gt_soft 5.216 gt 4.722]
+INFO:__main__:epoch 5 step 3040/7116 loss 5.2055 [traj 0.443 traj_accel 2.145 text 0.009 struct 0.000 feat 0.035 gt_soft 4.878 gt 4.292]
+INFO:__main__:epoch 5 step 3060/7116 loss 6.1370 [traj 0.641 traj_accel 2.206 text 0.009 struct 0.000 feat 0.032 gt_soft 5.646 gt 5.169]
+INFO:__main__:epoch 5 step 3080/7116 loss 5.7596 [traj 0.496 traj_accel 2.740 text 0.011 struct 0.000 feat 0.043 gt_soft 5.314 gt 4.813]
+INFO:__main__:epoch 5 step 3100/7116 loss 5.0193 [traj 0.342 traj_accel 2.078 text 0.037 struct 0.047 feat 0.034 gt_soft 4.695 gt 4.082]
+INFO:__main__:epoch 5 step 3120/7116 loss 5.6747 [traj 0.488 traj_accel 2.213 text 0.062 struct 0.000 feat 0.033 gt_soft 5.208 gt 5.048]
+INFO:__main__:epoch 5 step 3140/7116 loss 5.5961 [traj 0.448 traj_accel 2.110 text 0.078 struct 0.000 feat 0.034 gt_soft 5.145 gt 4.683]
+INFO:__main__:epoch 5 step 3160/7116 loss 6.4565 [traj 0.743 traj_accel 2.495 text 0.154 struct 0.002 feat 0.040 gt_soft 5.603 gt 5.553]
+INFO:__main__:epoch 5 step 3180/7116 loss 5.7916 [traj 0.596 traj_accel 2.043 text 0.010 struct 0.017 feat 0.036 gt_soft 5.234 gt 4.890]
+INFO:__main__:epoch 5 step 3200/7116 loss 5.3613 [traj 0.425 traj_accel 2.449 text 0.003 struct 0.000 feat 0.032 gt_soft 4.920 gt 4.537]
+INFO:__main__:epoch 5 step 3220/7116 loss 6.6130 [traj 0.718 traj_accel 2.442 text 0.109 struct 0.000 feat 0.042 gt_soft 5.797 gt 5.423]
+INFO:__main__:epoch 5 step 3240/7116 loss 5.9658 [traj 0.647 traj_accel 1.866 text 0.025 struct 0.000 feat 0.039 gt_soft 5.326 gt 5.112]
+INFO:__main__:epoch 5 step 3260/7116 loss 5.7287 [traj 0.655 traj_accel 2.483 text 0.020 struct 0.029 feat 0.036 gt_soft 4.982 gt 4.562]
+INFO:__main__:epoch 5 step 3280/7116 loss 5.8135 [traj 0.525 traj_accel 1.901 text 0.131 struct 0.008 feat 0.035 gt_soft 5.148 gt 4.474]
+INFO:__main__:epoch 5 step 3300/7116 loss 5.3676 [traj 0.448 traj_accel 2.086 text 0.038 struct 0.000 feat 0.038 gt_soft 4.830 gt 4.376]
+INFO:__main__:epoch 5 step 3320/7116 loss 5.5102 [traj 0.360 traj_accel 1.978 text 0.078 struct 0.000 feat 0.034 gt_soft 5.025 gt 4.210]
+INFO:__main__:epoch 5 step 3340/7116 loss 5.4439 [traj 0.421 traj_accel 2.530 text 0.057 struct 0.000 feat 0.038 gt_soft 4.843 gt 4.290]
+INFO:__main__:epoch 5 step 3360/7116 loss 5.7477 [traj 0.517 traj_accel 2.273 text 0.027 struct 0.000 feat 0.039 gt_soft 5.100 gt 4.679]
+INFO:__main__:epoch 5 step 3380/7116 loss 7.2828 [traj 0.902 traj_accel 2.186 text 0.060 struct 0.021 feat 0.049 gt_soft 6.224 gt 6.080]
+INFO:__main__:epoch 5 step 3400/7116 loss 6.2516 [traj 0.772 traj_accel 1.981 text 0.063 struct 0.026 feat 0.040 gt_soft 5.304 gt 4.861]
+INFO:__main__:epoch 5 step 3420/7116 loss 5.3262 [traj 0.380 traj_accel 1.798 text 0.015 struct 0.000 feat 0.032 gt_soft 4.829 gt 4.432]
+INFO:__main__:epoch 5 step 3440/7116 loss 6.0430 [traj 0.661 traj_accel 2.111 text 0.175 struct 0.000 feat 0.037 gt_soft 5.062 gt 4.843]
+INFO:__main__:epoch 5 step 3460/7116 loss 5.6654 [traj 0.399 traj_accel 2.399 text 0.080 struct 0.000 feat 0.036 gt_soft 4.998 gt 4.507]
+INFO:__main__:epoch 5 step 3480/7116 loss 5.8807 [traj 0.692 traj_accel 1.831 text 0.020 struct 0.000 feat 0.039 gt_soft 5.023 gt 4.150]
+INFO:__main__:epoch 5 step 3500/7116 loss 5.1462 [traj 0.400 traj_accel 2.298 text 0.047 struct 0.002 feat 0.043 gt_soft 4.484 gt 3.922]
+INFO:__main__:epoch 5 step 3520/7116 loss 5.8137 [traj 0.636 traj_accel 2.113 text 0.043 struct 0.049 feat 0.047 gt_soft 4.902 gt 4.317]
+INFO:__main__:epoch 5 step 3540/7116 loss 5.9473 [traj 0.592 traj_accel 2.503 text 0.052 struct 0.002 feat 0.032 gt_soft 5.050 gt 4.660]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.572 m (p90 6.054, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 5 challenging coarse-minADE 2.572 m | val CoC NLL 0.712 struct NLL 0.013 | gt_ce_w 0.999
+INFO:__main__:epoch 6 step 3560/7116 loss 5.9475 [traj 0.582 traj_accel 2.538 text 0.015 struct 0.000 feat 0.033 gt_soft 5.079 gt 4.634]
+INFO:__main__:epoch 6 step 3580/7116 loss 5.6445 [traj 0.384 traj_accel 2.279 text 0.003 struct 0.000 feat 0.033 gt_soft 4.999 gt 4.669]
+INFO:__main__:epoch 6 step 3600/7116 loss 5.3532 [traj 0.448 traj_accel 2.228 text 0.010 struct 0.000 feat 0.036 gt_soft 4.627 gt 4.253]
+INFO:__main__:epoch 6 step 3620/7116 loss 5.4960 [traj 0.442 traj_accel 2.384 text 0.014 struct 0.073 feat 0.038 gt_soft 4.706 gt 4.300]
+INFO:__main__:epoch 6 step 3640/7116 loss 5.9145 [traj 0.500 traj_accel 2.855 text 0.014 struct 0.009 feat 0.039 gt_soft 5.034 gt 4.686]
+INFO:__main__:epoch 6 step 3660/7116 loss 5.7410 [traj 0.575 traj_accel 2.376 text 0.005 struct 0.000 feat 0.036 gt_soft 4.836 gt 4.364]
+INFO:__main__:epoch 6 step 3680/7116 loss 5.6663 [traj 0.553 traj_accel 2.385 text 0.002 struct 0.000 feat 0.035 gt_soft 4.774 gt 4.484]
+INFO:__main__:epoch 6 step 3700/7116 loss 5.8811 [traj 0.477 traj_accel 2.372 text 0.016 struct 0.000 feat 0.036 gt_soft 5.033 gt 4.572]
+INFO:__main__:epoch 6 step 3720/7116 loss 5.5548 [traj 0.525 traj_accel 2.192 text 0.067 struct 0.001 feat 0.033 gt_soft 4.622 gt 4.289]
+INFO:__main__:epoch 6 step 3740/7116 loss 6.4805 [traj 0.582 traj_accel 2.021 text 0.035 struct 0.072 feat 0.033 gt_soft 5.470 gt 5.072]
+INFO:__main__:epoch 6 step 3760/7116 loss 5.4493 [traj 0.508 traj_accel 2.049 text 0.001 struct 0.000 feat 0.029 gt_soft 4.591 gt 4.060]
+INFO:__main__:epoch 6 step 3780/7116 loss 5.7237 [traj 0.414 traj_accel 2.562 text 0.024 struct 0.000 feat 0.030 gt_soft 4.864 gt 4.466]
+INFO:__main__:epoch 6 step 3800/7116 loss 5.9850 [traj 0.393 traj_accel 2.205 text 0.007 struct 0.002 feat 0.035 gt_soft 5.170 gt 4.636]
+INFO:__main__:epoch 6 step 3820/7116 loss 6.2119 [traj 0.608 traj_accel 2.098 text 0.032 struct 0.000 feat 0.040 gt_soft 5.153 gt 4.748]
+INFO:__main__:epoch 6 step 3840/7116 loss 5.6355 [traj 0.398 traj_accel 2.413 text 0.008 struct 0.010 feat 0.036 gt_soft 4.776 gt 4.213]
+INFO:__main__:epoch 6 step 3860/7116 loss 5.7226 [traj 0.447 traj_accel 2.407 text 0.005 struct 0.000 feat 0.044 gt_soft 4.805 gt 4.422]
+INFO:__main__:epoch 6 step 3880/7116 loss 6.0877 [traj 0.560 traj_accel 2.364 text 0.014 struct 0.001 feat 0.045 gt_soft 5.027 gt 4.838]
+INFO:__main__:epoch 6 step 3900/7116 loss 6.4485 [traj 0.543 traj_accel 2.169 text 0.036 struct 0.000 feat 0.040 gt_soft 5.374 gt 4.840]
+INFO:__main__:epoch 6 step 3920/7116 loss 5.7632 [traj 0.408 traj_accel 2.510 text 0.006 struct 0.022 feat 0.034 gt_soft 4.825 gt 4.274]
+INFO:__main__:epoch 6 step 3940/7116 loss 5.6605 [traj 0.374 traj_accel 2.172 text 0.031 struct 0.000 feat 0.032 gt_soft 4.767 gt 4.070]
+INFO:__main__:epoch 6 step 3960/7116 loss 5.6726 [traj 0.386 traj_accel 2.031 text 0.001 struct 0.000 feat 0.036 gt_soft 4.795 gt 4.188]
+INFO:__main__:epoch 6 step 3980/7116 loss 6.3865 [traj 0.486 traj_accel 2.127 text 0.046 struct 0.000 feat 0.031 gt_soft 5.313 gt 4.860]
+INFO:__main__:epoch 6 step 4000/7116 loss 6.3427 [traj 0.601 traj_accel 2.007 text 0.017 struct 0.000 feat 0.034 gt_soft 5.185 gt 4.640]
+INFO:__main__:epoch 6 step 4020/7116 loss 5.5801 [traj 0.515 traj_accel 2.131 text 0.036 struct 0.000 feat 0.036 gt_soft 4.506 gt 3.861]
+INFO:__main__:epoch 6 step 4040/7116 loss 6.4616 [traj 0.460 traj_accel 2.206 text 0.004 struct 0.000 feat 0.037 gt_soft 5.394 gt 5.179]
+INFO:__main__:epoch 6 step 4060/7116 loss 6.4964 [traj 0.523 traj_accel 2.454 text 0.015 struct 0.000 feat 0.037 gt_soft 5.320 gt 4.913]
+INFO:__main__:epoch 6 step 4080/7116 loss 6.1842 [traj 0.517 traj_accel 2.258 text 0.021 struct 0.000 feat 0.036 gt_soft 5.033 gt 4.660]
+INFO:__main__:epoch 6 step 4100/7116 loss 5.9568 [traj 0.425 traj_accel 2.128 text 0.020 struct 0.006 feat 0.029 gt_soft 4.908 gt 4.594]
+INFO:__main__:epoch 6 step 4120/7116 loss 6.3184 [traj 0.509 traj_accel 2.042 text 0.056 struct 0.000 feat 0.034 gt_soft 5.128 gt 4.745]
+INFO:__main__:epoch 6 step 4140/7116 loss 5.3847 [traj 0.444 traj_accel 2.378 text 0.004 struct 0.000 feat 0.029 gt_soft 4.330 gt 3.711]
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 2.355 m (p90 5.317, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 6 challenging coarse-minADE 2.355 m | val CoC NLL 0.772 struct NLL 0.016 | gt_ce_w 1.082
+INFO:__main__:early stop: no improvement for 3 evals
+----------------------------------------------------------------
+Finished 2026-09-08T10:05:44+02:00
+Check what this actually used:  seff 253
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/vla/.netrc.
+wandb: Currently logged in as: karmishthannauth27 (karmishthannauth27-technical-university-of-munich) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run stage1-job253
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /home/vla/projects/alpamayo2edge/wandb/run-20260908_100545-stage1-job253
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Resuming run stage1-job253
+wandb: ⭐️ View project at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: 🚀 View run at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job253
+wandb: uploading summary; updating run metadata
+wandb: uploading requirements.txt; uploading wandb-summary.json; uploading config.yaml; uploading wandb-metadata.json
+wandb: uploading history steps 206-206, summary
+wandb: 
+wandb: Run history:
+wandb:                epoch ▁
+wandb: gate/coarse_minADE_m ▁
+wandb:           gate/epoch ▁
+wandb:     gate/val_coc_nll ▁
+wandb:  gate/val_struct_nll ▁
+wandb:            loss/feat ▁
+wandb:           loss/gt_ce ▁
+wandb:      loss/gt_ce_soft ▁
+wandb:       loss/struct_ce ▁
+wandb:         loss/text_kl ▁
+wandb:                   +4 ...
+wandb: 
+wandb: Run summary:
+wandb:                epoch 6
+wandb: gate/coarse_minADE_m 2.355
+wandb:           gate/epoch 6
+wandb:     gate/val_coc_nll 0.772
+wandb:  gate/val_struct_nll 0.016
+wandb:            loss/feat 0.029
+wandb:           loss/gt_ce 3.711
+wandb:      loss/gt_ce_soft 4.33
+wandb:       loss/struct_ce 0
+wandb:         loss/text_kl 0.004
+wandb:                   +4 ...
+wandb: 
+wandb: 🚀 View run stage1-job253 at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job253
+wandb: ⭐️ View project at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: Synced 4 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260908_100545-stage1-job253/logs
+wandb: WARNING Tried to log to step 20 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 40 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 60 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 80 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 100 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 120 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 140 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 160 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 180 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 200 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 220 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 240 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 260 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 280 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 300 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 320 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 340 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 360 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 380 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 400 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 420 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 440 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 460 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 480 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 500 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 520 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 540 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 560 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 580 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 580 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 600 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 620 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 640 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 660 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 680 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 700 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 720 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 740 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 760 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 780 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 800 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 820 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 840 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 860 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 880 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 900 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 920 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 940 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 960 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 980 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1000 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1020 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1040 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1060 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1080 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1100 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1120 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1140 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1160 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1180 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1180 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1200 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1220 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1240 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1260 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1280 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1300 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1320 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1340 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1360 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1380 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1400 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1420 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1440 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1460 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1480 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1500 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1520 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1540 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1560 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1580 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1600 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1620 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1640 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1660 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1680 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1700 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1720 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1740 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1760 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1760 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1780 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1800 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1820 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1840 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1860 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1880 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1900 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1920 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1940 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1960 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 1980 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2000 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2020 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2040 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2060 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2080 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2100 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2120 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2140 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2160 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2180 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2200 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2220 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2240 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2260 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2280 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2300 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2320 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2340 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2360 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2360 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2380 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2400 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2420 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2440 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2460 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2480 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2500 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2520 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2540 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2560 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2580 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2600 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2620 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2640 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2660 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2680 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2700 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2720 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2740 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2760 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2780 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2800 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2820 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2840 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2860 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2880 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2900 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2920 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2940 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2960 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2960 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 2980 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3000 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3020 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3040 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3060 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3080 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3100 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3120 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3140 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3160 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3180 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3200 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3220 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3240 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3260 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3280 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3300 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3320 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3340 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3360 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3380 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3400 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3420 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3440 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3460 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3480 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3500 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3520 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3540 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3540 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3560 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3580 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3600 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3620 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3640 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3660 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3680 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3700 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3720 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3740 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3760 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3780 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3800 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3820 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3840 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3860 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3880 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3900 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3920 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3940 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3960 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 3980 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 4000 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 4020 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 4040 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 4060 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 4080 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 4100 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 4120 that is less than the current step 4121. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.

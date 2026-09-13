@@ -113,8 +113,19 @@ student:
       enabled: true                          # false = full-FT ablation; does NOT
                                              # fit 48GB (43.5GB of states before
                                              # activations) - 500-clip diagnostic only
-      rank: 96                               # was 48. Kept for run 4, but NOT because the
-                                             # capacity diagnostic cleanly answered - it did not.
+      rank: 48                               # RUN 6: back from 96 (runs 4-5), TOGETHER with the
+                                             # targets below - 232's exact setting, so the
+                                             # comparison is one change. r96+MLP was adopted on
+                                             # the confounded comparison recorded below, and the
+                                             # metric that can now see the CoC says it hurt:
+                                             # best val CoC NLL 0.455 at r48 attention-only (job
+                                             # 232) vs 0.509 / 0.536 at r96+MLP (jobs 253 / 313),
+                                             # 19.3M -> 99.1M adapter params, the NLL peak moving
+                                             # from epoch 2 to epoch 1, and a 0.115-0.147
+                                             # train->val maneuver-accuracy gap on free-running
+                                             # CoC (05b_eval_coc.py, D-036). Capacity/data
+                                             # mismatch is the simplest reading; this run tests it.
+                                             # ---- history of the r96 decision, for the record:
                                              # Job 243 (r96 + MLP targets) reached 2.414 m; job
                                              # 232 (r48, attention-only) reached 2.463 m. Those
                                              # runs differ in THREE ways, not one: rank, targets
@@ -126,11 +137,13 @@ student:
                                              # suggestive but attributable to none of the three.
                                              # Kept because it is the better number we have and
                                              # the base stays frozen either way (no full-FT
-                                             # forgetting risk). Run 4 is the first full-data run
-                                             # at these settings; a real ablation is still owed.
-      alpha: 192                             # 2x rank, the framework's own ratio - scaled with rank
-      targets: [q_proj, k_proj, v_proj, o_proj, mlp.up_proj, mlp.down_proj]
-      # path-qualified: up_proj/down_proj are leaf names shared by both towers.
+                                             # forgetting risk). Run 4 was the first full-data run
+                                             # at those settings; run 6 is the ablation it owed.
+      alpha: 96                              # 2x rank, the framework's own ratio - scaled with rank
+      targets: [q_proj, k_proj, v_proj, o_proj]
+      # RUN 6: attention-only again. mlp.up_proj / mlp.down_proj (path-qualified -
+      # the leaf names are shared with the gen tower) were runs 4-5's addition and
+      # revert with the rank; see the rank comment.
     stage2:                                  # generation/diffusion tower
       enabled: true
       rank: 16                               # Cosmos3-Edge.yaml's shipped default
@@ -294,7 +307,26 @@ stage1:
                                              # epoch regardless of this setting.
   early_stop_patience: 3                     # run 2: was 2. Run-1 peak was epoch 3/6 on a
                                              # noisy gate; a higher lr may move it. (evals
-                                             # without coarse-minADE improvement)
+                                             # without `select_on` improvement - coc_nll since
+                                             # run 5, NOT coarse-minADE)
+  # RUN 6, NEW: maneuver-stratified sampling (D-036, data/sampling.py). Uniform
+  # sampling hands the student the teacher's maneuver MARGINAL - FOLLOW 32.9% +
+  # KEEP 20.8% = 54% of the CoC gradient, LANE_CHANGE 2.1% - and 05b_eval_coc.py
+  # measured what that buys: LANE_CHANGE emitted at 11% of the teacher's rate, and
+  # silence on direction in ~48% of the windows where the teacher commits to one,
+  # on train AND val - no gap, so never learned rather than overfit. Each window
+  # is drawn with probability ~ (1/freq of its teacher maneuver class)^alpha, the
+  # class parsed from the cached coc_text (eval/coc_score.maneuver, 98.7%
+  # assignable; the rest draw at the uniform rate). alpha 0.5 is square-root
+  # tempering: LANE_CHANGE 2.1% -> 5.1%, FOLLOW 32.9% -> 20.3%. NOT 1.0 - full
+  # inversion repeats the 415 LANE_CHANGE windows ~16x per epoch, which is the
+  # memorisation we are already fighting. Draws per epoch = len(train split),
+  # with replacement: steps/epoch unchanged. Over-correction shows up in the eval
+  # as object PRECISION falling and the val maneuver mix overshooting the
+  # teacher's, not just recall rising - read both.
+  maneuver_sampling:
+    enabled: true
+    alpha: 0.5
 
 stage2:
   supervision: teacher_flow                  # teacher_flow (D-007) | gt_flow (ablation baseline)

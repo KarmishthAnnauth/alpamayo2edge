@@ -1088,3 +1088,69 @@ What this does NOT touch, checked rather than assumed:
 Lesson for the next entry: `sacct -j <ids> --format=Elapsed` before comparing two runs.
 Both of these logs record the gate number prominently and the step count only in passing,
 which is how a 20x data difference got read as a rank effect.
+
+## D-036 [DECIDED 2026-09-13] Stage 1's failure is in the CoC, and it is two failures: capacity overfit and maneuver mode-collapse
+
+Run 5 (job 313) looked bad on the gate - best saved minADE_6 3.549 m against run 4's
+2.232 m - and that reading was wrong three ways. Everything below is from the cache and
+from `scripts/09_teacher_ceiling.py` / `scripts/05b_eval_coc.py`, both new.
+
+### 1. minADE is not a stage-1 metric
+
+On the gate's own 60 windows (`runs/teacher_ceiling.json`): codec floor 0.054 m; **teacher
+token path 3.767 m ADE_1** (p90 9.376 - heavy-tailed, which is why D-031's 10-window
+1.79 m was so far off); teacher action expert 0.998 m minADE_4. The student at 2.937 m
+(run 5, epoch 2) is at its target's ceiling, not far above it. Hybrids: teacher curvature
++ GT accel 1.324 m, GT curvature + teacher accel 3.031 m - the accel half carries ~65% of
+the token path's error, confirming D-035 in metres. Pushing minADE lower now means
+diverging from the teacher.
+
+Also settled: A1.5's action expert **masks the emitted future trajectory tokens out of
+its attention** (`alpamayo1_5.py:201-204`, `offset : -n_diffusion_tokens` = -inf; the
+expert has no `embed_tokens` at all). It conditions on the KV of prompt + CoC. So the CoC
+is the phase-1 deliverable and the trajectory tokens are a side output. NB our
+`train_stage2.py:73-84` does the opposite - `ar_forward` over a context that includes the
+traj tokens, no mask - which is an open divergence to resolve before phase 2.
+
+### 2. The CoC, free-running and scored (300-500 windows/arm, val and train)
+
+`05b_eval_coc.py` parses maneuver / ego direction / named objects from both traces; the
+teacher's CoC is a near-regular language (94.6% causal connective, 95.8% single clause,
+99.9% of leading tokens from a 25-word vocabulary; parser assigns a maneuver to 98.7%).
+
+| arm                        | maneuver acc | direction: silent / wrong | obj recall | false-clear |
+|----------------------------|-------------:|--------------------------:|-----------:|------------:|
+| run-253 4cam train (ep 3)  | 0.787        | 32.1% / 6.2%              | -          | 0.107       |
+| run-253 4cam val           | 0.640        | 57.9% / 7.9%              | 0.792      | 0.095       |
+| run-253 **1cam** val       | 0.529        | 65.8% / 11.4%             | 0.649      | 0.205       |
+| run-313 1cam train (ep 1)  | 0.695        | 48.9% / 15.6%             | 0.773      | 0.105       |
+| run-313 1cam val           | 0.580        | 47.4% / 14.5%             | 0.726      | 0.123       |
+
+Termination is 1.000 everywhere (D-034 holds). Two separable failures:
+
+- **Overfit**: maneuver accuracy drops 0.115-0.147 train->val, and run-253's direction
+  *silence* goes 32% -> 58%. Lines up with val CoC NLL peaking at epoch 1-2 and with the
+  capacity history: best NLL 0.455 at LoRA r48 attention-only (job 232) vs 0.509 / 0.536
+  at r96+MLP (253 / 313), 19.3M -> 99.1M adapter params.
+- **Mode collapse, no train/val gap**: both students over-emit FOLLOW/KEEP and
+  under-emit every committed maneuver; run-313 emits LANE_CHANGE at 11% of the teacher's
+  rate (1 vs 9). The "low direction accuracy" is mostly this - the student is *silent* on
+  direction ~48% of the time, and when it does commit it is right 70-90%.
+- **Camera** (within-model, same weights): 4->1 camera costs object recall 0.792 -> 0.649
+  and doubles false-clear 0.095 -> 0.205. Training on 1 camera recovers most of that
+  (run-313) but the 1cam-native wrong-side rate is ~2x the 4cam-native (14.9% vs 7.2%
+  pooled, p~0.03 on 18 vs 14 events - suggestive, to be tightened at larger n before a
+  training slot goes on it).
+
+### 3. Decisions for run 6 (one change per failure, both in `configs/default.yaml`)
+
+1. `student.lora.stage1`: rank 96 -> **48**, alpha 192 -> 96, targets back to attention-only
+   - 232's exact setting, reverted together so it is one change. Tests the capacity reading.
+2. `stage1.maneuver_sampling: {enabled: true, alpha: 0.5}` (`data/sampling.py`): draw
+   probability ~ (1/freq of the teacher's maneuver class)^0.5, class parsed from the cached
+   `coc_text`. LANE_CHANGE 2.1% -> 5.1% of draws, FOLLOW 32.9% -> 20.3%. Targets the
+   collapse. This is the teacher-label bootstrap D-021 disabled, with a signal that exists.
+
+Judge run 6 on `05b_eval_coc.py`, not the gate: val maneuver accuracy up, the train->val
+gap down, LANE_CHANGE / ACCELERATE rates toward the teacher's, false-clear down - and
+object precision NOT down (the over-correction signature). `select_on: coc_nll` stays.
