@@ -1272,3 +1272,87 @@ accuracy (the +/-0.02 between two runs of the same checkpoint is that check's no
 
 Not phase 2: DiffGRPO on the flow head with closed-loop reward is unchanged. This is the
 AR tower's CoC, which is what the expert's KV attends.
+
+## D-038 [MEASURED 2026-09-14] The teacher's CoC is an opinion: against the driver's own future it is route-blind, conservative, and its hazard mentions carry no information
+
+All from the cache - `gt_future_xyz` (6.4 s, ego frame, +y = left) against the parsed cached
+trace, 19,930 windows - after looking at the frames (user, 2026-09-14): cones the teacher
+"nudges" for are beside the road, obstacles it names are visible only in the 30-degree tele
+camera, and "turn left/right" at an intersection depends on a goal nobody gave it.
+
+| teacher says | matches driver | opposite | driver went straight |
+|---|---:|---:|---:|
+| TURN left/right (n=663) | 56% | **17%** | 27% |
+| LANE_CHANGE left/right (n=399, offset >2 m) | 43% | **21%** | 36% |
+
+Labelling ran the teacher with no route (`nav_text` never passed). One "turn left" in six,
+the car turned right.
+
+| label | stops | slows | holds | speeds up |
+|---|---:|---:|---:|---:|
+| STOP | 74% | 15% | 5% | 6% |
+| SLOW | 4% | 47% | 28% | 21% |
+| YIELD | 30% | 12% | 30% | 28% |
+| ADAPT_SPEED | 2% | 24% | 51% | 23% |
+
+STOP is grounded; the cautionary classes are not - the driver held or gained speed about
+half the time the teacher counselled slowing.
+
+| teacher names a hazard? | n | driver stops / brakes >2.5 m/s / moves >1.5 m within 6.4 s |
+|---|---:|---:|
+| yes | 13,235 | 70% |
+| no | 6,695 | 69% |
+
+Identical: the hazard mentions are scene narration. Two of run 1's reward terms (object recall,
+false-clear) were defined by them.
+
+**What run 1 (job 316, teacher-match reward) did with that**, 500 val windows:
+
+| | SFT | RL 75 | RL 400 | teacher |
+|---|---:|---:|---:|---:|
+| object recall / precision | 0.758 / 0.819 | 0.792 / 0.792 | 0.821 / 0.757 | |
+| false-clear (teacher-defined) | 0.113 | 0.071 | 0.027 | |
+| GT false-clear (driver braked) | 22% | 15% | 14% | 16% |
+| GT-consistent maneuvers | 56% | 57% | 54% | 64% |
+| SLOW / YIELD / TURN vs teacher rate | 0.6x/1.1x/1.4x | 1.1x/1.7x/1.7x | 1.4x/1.7x/1.8x | |
+| train - val maneuver gap | 0.051 | 0.067 | 0.081 | |
+
+By step 75 the collapse was repaired (FOLLOW/KEEP 1.25x/1.45x -> 1.10x/1.09x, direction
+silence 67% -> 56%). After it the run optimised the reward it was given: more hazards named
+from a view that cannot see them, less precision, more caution, no more grounding. Not a
+failure of GRPO - a wrong objective. The step-75 weights were overwritten by the noisy
+99-window selector (only `best/` was kept); every eval now saves its adapters.
+
+## D-039 [DECIDED 2026-09-14] RL run 2 grades the CoC through the trajectory it leads to - the recipe's shape - with the driver's future as the reference
+
+`recipes/alpamayo1_x_rl` (read, not paraphrased): the rollout is the whole completion, CoC
+then trajectory tokens; reward = -w_l2 * ADE/3 (+ comfort, + optional Lingo-Judge score vs a
+GT reasoning label), and -1 outright when ADE >= 3 m, the CoT is missing, or the judge
+fails. `kl_beta = 0.0`, PPO eps 0.2/0.28, lr 2e-6 full-parameter, n_generation 12 at
+T=0.6/top_p 0.98, validation on ADE. The reasoning is never graded by rules; it earns credit
+through the plan that follows it. Cosmos-RL's advantage normalisation could not be checked
+(package not installed); group mean/std assumed.
+
+Run 2 (`train_grpo_coc.py`, `stage1_rl.reward.mode: traj`, job 317):
+- `EdgeStudent.generate_coc_and_traj`: one batched decode, per-row state machine (free CoC
+  -> forced `<|traj_future_start|>` subwords -> 128 bins restricted to the future rows), so
+  G rows with different CoC lengths share one causal cache (no second right-padded prefill).
+- reward = -min(ADE, 8)/8 + 0.25 kin + 0.25 dir; -2 for an unterminated CoC or an
+  undecodable trajectory. Cap, not gate, and 8 m not 3: the token path lives at 3-5 m
+  (teacher's own 3.77 m ADE_1 on the gate windows; SFT single-sample 4.5 m), and a 3 m cap
+  saturated the term at -1 for most samples in the smoke.
+- scoring layout = CoC + sampled bins; PG and KL per span with separate means (128 trajectory
+  tokens must not drown 14 CoC tokens); chunked scoring with grad accumulation.
+- route hint `<|route_start|>Turn left ahead<|route_end|>` etc. from `gt_future_xyz`
+  (direction only) in every context; the student is told what the teacher was not.
+- kept from run 1: LoRA r48 on `run-314/best` as policy and reference, kl_beta 0.03 + 0.1 CE
+  anchor (the recipe has neither; we train adapters at 1e-5, not weights at 2e-6), G=16,
+  maneuver-weighted prompts. 8 prompts/step, 200 steps, val 200 windows / 25 steps on ADE.
+- single front camera, by decision (user, 2026-09-14): the reward pays only for what the
+  driver did, so it never asks the student to name what a side camera saw.
+- `gt_reward.gt_metrics` (consistency with the driver's speed/path, GT false-clear, ungrounded
+  hazards, direction taken) is the teacher-free evaluation; `05b --route-hint --adapters`
+  scores any saved step on full n.
+
+Judge run 2 on val ADE (its objective), then on the teacher-free CoC metrics against run 1's
+step-75 checkpoint (GT-consistent 57%, GT false-clear 15%) and the teacher's own (64%, 16%).
