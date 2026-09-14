@@ -301,7 +301,7 @@ def main(cfg_path: str, smoke: bool = False) -> None:
 
     run_dir = Path(cfg.paths.runs_root) / "stage1_rl" / (rl.get("run_name") or "run")
     run_dir.mkdir(parents=True, exist_ok=True)
-    best_acc, cursor = -1.0, 0
+    best_acc, cursor = float("-inf"), 0   # any first eval is a best (neg_ade is < -1)
     hist = open(run_dir / "steps.jsonl", "a")
 
     traj_mode = (mode == "traj")

@@ -352,14 +352,17 @@ stage1_rl:
   # credit through the plan it leads to, which is how alpamayo1_x_rl trains it.
   # The kinematic / direction text checks stay as small shaping terms and as
   # teacher-free EVALUATION metrics; they are no longer the objective.
-  # Cameras: the deployment's single front-wide view (data.cameras), by decision
-  # (user, 2026-09-14) - the GT reward only pays for what the driver did, so it
-  # never asks the student to name what only a side camera could see.
-  init_ckpt: /data/vla/alpamayo2edge/runs/stage1/run-314/best   # 1-camera-native SFT (r48); the
-                                             # policy AND the reference (fresh r48 adapters on top)
-  run_name: rl-run-2-traj
-  # cameras: (unset) -> data.cameras. Set a list here to run RL on a different
-  # camera set than SFT; 4 cameras need ~2x the memory per sequence.
+  # RUN 3 (user, 2026-09-14): the same recipe on the FOUR cameras the labels were
+  # made with. Run 2 (job 317, 1 camera, run-314 init): val ADE 5.26 -> 4.54 m,
+  # route read 0.08 -> 0.50, FOLLOW 79 -> 49 / LANE_CHANGE 2 -> 21 on 200 windows;
+  # GT-consistency of the stated maneuver flat at ~0.70. Run 3 asks how much of
+  # the remaining gap is the single view. Same reward, same route hint.
+  init_ckpt: /data/vla/alpamayo2edge/runs/stage1/run-253/best   # 4-camera-native SFT (r96+MLP,
+                                             # merged); fresh r48 attention adapters on top are
+                                             # the policy, the merged weights the reference
+  run_name: rl-run-3-traj-4cam
+  cameras: [camera_cross_left_120fov, camera_front_wide_120fov, camera_cross_right_120fov,
+            camera_front_tele_30fov]         # RL-only override of data.cameras (1 cam for SFT)
   route_hint: true                           # <|route_start|>Turn left ahead<|route_end|> etc.,
                                              # derived from gt_future_xyz (direction only)
   group_size: 16
@@ -369,9 +372,9 @@ stage1_rl:
   steps: 200                                 # run 1 had what it could get by ~75-150 steps
   traj_loss_weight: 1.0                      # trajectory span's PG term relative to the CoC's
                                              # (each span is mean-normalised on its own)
-  score_chunk: 8                             # rows per scoring forward (grad accumulation);
-                                             # the full-vocab logits over ~1.7k positions are the
-                                             # memory cost, not the adapters
+  score_chunk: 4                             # rows per scoring forward (grad accumulation); 4 cams
+                                             # make a row ~3x longer than 1 cam (run 2 used 8 at
+                                             # 42 GB on the Blackwell)
   lr: 1.0e-5
   grad_clip: 1.0
   kl_beta: 0.03
@@ -380,8 +383,8 @@ stage1_rl:
   top_p: 0.98
   max_new_tokens: 64
   eval_every: 25
-  eval_windows: 200                          # was 100 (a +/-0.04 draw); each val window now
-                                             # decodes a trajectory too, so 200 not 300
+  eval_windows: 150                          # each val window decodes a trajectory on 4-camera
+                                             # contexts (~3x run 2's cost per window)
   select_on: neg_ade                         # the recipe validates on ADE. gt_score, maneuver
                                              # acc etc. are logged alongside; every eval also
                                              # keeps its adapters (~75 MB)

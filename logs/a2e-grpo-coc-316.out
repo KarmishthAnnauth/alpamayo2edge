@@ -1,0 +1,619 @@
+Job 316 on ProArt, started 2026-09-14T01:47:21+02:00
+Submitted from: /home/vla/projects/alpamayo2edge
+GPU:            NVIDIA RTX PRO 6000 Blackwell Workstation Edition,NVIDIA RTX 6000 Ada Generation
+Commit:         32fb7b1
+Scratch:        /bulk/scratch/vla/316
+----------------------------------------------------------------
+   CUDA_VISIBLE_DEVICES = GPU-1e9d88da-6c84-dbf7-f179-fdca7207dae0
+   CPUs allocated       = 8
+   device 0             = NVIDIA RTX PRO 6000 Blackwell Workstation Edition  95.0 GiB total, 93.2 GiB free
+wandb sidecar: run stage1-job316 (pid 623383)
+----------------------------------------------------------------
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/vla/.netrc.
+wandb: Currently logged in as: karmishthannauth27 (karmishthannauth27-technical-university-of-munich) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run stage1-job316
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /home/vla/projects/alpamayo2edge/wandb/run-20260914_014725-stage1-job316
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run stage1-job316
+wandb: ⭐️ View project at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: 🚀 View run at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job316
+INFO:megatron.core.msc_utils:The multistorageclient package is available.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/distributed/fsdp/src/megatron_fsdp/utils.py:108: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+INFO:megatron.core.distributed.fsdp.src.megatron_fsdp.megatron_fsdp:Detected Megatron Core, using Megatron-FSDP with Megatron.
+INFO:megatron.core.distributed.fsdp.src.megatron_fsdp.param_and_grad_buffer:Detected Megatron Core, using Megatron-FSDP with Megatron.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/__init__.py:24: UserWarning: Transformer Engine and Apex are not installed. Falling back to Torch optimizers.
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/optimizer.py:28: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/clip_grads.py:29: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier, multi_tensor_l2norm, and multi_tensor_scale
+  warnings.warn(
+[09-14 01:47:30|INFO|cosmos_framework/model/generator/omni_mot_model.py:124:__init__] OmniMoTModel: config {'tokenizer': {'bucket_name': 'bucket', 'object_store_credential_path_pretrained': 'credentials/gcp_training.secret', 'vae_path': 'pretrained/tokenizers/video/wan2pt2/Wan2.2_VAE.pth', 'chunk_duration': 93, 'keep_decoder_cache': False, 'use_streaming_encode': False, 'encode_chunk_frames': {'256': 68, '480': 24, '720': 8, '768': 8}, 'encode_exact_durations': [17, 61, 73], 'spatial_compression_factor': 16, 'temporal_compression_factor': 4, 'temporal_window': None, 'encode_bucket_multiple': None, 'causal': True, '_target_': 'cosmos_framework.model.generator.tokenizers.wan2pt2_vae_4x16x16.Wan2pt2VAEInterface'}, 'load_vision_tokenizer': True, 'lidar_tokenizer': None, 'lidar_state_ch': None, 'lidar_fps': None, 'net': None, 'ema': {'enabled': False, 'rate': 0.1, 'iteration_shift': 0, '_type': 'cosmos_framework.configs.base.defaults.ema.EMAConfig'}, 'parallelism': {'data_parallel_shard_degree': -1, 'data_parallel_replicate_degree': 1, 'context_parallel_shard_degree': 1, 'cfg_parallel_shard_degree': 1, 'enable_inference_mode': True, 'fsdp_master_dtype': 'float32', 'fsdp_reduce_dtype': None, '_type': 'cosmos_framework.configs.base.defaults.parallelism.ParallelismConfig'}, 'attention_io_layout': 'sequence_sharded', 'compile': {'enabled': False, 'compiled_region': 'language', 'compile_dynamic': True, 'use_cuda_graphs': False, 'ar_post_saturation_mode': 'default', 'max_autotune_pointwise': False, 'coordinate_descent_tuning': False, '_type': 'cosmos_framework.configs.base.defaults.compile.CompileConfig'}, 'quantization': {'method': None, 'fp8_granularity': 'per_row', 'modelopt_fp8_checkpoint_path': None, 'mixed_precision_first_steps': 0, 'mixed_precision_last_steps': 0, 'mixed_precision_reasoner_policy': 'high_precision', 'mixed_precision_w8a16_cache': 'none', 'include_regex': [], 'exclude_regex': [], 'modelopt_fp8_target_fqns': [], '_type': 'cosmos_framework.configs.base.defaults.quantization.QuantizationConfig'}, 'activation_checkpointing': {'mode': 'none', 'preserve_rng_state': True, 'determinism_check': 'default', 'save_ops_regex': ['fmha'], '_type': 'cosmos_framework.configs.base.defaults.activation_checkpointing.ActivationCheckpointingConfig'}, 'precision': 'bfloat16', 'lora_enabled': False, 'lora_rank': 16, 'lora_alpha': 32, 'lora_target_modules': 'q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen', 'rectified_flow_training_config': {'shift': {'256': 3, '480': 5, '720': 10}, 'shift_image': None, 'use_dynamic_shift': False, 'train_time_image_distribution': 'logitnormal', 'train_time_video_distribution': 'waver', 'train_time_action_distribution': 'logitnormal', 'train_time_sound_distribution': 'logitnormal', 'train_time_weight': 'uniform', 'loss_scale': 10.0, 'image_loss_scale': None, 'sound_loss_scale': 2.0, 'lidar_loss_scale': None, 'use_discrete_rf': False, 'action_loss_weight': 10.0, 'independent_action_schedule': False, 'shift_action': None, 'independent_sound_schedule': False, 'shift_sound': None, 'normalize_loss_by_active': False, 'sample_level_loss_averaging': False, 'high_sigma_ratio': 0.05, 'high_sigma_timesteps_max': 1000, 'high_sigma_timesteps_min': 995, 'use_high_sigma_strategy': False, 'use_high_sigma_strategy_action': False, 'use_high_sigma_strategy_sound': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowTrainingConfig'}, 'rectified_flow_inference_config': {'scheduler_type': 'unipc', 'num_train_timesteps': 1000, 'shift': 1, 'use_dynamic_shifting': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowInferenceConfig'}, 'fixed_step_sampler_config': None, 'vlm_config': {'model_name': 'nvidia/Cosmos3-Edge-Reasoner', 'safetensors_path': '', 'pretrained_weights': {'enabled': False, 'backbone_path': 's3://bucket/cosmos3/pretrained/huggingface/nvidia/Cosmos3-Edge-Reasoner-590c1c0/', 'credentials_path': 'credentials/gcp_checkpoint.secret', 'enable_gcs_patch_in_boto3': True, 'checkpoint_format': None, '_type': 'cosmos_framework.configs.base.defaults.reasoner.PretrainedWeightsConfig'}, 'model_instance': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLTextForCausalLM', 'config': {'_target_': 'cosmos_framework.configs.base.defaults.reasoner.create_vlm_config', 'base_config': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLMoTConfig.from_json_file', 'json_file': 'cosmos_framework/model/generator/reasoner/nemotron_3_dense_vl/configs/Nemotron-2B-Dense-VL.json'}, 'include_visual': None, 'qk_norm_for_text': False, 'use_und_k_norm_for_gen': True}}, 'tokenizer': {'repository': None, 'revision': None, 'subdir': '', '_target_': 'cosmos_framework.data.generator.processors.build_processor_lazy', 'tokenizer_type': '/bulk/users/vla/alpamayo2edge/cosmos3-edge'}, 'layer_module': None, 'qk_norm': False, 'tie_word_embeddings': False, 'use_system_prompt': False, '_type': 'cosmos_framework.configs.base.defaults.reasoner.VLMConfig'}, 'diffusion_expert_config': {'timestep_range': 1.0, 'load_weights_from_pretrained': False, 'enable_vision_modality_embeddings': False, 'enable_media_modality_embedding': False, 'enable_sound_modality_embedding': True, 'patch_spatial': 2, 'max_vae_latent_side_after_patchify': 20, 'enable_fps_modulation': True, 'base_fps': 24, 'sound_base_temporal_compression_factor': None, 'vision_temporal_position_mode': 'latent_index', 'unified_3d_mrope_reset_spatial_ids': True, 'unified_3d_mrope_temporal_modality_margin': 15000, '_type': 'cosmos_framework.configs.base.defaults.model_config.DiffusionExpertConfig'}, 'input_video_key': 'video', 'input_image_key': 'images', 'input_caption_key': 'ai_caption', 'state_ch': 48, 'state_t': 300, 'latent_downsample_factor': 16, 'resolution': '480', 'max_num_tokens_after_packing': 74000, 'joint_attn_implementation': 'two_way', 'flex_attention': {'enabled': False, 'backend': 'auto', 'mask': {'attention_scope': 'all_views'}}, 'natten_parameter_list': None, 'video_temporal_causal': False, 'causal_training_strategy': 'none', 'lbl': {'method': 'local', 'coeff_und': None, 'coeff_gen': None, '_type': 'cosmos_framework.configs.base.defaults.model_config.LBLConfig'}, 'vision_gen': True, 'action_gen': True, 'max_action_dim': 64, 'num_embodiment_domains': 32, 'sound_gen': False, 'sound_tokenizer': None, 'sound_dim': None, 'sound_latent_fps': 25, 'enable_input_bias': True, 'log_enc_time_every_n': 100, 'exclude_reasoner_weights_from_checkpoint': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.OmniMoTModelConfig'}
+[09-14 01:47:30|WARNING|cosmos_framework/model/generator/omni_mot_model.py:150:set_precision] OmniMoTModel: precision torch.bfloat16
+This processor does not use the `size` parameter. It will be ignored.
+[09-14 01:47:30|INFO|cosmos_framework/data/generator/processors/base.py:131:__init__] Successfully loaded processor from local cache
+[09-14 01:47:31|INFO|cosmos_framework/utils/checkpoint_db.py:338:download] Downloading checkpoint Wan2.2/vae(b6a5fdbcf3054930a3aa0c3629b2c462)
+[09-14 01:47:31|INFO|cosmos_framework/utils/checkpoint_db.py:171:_hf_download] uv run --isolated --project /home/vla/projects/cosmos-framework/cosmos_framework/utils/hf_cli --locked --no-default-groups hf download --format=json Wan-AI/Wan2.2-TI2V-5B --repo-type model --revision 921dbaf3f1674a56f47e83fb80a34bac8a8f203e Wan2.2_VAE.pth
+Installed 16 packages in 4ms
+[09-14 01:47:35|INFO|cosmos_framework/model/generator/tokenizers/wan2pt2_vae_4x16x16.py:1056:_video_vae] loading /bulk/users/vla/alpamayo2edge/hf-cache/models--Wan-AI--Wan2.2-TI2V-5B/snapshots/921dbaf3f1674a56f47e83fb80a34bac8a8f203e/Wan2.2_VAE.pth
+[09-14 01:47:35|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_tokenizers: 4.72 s
+[09-14 01:47:35|INFO|cosmos_framework/utils/generator/parallelism.py:110:_validate] dp_shard auto-inferred to world_size = 1
+[09-14 01:47:35|INFO|cosmos_framework/utils/generator/parallelism.py:124:_validate] dp_replicate is set to -1, will be automatically determined based on world_size 1 // dp_shard 1.
+[09-14 01:47:35|INFO|cosmos_framework/utils/generator/parallelism.py:129:_validate] dp_replicate is set to 1.
+`torch_dtype` is deprecated! Use `dtype` instead!
+[09-14 01:47:35|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on meta to cuda and broadcast model states: 0.07 s
+[09-14 01:47:35|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on Creating PyTorch model and ema if enabled: 0.22 s
+[09-14 01:47:35|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_model: 0.22 s
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/torch/distributed/checkpoint/utils.py:483: UserWarning: torch.distributed is disabled, unavailable or uninitialized, assuming the intent is to load in a single process.
+  return func(*args, **kwargs)
+[09-14 01:47:37|INFO|../cosmos-framework/cosmos_framework/model/generator/mot/unified_mot.py:2656:_ensure_vision_tower] Edge vision tower: loading from checkpoint-local bundle /bulk/users/vla/alpamayo2edge/cosmos3-edge/vision_encoder
+INFO:distill.checkpoint:loaded merged student <- /data/vla/alpamayo2edge/runs/stage1/run-314/best
+INFO:__main__:init policy <- /data/vla/alpamayo2edge/runs/stage1/run-314/best (epoch=1 coc_nll=0.5657465898742279)
+[09-14 01:47:42|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[09-14 01:47:42|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+INFO:__main__:LoRA: {'wrapped': 112, 'by_leaf': {'q_proj': 28, 'k_proj': 28, 'v_proj': 28, 'o_proj': 28}, 'lora_params': 19267584, 'example': ['0.self_attn.q_proj', '0.self_attn.k_proj', '0.self_attn.v_proj']}
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:train prompts: 18954   val eval windows: 100
+INFO:distill.data.sampling:maneuver-stratified sampling, alpha=0.50 (D-036):
+INFO:distill.data.sampling:   class              n  uniform  effective
+INFO:distill.data.sampling:   FOLLOW          6249    33.0%      20.1%
+INFO:distill.data.sampling:   KEEP            3942    20.8%      16.0%
+INFO:distill.data.sampling:   STOP            2131    11.2%      11.7%
+INFO:distill.data.sampling:   NUDGE           1960    10.3%      11.3%
+INFO:distill.data.sampling:   ADAPT_SPEED     1870     9.9%      11.0%
+INFO:distill.data.sampling:   TURN             626     3.3%       6.4%
+INFO:distill.data.sampling:   ACCELERATE       573     3.0%       6.1%
+INFO:distill.data.sampling:   SLOW             494     2.6%       5.7%
+INFO:distill.data.sampling:   YIELD            451     2.4%       5.4%
+INFO:distill.data.sampling:   LANE_CHANGE      382     2.0%       5.0%
+INFO:distill.data.sampling:   UNASSIGNED       276     1.5%       1.5%
+INFO:__main__:step 0 val: {"n": 99, "maneuver_acc": 0.6421052631578947, "false_clear": 0.10256410256410256, "termination": 1.0, "obj_precision": 0.8401826484018265, "mix": {"FOLLOW": 42, "KEEP": 17, "STOP": 12, "NUDGE": 8, "ADAPT_SPEED": 6, "TURN": 3, "YIELD": 3, "ACCELERATE": 3, "SLOW": 3, "LANE_CHANGE": 2}}
+/home/vla/projects/alpamayo2edge/src/distill/train_grpo_coc.py:296: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  kl_all.append(float((kl * okf).sum() / okf.sum().clamp_min(1)))
+INFO:__main__:step 1/500 reward 1.107 man 0.73 fc 0.01 fail 0.00 skip 0.44 kl 0.0000 ce 0.200 |g| 0.29  85s  {'FOLLOW': 55, 'NUDGE': 40, 'KEEP': 32, 'YIELD': 32, 'ADAPT_SPEED': 30, 'STOP': 26}
+INFO:__main__:step 2/500 reward 0.964 man 0.70 fc 0.08 fail 0.02 skip 0.31 kl 0.0002 ce 0.217 |g| 0.32  103s  {'KEEP': 54, 'STOP': 49, 'FOLLOW': 38, 'TURN': 30, 'ADAPT_SPEED': 21, 'ACCELERATE': 20}
+INFO:__main__:step 3/500 reward 0.825 man 0.55 fc 0.07 fail 0.00 skip 0.31 kl 0.0002 ce 0.286 |g| 0.22  102s  {'FOLLOW': 80, 'KEEP': 64, 'STOP': 28, 'NUDGE': 28, 'LANE_CHANGE': 18, 'SLOW': 18}
+INFO:__main__:step 4/500 reward 1.166 man 0.76 fc 0.01 fail 0.01 skip 0.44 kl 0.0002 ce 0.113 |g| 0.21  85s  {'STOP': 86, 'FOLLOW': 59, 'YIELD': 31, 'SLOW': 20, 'KEEP': 18, 'TURN': 17}
+INFO:__main__:step 5/500 reward 0.811 man 0.72 fc 0.12 fail 0.00 skip 0.75 kl 0.0001 ce 0.044 |g| 0.15  54s  {'KEEP': 107, 'STOP': 47, 'ADAPT_SPEED': 28, 'ACCELERATE': 28, 'FOLLOW': 21, 'YIELD': 17}
+INFO:__main__:step 6/500 reward 0.773 man 0.62 fc 0.06 fail 0.00 skip 0.44 kl 0.0001 ce 0.078 |g| 0.28  87s  {'KEEP': 86, 'FOLLOW': 83, 'STOP': 32, 'YIELD': 21, 'ADAPT_SPEED': 19, 'SLOW': 10}
+INFO:__main__:step 7/500 reward 1.051 man 0.71 fc 0.01 fail 0.00 skip 0.62 kl 0.0001 ce 0.133 |g| 0.16  67s  {'STOP': 68, 'FOLLOW': 35, 'KEEP': 34, 'ADAPT_SPEED': 33, 'SLOW': 26, 'YIELD': 18}
+INFO:__main__:step 8/500 reward 1.374 man 0.86 fc 0.01 fail 0.00 skip 0.25 kl 0.0002 ce 0.143 |g| 0.31  98s  {'TURN': 77, 'KEEP': 47, 'NUDGE': 47, 'FOLLOW': 42, 'YIELD': 18, 'STOP': 15}
+INFO:__main__:step 9/500 reward 1.001 man 0.70 fc 0.02 fail 0.01 skip 0.44 kl 0.0001 ce 0.155 |g| 0.26  82s  {'FOLLOW': 139, 'KEEP': 61, 'SLOW': 29, 'ADAPT_SPEED': 16, 'NUDGE': 3, 'LANE_CHANGE': 3}
+INFO:__main__:step 10/500 reward 0.657 man 0.50 fc 0.05 fail 0.00 skip 0.50 kl 0.0001 ce 0.164 |g| 0.29  79s  {'KEEP': 86, 'FOLLOW': 59, 'SLOW': 31, 'STOP': 30, 'ADAPT_SPEED': 16, 'TURN': 16}
+INFO:__main__:step 11/500 reward 1.087 man 0.86 fc 0.12 fail 0.00 skip 0.62 kl 0.0003 ce 0.155 |g| 0.28  67s  {'STOP': 81, 'KEEP': 63, 'FOLLOW': 45, 'NUDGE': 19, 'ADAPT_SPEED': 17, 'TURN': 16}
+INFO:__main__:step 12/500 reward 0.655 man 0.55 fc 0.18 fail 0.00 skip 0.38 kl 0.0003 ce 0.208 |g| 0.34  84s  {'KEEP': 63, 'FOLLOW': 58, 'STOP': 52, 'ADAPT_SPEED': 23, 'SLOW': 19, 'ACCELERATE': 16}
+INFO:__main__:step 13/500 reward 1.134 man 0.79 fc 0.04 fail 0.00 skip 0.38 kl 0.0002 ce 0.122 |g| 0.25  89s  {'YIELD': 79, 'FOLLOW': 60, 'KEEP': 40, 'TURN': 30, 'STOP': 16, 'LANE_CHANGE': 11}
+INFO:__main__:step 14/500 reward 0.893 man 0.63 fc 0.05 fail 0.00 skip 0.44 kl 0.0004 ce 0.206 |g| 0.30  84s  {'KEEP': 52, 'STOP': 52, 'SLOW': 36, 'NUDGE': 33, 'TURN': 31, 'FOLLOW': 31}
+INFO:__main__:step 15/500 reward 1.052 man 0.63 fc 0.01 fail 0.00 skip 0.38 kl 0.0003 ce 0.220 |g| 0.29  95s  {'FOLLOW': 60, 'KEEP': 53, 'TURN': 51, 'STOP': 32, 'ACCELERATE': 31, 'NUDGE': 17}
+INFO:__main__:step 16/500 reward 0.926 man 0.66 fc 0.07 fail 0.00 skip 0.31 kl 0.0003 ce 0.189 |g| 0.28  98s  {'FOLLOW': 105, 'KEEP': 49, 'ADAPT_SPEED': 29, 'NUDGE': 29, 'SLOW': 17, 'STOP': 13}
+INFO:__main__:step 17/500 reward 0.993 man 0.69 fc 0.00 fail 0.00 skip 0.50 kl 0.0005 ce 0.126 |g| 0.23  74s  {'STOP': 83, 'FOLLOW': 66, 'KEEP': 45, 'ADAPT_SPEED': 28, 'NUDGE': 15, 'TURN': 14}
+INFO:__main__:step 18/500 reward 0.684 man 0.54 fc 0.15 fail 0.01 skip 0.31 kl 0.0004 ce 0.223 |g| 0.30  98s  {'KEEP': 93, 'FOLLOW': 42, 'STOP': 34, 'TURN': 31, 'NUDGE': 20, 'SLOW': 15}
+INFO:__main__:step 19/500 reward 0.987 man 0.61 fc 0.02 fail 0.00 skip 0.56 kl 0.0003 ce 0.137 |g| 0.18  78s  {'FOLLOW': 72, 'ADAPT_SPEED': 39, 'KEEP': 37, 'STOP': 35, 'NUDGE': 31, 'YIELD': 20}
+INFO:__main__:step 20/500 reward 0.782 man 0.62 fc 0.10 fail 0.00 skip 0.44 kl 0.0008 ce 0.204 |g| 0.30  82s  {'KEEP': 97, 'TURN': 33, 'NUDGE': 31, 'STOP': 30, 'YIELD': 30, 'FOLLOW': 26}
+INFO:__main__:step 21/500 reward 0.674 man 0.50 fc 0.11 fail 0.00 skip 0.56 kl 0.0007 ce 0.148 |g| 0.24  73s  {'KEEP': 68, 'STOP': 60, 'FOLLOW': 39, 'TURN': 26, 'NUDGE': 20, 'YIELD': 16}
+INFO:__main__:step 22/500 reward 1.031 man 0.76 fc 0.08 fail 0.00 skip 0.50 kl 0.0005 ce 0.133 |g| 0.26  75s  {'KEEP': 117, 'FOLLOW': 74, 'TURN': 29, 'YIELD': 16, 'LANE_CHANGE': 16, 'STOP': 3}
+INFO:__main__:step 23/500 reward 0.898 man 0.69 fc 0.06 fail 0.05 skip 0.75 kl 0.0005 ce 0.105 |g| 0.14  56s  {'KEEP': 97, 'FOLLOW': 47, 'STOP': 32, 'YIELD': 32, 'TURN': 30, None: 13}
+INFO:__main__:step 24/500 reward 0.921 man 0.72 fc 0.06 fail 0.00 skip 0.44 kl 0.0010 ce 0.094 |g| 0.25  80s  {'KEEP': 90, 'STOP': 67, 'ACCELERATE': 26, 'FOLLOW': 17, 'ADAPT_SPEED': 15, 'TURN': 15}
+INFO:__main__:step 25/500 reward 0.933 man 0.60 fc 0.01 fail 0.00 skip 0.44 kl 0.0006 ce 0.178 |g| 0.25  88s  {'FOLLOW': 103, 'STOP': 57, 'YIELD': 31, 'KEEP': 25, 'ADAPT_SPEED': 21, 'TURN': 12}
+INFO:__main__:step 25 val: {"n": 99, "maneuver_acc": 0.6631578947368421, "false_clear": 0.11538461538461539, "termination": 1.0, "obj_precision": 0.8333333333333334, "mix": {"FOLLOW": 41, "KEEP": 16, "NUDGE": 13, "STOP": 11, "ADAPT_SPEED": 5, "TURN": 3, "YIELD": 3, "SLOW": 3, "ACCELERATE": 2, "null": 1, "LANE_CHANGE": 1}}
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-1/best (992 tensors)
+INFO:__main__:  <- new best (val maneuver acc 0.663), saved
+INFO:__main__:step 26/500 reward 0.758 man 0.56 fc 0.04 fail 0.00 skip 0.50 kl 0.0009 ce 0.181 |g| 0.23  77s  {'KEEP': 107, 'FOLLOW': 56, 'ACCELERATE': 31, 'YIELD': 17, None: 16, 'NUDGE': 11}
+INFO:__main__:step 27/500 reward 0.818 man 0.61 fc 0.06 fail 0.01 skip 0.38 kl 0.0011 ce 0.186 |g| 0.27  93s  {'KEEP': 101, 'FOLLOW': 71, 'STOP': 27, 'SLOW': 16, 'ACCELERATE': 10, None: 9}
+INFO:__main__:step 28/500 reward 0.775 man 0.50 fc 0.00 fail 0.01 skip 0.44 kl 0.0027 ce 0.262 |g| 0.40  87s  {'KEEP': 68, 'TURN': 38, 'YIELD': 28, 'FOLLOW': 24, 'NUDGE': 20, 'ADAPT_SPEED': 19}
+INFO:__main__:step 29/500 reward 1.128 man 0.80 fc 0.00 fail 0.00 skip 0.44 kl 0.0010 ce 0.104 |g| 0.21  86s  {'KEEP': 72, 'NUDGE': 63, 'FOLLOW': 62, 'ADAPT_SPEED': 36, 'STOP': 17, 'SLOW': 5}
+INFO:__main__:step 30/500 reward 1.137 man 0.69 fc 0.00 fail 0.00 skip 0.50 kl 0.0017 ce 0.147 |g| 0.20  80s  {'FOLLOW': 75, 'STOP': 51, 'NUDGE': 38, 'KEEP': 28, 'ADAPT_SPEED': 24, 'YIELD': 16}
+INFO:__main__:step 31/500 reward 1.055 man 0.71 fc 0.06 fail 0.00 skip 0.62 kl 0.0019 ce 0.119 |g| 0.25  68s  {'FOLLOW': 110, 'ADAPT_SPEED': 33, 'KEEP': 32, 'YIELD': 29, 'STOP': 27, 'TURN': 16}
+INFO:__main__:step 32/500 reward 1.133 man 0.81 fc 0.04 fail 0.00 skip 0.56 kl 0.0016 ce 0.155 |g| 0.19  72s  {'FOLLOW': 95, 'KEEP': 52, 'ADAPT_SPEED': 36, 'NUDGE': 23, 'YIELD': 16, 'STOP': 16}
+INFO:__main__:step 33/500 reward 0.949 man 0.65 fc 0.06 fail 0.00 skip 0.62 kl 0.0006 ce 0.126 |g| 0.21  67s  {'FOLLOW': 59, 'NUDGE': 52, 'KEEP': 48, 'STOP': 32, 'YIELD': 24, 'SLOW': 23}
+INFO:__main__:step 34/500 reward 0.871 man 0.74 fc 0.11 fail 0.00 skip 0.44 kl 0.0011 ce 0.143 |g| 0.29  86s  {'FOLLOW': 84, 'KEEP': 80, 'ADAPT_SPEED': 31, 'TURN': 24, 'SLOW': 15, 'YIELD': 10}
+INFO:__main__:step 35/500 reward 0.927 man 0.64 fc 0.08 fail 0.00 skip 0.31 kl 0.0020 ce 0.213 |g| 0.39  102s  {'FOLLOW': 61, 'KEEP': 42, 'ADAPT_SPEED': 37, 'NUDGE': 32, 'TURN': 20, 'LANE_CHANGE': 17}
+INFO:__main__:step 36/500 reward 0.978 man 0.72 fc 0.07 fail 0.00 skip 0.38 kl 0.0020 ce 0.136 |g| 0.28  88s  {'FOLLOW': 94, 'ADAPT_SPEED': 37, 'KEEP': 35, 'STOP': 30, 'SLOW': 19, 'NUDGE': 16}
+INFO:__main__:step 37/500 reward 0.971 man 0.73 fc 0.12 fail 0.00 skip 0.44 kl 0.0014 ce 0.233 |g| 0.22  82s  {'KEEP': 73, 'STOP': 64, 'ADAPT_SPEED': 37, 'TURN': 34, 'YIELD': 31, 'FOLLOW': 17}
+INFO:__main__:step 38/500 reward 1.130 man 0.74 fc 0.01 fail 0.00 skip 0.56 kl 0.0019 ce 0.170 |g| 0.19  71s  {'FOLLOW': 131, 'ADAPT_SPEED': 42, 'SLOW': 26, 'LANE_CHANGE': 17, 'TURN': 16, 'KEEP': 14}
+INFO:__main__:step 39/500 reward 0.483 man 0.38 fc 0.14 fail 0.03 skip 0.25 kl 0.0024 ce 0.235 |g| 0.27  102s  {'KEEP': 61, 'FOLLOW': 56, 'NUDGE': 51, 'ADAPT_SPEED': 30, 'TURN': 18, 'STOP': 16}
+INFO:__main__:step 40/500 reward 1.059 man 0.77 fc 0.02 fail 0.01 skip 0.56 kl 0.0037 ce 0.101 |g| 0.32  77s  {'KEEP': 68, 'SLOW': 46, 'FOLLOW': 37, 'LANE_CHANGE': 32, 'ADAPT_SPEED': 31, 'NUDGE': 13}
+INFO:__main__:step 41/500 reward 0.900 man 0.59 fc 0.11 fail 0.01 skip 0.56 kl 0.0008 ce 0.081 |g| 0.24  71s  {'FOLLOW': 71, 'KEEP': 42, 'TURN': 38, 'NUDGE': 38, 'ADAPT_SPEED': 21, 'STOP': 16}
+INFO:__main__:step 42/500 reward 0.808 man 0.62 fc 0.09 fail 0.03 skip 0.44 kl 0.0043 ce 0.117 |g| 0.35  86s  {'KEEP': 75, 'FOLLOW': 55, None: 23, 'ADAPT_SPEED': 21, 'LANE_CHANGE': 21, 'TURN': 20}
+INFO:__main__:step 43/500 reward 1.089 man 0.82 fc 0.06 fail 0.02 skip 0.38 kl 0.0024 ce 0.098 |g| 0.38  93s  {'FOLLOW': 73, 'KEEP': 66, 'ACCELERATE': 33, 'ADAPT_SPEED': 29, 'LANE_CHANGE': 19, 'STOP': 12}
+INFO:__main__:step 44/500 reward 0.851 man 0.63 fc 0.06 fail 0.01 skip 0.56 kl 0.0014 ce 0.131 |g| 0.27  74s  {'KEEP': 63, 'FOLLOW': 50, 'SLOW': 33, 'ADAPT_SPEED': 33, 'STOP': 32, 'LANE_CHANGE': 17}
+INFO:__main__:step 45/500 reward 0.972 man 0.77 fc 0.06 fail 0.01 skip 0.50 kl 0.0025 ce 0.089 |g| 0.25  83s  {'FOLLOW': 78, 'KEEP': 48, 'YIELD': 44, 'ADAPT_SPEED': 39, 'ACCELERATE': 16, 'STOP': 16}
+INFO:__main__:step 46/500 reward 1.088 man 0.74 fc 0.08 fail 0.00 skip 0.38 kl 0.0061 ce 0.160 |g| 0.26  93s  {'FOLLOW': 49, 'TURN': 38, 'STOP': 36, 'KEEP': 34, 'NUDGE': 34, 'YIELD': 32}
+INFO:__main__:step 47/500 reward 1.070 man 0.66 fc 0.10 fail 0.01 skip 0.31 kl 0.0020 ce 0.150 |g| 0.28  93s  {'FOLLOW': 92, 'STOP': 39, 'NUDGE': 36, 'KEEP': 24, 'ACCELERATE': 16, 'LANE_CHANGE': 14}
+INFO:__main__:step 48/500 reward 0.984 man 0.74 fc 0.02 fail 0.00 skip 0.69 kl 0.0044 ce 0.122 |g| 0.17  63s  {'ADAPT_SPEED': 81, 'FOLLOW': 63, 'KEEP': 36, 'NUDGE': 29, 'TURN': 21, 'STOP': 16}
+INFO:__main__:step 49/500 reward 0.941 man 0.62 fc 0.03 fail 0.00 skip 0.44 kl 0.0021 ce 0.316 |g| 0.22  85s  {'STOP': 75, 'KEEP': 51, 'FOLLOW': 51, 'NUDGE': 37, 'LANE_CHANGE': 25, 'YIELD': 5}
+INFO:__main__:step 50/500 reward 0.685 man 0.62 fc 0.20 fail 0.00 skip 0.31 kl 0.0054 ce 0.242 |g| 0.37  98s  {'KEEP': 92, 'TURN': 35, 'NUDGE': 31, 'SLOW': 27, 'STOP': 24, 'ADAPT_SPEED': 20}
+INFO:__main__:step 50 val: {"n": 99, "maneuver_acc": 0.6210526315789474, "false_clear": 0.08974358974358974, "termination": 1.0, "obj_precision": 0.78125, "mix": {"FOLLOW": 37, "NUDGE": 14, "STOP": 13, "KEEP": 12, "TURN": 7, "ADAPT_SPEED": 6, "YIELD": 4, "ACCELERATE": 3, "SLOW": 2, "LANE_CHANGE": 1}}
+INFO:__main__:step 51/500 reward 1.228 man 0.82 fc 0.01 fail 0.00 skip 0.56 kl 0.0062 ce 0.114 |g| 0.21  69s  {'FOLLOW': 70, 'KEEP': 47, 'NUDGE': 40, 'YIELD': 32, 'ADAPT_SPEED': 28, 'SLOW': 18}
+INFO:__main__:step 52/500 reward 1.175 man 0.84 fc 0.12 fail 0.00 skip 0.69 kl 0.0023 ce 0.082 |g| 0.20  61s  {'FOLLOW': 63, 'KEEP': 48, 'STOP': 32, 'YIELD': 32, 'NUDGE': 30, 'TURN': 18}
+INFO:__main__:step 53/500 reward 0.915 man 0.72 fc 0.06 fail 0.04 skip 0.50 kl 0.0045 ce 0.095 |g| 0.22  81s  {'FOLLOW': 64, 'ADAPT_SPEED': 49, 'KEEP': 44, 'STOP': 38, 'NUDGE': 24, 'ACCELERATE': 18}
+INFO:__main__:step 54/500 reward 1.075 man 0.73 fc 0.00 fail 0.02 skip 0.44 kl 0.0052 ce 0.190 |g| 0.28  89s  {'STOP': 53, 'KEEP': 48, 'FOLLOW': 47, 'YIELD': 33, 'NUDGE': 30, 'ADAPT_SPEED': 17}
+INFO:__main__:step 55/500 reward 0.928 man 0.68 fc 0.02 fail 0.00 skip 0.56 kl 0.0035 ce 0.139 |g| 0.32  75s  {'KEEP': 66, 'FOLLOW': 60, 'NUDGE': 40, 'ADAPT_SPEED': 26, 'SLOW': 22, 'STOP': 15}
+INFO:__main__:step 56/500 reward 0.846 man 0.62 fc 0.12 fail 0.01 skip 0.75 kl 0.0039 ce 0.271 |g| 0.19  54s  {'KEEP': 62, 'NUDGE': 46, 'YIELD': 46, 'FOLLOW': 35, 'STOP': 18, 'ADAPT_SPEED': 16}
+INFO:__main__:step 57/500 reward 1.036 man 0.69 fc 0.03 fail 0.00 skip 0.50 kl 0.0023 ce 0.168 |g| 0.27  76s  {'STOP': 62, 'FOLLOW': 49, 'NUDGE': 41, None: 18, 'YIELD': 17, 'SLOW': 17}
+INFO:__main__:step 58/500 reward 0.857 man 0.56 fc 0.11 fail 0.00 skip 0.50 kl 0.0071 ce 0.163 |g| 0.27  82s  {'FOLLOW': 71, 'STOP': 66, 'NUDGE': 36, 'KEEP': 36, 'TURN': 16, 'ADAPT_SPEED': 14}
+INFO:__main__:step 59/500 reward 0.789 man 0.60 fc 0.09 fail 0.00 skip 0.56 kl 0.0011 ce 0.189 |g| 0.45  74s  {'STOP': 84, 'FOLLOW': 34, 'ACCELERATE': 31, 'KEEP': 29, 'ADAPT_SPEED': 19, None: 16}
+INFO:__main__:step 60/500 reward 0.584 man 0.46 fc 0.06 fail 0.00 skip 0.44 kl 0.0051 ce 0.182 |g| 0.26  91s  {'KEEP': 73, 'YIELD': 48, 'ADAPT_SPEED': 43, 'TURN': 28, 'FOLLOW': 23, 'STOP': 22}
+INFO:__main__:step 61/500 reward 0.893 man 0.55 fc 0.05 fail 0.02 skip 0.25 kl 0.0025 ce 0.268 |g| 0.28  106s  {'FOLLOW': 59, 'STOP': 56, 'ADAPT_SPEED': 25, 'TURN': 23, 'LANE_CHANGE': 22, 'ACCELERATE': 21}
+INFO:__main__:step 62/500 reward 0.896 man 0.62 fc 0.05 fail 0.00 skip 0.44 kl 0.0062 ce 0.234 |g| 0.31  81s  {'TURN': 52, 'FOLLOW': 52, 'YIELD': 40, 'ADAPT_SPEED': 38, 'SLOW': 19, 'STOP': 16}
+INFO:__main__:step 63/500 reward 0.750 man 0.72 fc 0.18 fail 0.00 skip 0.62 kl 0.0012 ce 0.092 |g| 0.20  63s  {'KEEP': 71, 'ADAPT_SPEED': 53, 'STOP': 32, 'FOLLOW': 28, 'LANE_CHANGE': 16, 'TURN': 16}
+INFO:__main__:step 64/500 reward 1.094 man 0.64 fc 0.00 fail 0.01 skip 0.62 kl 0.0035 ce 0.064 |g| 0.22  72s  {'FOLLOW': 78, 'STOP': 34, 'YIELD': 32, 'KEEP': 32, 'NUDGE': 21, 'LANE_CHANGE': 16}
+INFO:__main__:step 65/500 reward 0.839 man 0.59 fc 0.10 fail 0.00 skip 0.44 kl 0.0050 ce 0.126 |g| 0.24  84s  {'KEEP': 74, 'FOLLOW': 45, 'NUDGE': 36, 'ADAPT_SPEED': 34, 'TURN': 32, 'SLOW': 16}
+INFO:__main__:step 66/500 reward 1.039 man 0.73 fc 0.00 fail 0.02 skip 0.50 kl 0.0041 ce 0.125 |g| 0.27  85s  {'FOLLOW': 81, 'ACCELERATE': 32, 'NUDGE': 32, 'STOP': 29, 'KEEP': 27, None: 21}
+INFO:__main__:step 67/500 reward 0.854 man 0.61 fc 0.07 fail 0.02 skip 0.50 kl 0.0089 ce 0.181 |g| 0.22  85s  {'FOLLOW': 92, 'KEEP': 39, 'ADAPT_SPEED': 30, 'NUDGE': 29, 'SLOW': 22, 'TURN': 16}
+INFO:__main__:step 68/500 reward 0.911 man 0.61 fc 0.03 fail 0.00 skip 0.62 kl 0.0030 ce 0.153 |g| 0.24  64s  {'STOP': 60, 'FOLLOW': 47, 'KEEP': 40, 'YIELD': 37, 'NUDGE': 35, 'SLOW': 22}
+INFO:__main__:step 69/500 reward 0.834 man 0.61 fc 0.10 fail 0.00 skip 0.38 kl 0.0114 ce 0.153 |g| 0.29  91s  {'NUDGE': 46, 'KEEP': 44, 'ADAPT_SPEED': 41, 'TURN': 37, 'FOLLOW': 31, 'SLOW': 20}
+INFO:__main__:step 70/500 reward 1.156 man 0.86 fc 0.06 fail 0.00 skip 0.56 kl 0.0025 ce 0.188 |g| 0.21  72s  {'FOLLOW': 92, 'KEEP': 69, 'NUDGE': 43, 'STOP': 19, 'ADAPT_SPEED': 16, 'ACCELERATE': 14}
+INFO:__main__:step 71/500 reward 1.102 man 0.73 fc 0.02 fail 0.00 skip 0.62 kl 0.0098 ce 0.164 |g| 0.19  68s  {'FOLLOW': 66, 'NUDGE': 63, 'KEEP': 62, 'ADAPT_SPEED': 29, 'TURN': 17, 'YIELD': 15}
+INFO:__main__:step 72/500 reward 0.736 man 0.56 fc 0.03 fail 0.00 skip 0.56 kl 0.0038 ce 0.202 |g| 0.25  71s  {'KEEP': 73, 'ADAPT_SPEED': 72, 'FOLLOW': 53, 'YIELD': 18, 'STOP': 18, 'NUDGE': 16}
+INFO:__main__:step 73/500 reward 1.006 man 0.72 fc 0.07 fail 0.02 skip 0.56 kl 0.0045 ce 0.187 |g| 0.23  75s  {'FOLLOW': 93, 'KEEP': 40, 'STOP': 36, 'ADAPT_SPEED': 32, 'LANE_CHANGE': 28, 'NUDGE': 20}
+INFO:__main__:step 74/500 reward 1.289 man 0.86 fc 0.00 fail 0.02 skip 0.62 kl 0.0046 ce 0.103 |g| 0.18  69s  {'STOP': 80, 'FOLLOW': 60, 'KEEP': 30, 'ADAPT_SPEED': 28, 'NUDGE': 17, 'TURN': 16}
+INFO:__main__:step 75/500 reward 0.961 man 0.65 fc 0.09 fail 0.00 skip 0.50 kl 0.0119 ce 0.076 |g| 0.17  76s  {'NUDGE': 82, 'KEEP': 80, 'FOLLOW': 32, 'STOP': 32, 'ACCELERATE': 26, 'ADAPT_SPEED': 4}
+INFO:__main__:step 75 val: {"n": 99, "maneuver_acc": 0.7052631578947368, "false_clear": 0.0641025641025641, "termination": 1.0, "obj_precision": 0.8312236286919832, "mix": {"FOLLOW": 35, "NUDGE": 17, "STOP": 12, "KEEP": 10, "TURN": 9, "ADAPT_SPEED": 5, "YIELD": 4, "LANE_CHANGE": 3, "ACCELERATE": 2, "SLOW": 2}}
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-1/best (992 tensors)
+INFO:__main__:  <- new best (val maneuver acc 0.705), saved
+INFO:__main__:step 76/500 reward 0.954 man 0.73 fc 0.03 fail 0.04 skip 0.56 kl 0.0048 ce 0.236 |g| 0.21  74s  {'KEEP': 48, 'NUDGE': 44, 'YIELD': 37, 'STOP': 28, 'FOLLOW': 26, 'ADAPT_SPEED': 26}
+INFO:__main__:step 77/500 reward 0.910 man 0.56 fc 0.07 fail 0.00 skip 0.56 kl 0.0074 ce 0.158 |g| 0.24  75s  {'FOLLOW': 56, 'NUDGE': 54, 'STOP': 48, 'KEEP': 34, 'ADAPT_SPEED': 26, 'TURN': 16}
+INFO:__main__:step 78/500 reward 0.988 man 0.65 fc 0.03 fail 0.02 skip 0.44 kl 0.0090 ce 0.128 |g| 0.24  87s  {'FOLLOW': 54, 'ACCELERATE': 46, 'NUDGE': 36, 'STOP': 33, None: 22, 'TURN': 18}
+INFO:__main__:step 79/500 reward 0.876 man 0.69 fc 0.05 fail 0.02 skip 0.56 kl 0.0084 ce 0.155 |g| 0.24  68s  {'KEEP': 91, 'STOP': 48, 'NUDGE': 45, 'ADAPT_SPEED': 18, 'FOLLOW': 17, 'TURN': 11}
+INFO:__main__:step 80/500 reward 1.083 man 0.73 fc 0.04 fail 0.02 skip 0.44 kl 0.0059 ce 0.268 |g| 0.26  89s  {'NUDGE': 64, 'FOLLOW': 59, 'KEEP': 44, 'YIELD': 32, 'TURN': 30, None: 11}
+INFO:__main__:step 81/500 reward 1.055 man 0.75 fc 0.00 fail 0.00 skip 0.44 kl 0.0061 ce 0.084 |g| 0.28  81s  {'TURN': 64, 'ADAPT_SPEED': 63, 'KEEP': 49, 'NUDGE': 30, 'FOLLOW': 30, 'STOP': 15}
+INFO:__main__:step 82/500 reward 1.225 man 0.86 fc 0.07 fail 0.00 skip 0.38 kl 0.0130 ce 0.178 |g| 0.27  92s  {'NUDGE': 59, 'KEEP': 53, 'FOLLOW': 48, 'STOP': 35, 'YIELD': 32, 'SLOW': 19}
+INFO:__main__:step 83/500 reward 1.192 man 0.79 fc 0.00 fail 0.00 skip 0.38 kl 0.0033 ce 0.098 |g| 0.32  90s  {'SLOW': 72, 'FOLLOW': 64, 'YIELD': 53, 'TURN': 24, 'KEEP': 16, 'ACCELERATE': 14}
+INFO:__main__:step 84/500 reward 0.799 man 0.61 fc 0.09 fail 0.07 skip 0.31 kl 0.0043 ce 0.135 |g| 0.31  93s  {'FOLLOW': 55, 'TURN': 48, 'STOP': 47, 'KEEP': 41, None: 18, 'NUDGE': 17}
+INFO:__main__:step 85/500 reward 0.787 man 0.59 fc 0.09 fail 0.00 skip 0.62 kl 0.0074 ce 0.131 |g| 0.22  67s  {'FOLLOW': 85, 'KEEP': 55, 'ADAPT_SPEED': 35, 'TURN': 28, 'SLOW': 19, 'NUDGE': 18}
+INFO:__main__:step 86/500 reward 0.983 man 0.56 fc 0.01 fail 0.01 skip 0.38 kl 0.0091 ce 0.174 |g| 0.26  94s  {'FOLLOW': 99, 'NUDGE': 48, 'STOP': 33, 'YIELD': 20, 'TURN': 14, 'KEEP': 13}
+INFO:__main__:step 87/500 reward 1.081 man 0.82 fc 0.07 fail 0.00 skip 0.56 kl 0.0079 ce 0.102 |g| 0.28  70s  {'FOLLOW': 52, 'KEEP': 44, 'SLOW': 38, 'STOP': 34, 'ADAPT_SPEED': 26, 'NUDGE': 22}
+INFO:__main__:step 88/500 reward 1.011 man 0.67 fc 0.11 fail 0.03 skip 0.50 kl 0.0059 ce 0.167 |g| 0.23  81s  {'NUDGE': 61, 'FOLLOW': 52, 'TURN': 42, 'STOP': 34, 'KEEP': 16, 'ACCELERATE': 15}
+INFO:__main__:step 89/500 reward 0.830 man 0.57 fc 0.09 fail 0.02 skip 0.56 kl 0.0061 ce 0.181 |g| 0.23  74s  {'FOLLOW': 60, 'KEEP': 59, 'STOP': 48, 'YIELD': 35, 'LANE_CHANGE': 15, 'TURN': 13}
+INFO:__main__:step 90/500 reward 1.073 man 0.66 fc 0.05 fail 0.00 skip 0.62 kl 0.0103 ce 0.079 |g| 0.24  70s  {'FOLLOW': 67, 'STOP': 55, 'ACCELERATE': 35, 'KEEP': 32, 'ADAPT_SPEED': 20, 'NUDGE': 17}
+INFO:__main__:step 91/500 reward 0.737 man 0.49 fc 0.03 fail 0.01 skip 0.44 kl 0.0077 ce 0.186 |g| 0.34  92s  {'FOLLOW': 74, 'KEEP': 60, 'STOP': 53, 'LANE_CHANGE': 20, 'ADAPT_SPEED': 20, 'TURN': 12}
+INFO:__main__:step 92/500 reward 1.129 man 0.71 fc 0.02 fail 0.02 skip 0.62 kl 0.0043 ce 0.057 |g| 0.18  71s  {'NUDGE': 48, 'STOP': 48, 'FOLLOW': 46, 'KEEP': 36, 'ADAPT_SPEED': 33, 'YIELD': 14}
+INFO:__main__:step 93/500 reward 1.066 man 0.65 fc 0.02 fail 0.01 skip 0.25 kl 0.0152 ce 0.290 |g| 0.35  102s  {'TURN': 56, 'FOLLOW': 48, 'ADAPT_SPEED': 44, 'NUDGE': 29, 'KEEP': 23, 'STOP': 23}
+INFO:__main__:step 94/500 reward 1.045 man 0.67 fc 0.02 fail 0.00 skip 0.44 kl 0.0074 ce 0.207 |g| 0.30  81s  {'FOLLOW': 55, 'NUDGE': 51, 'STOP': 50, 'SLOW': 32, 'YIELD': 27, 'KEEP': 23}
+INFO:__main__:step 95/500 reward 0.974 man 0.68 fc 0.00 fail 0.00 skip 0.56 kl 0.0110 ce 0.071 |g| 0.21  75s  {'KEEP': 51, 'NUDGE': 49, 'STOP': 39, 'ADAPT_SPEED': 39, 'FOLLOW': 28, 'SLOW': 16}
+INFO:__main__:step 96/500 reward 0.863 man 0.57 fc 0.05 fail 0.00 skip 0.44 kl 0.0106 ce 0.292 |g| 0.27  89s  {'STOP': 71, 'FOLLOW': 66, 'SLOW': 32, 'KEEP': 27, 'NUDGE': 24, 'TURN': 17}
+INFO:__main__:step 97/500 reward 0.952 man 0.55 fc 0.01 fail 0.00 skip 0.50 kl 0.0177 ce 0.096 |g| 0.25  81s  {'NUDGE': 65, 'STOP': 42, 'ADAPT_SPEED': 40, 'FOLLOW': 33, 'TURN': 26, 'SLOW': 25}
+INFO:__main__:step 98/500 reward 0.933 man 0.65 fc 0.09 fail 0.01 skip 0.38 kl 0.0078 ce 0.121 |g| 0.26  94s  {'FOLLOW': 62, 'KEEP': 47, 'STOP': 33, 'ACCELERATE': 25, 'ADAPT_SPEED': 21, 'NUDGE': 21}
+INFO:__main__:step 99/500 reward 0.995 man 0.67 fc 0.06 fail 0.00 skip 0.62 kl 0.0057 ce 0.062 |g| 0.22  67s  {'FOLLOW': 72, 'SLOW': 48, 'KEEP': 39, 'STOP': 32, 'TURN': 31, 'YIELD': 16}
+INFO:__main__:step 100/500 reward 0.932 man 0.61 fc 0.06 fail 0.00 skip 0.75 kl 0.0166 ce 0.046 |g| 0.21  58s  {'NUDGE': 62, 'KEEP': 59, 'STOP': 41, 'FOLLOW': 41, 'TURN': 23, 'ADAPT_SPEED': 16}
+INFO:__main__:step 100 val: {"n": 99, "maneuver_acc": 0.6526315789473685, "false_clear": 0.07692307692307693, "termination": 1.0, "obj_precision": 0.8333333333333334, "mix": {"FOLLOW": 32, "NUDGE": 17, "STOP": 13, "KEEP": 12, "TURN": 7, "ADAPT_SPEED": 5, "YIELD": 4, "LANE_CHANGE": 3, "ACCELERATE": 3, "SLOW": 3}}
+INFO:__main__:step 101/500 reward 1.018 man 0.77 fc 0.03 fail 0.00 skip 0.44 kl 0.0058 ce 0.166 |g| 0.31  84s  {'KEEP': 93, 'FOLLOW': 47, 'ADAPT_SPEED': 34, 'ACCELERATE': 19, 'TURN': 18, 'YIELD': 16}
+INFO:__main__:step 102/500 reward 0.980 man 0.66 fc 0.00 fail 0.01 skip 0.44 kl 0.0078 ce 0.089 |g| 0.42  84s  {'FOLLOW': 54, 'ADAPT_SPEED': 43, 'NUDGE': 37, 'TURN': 36, 'STOP': 33, 'SLOW': 21}
+INFO:__main__:step 103/500 reward 0.818 man 0.56 fc 0.05 fail 0.01 skip 0.44 kl 0.0134 ce 0.226 |g| 0.28  80s  {'KEEP': 54, 'TURN': 37, 'ACCELERATE': 31, 'FOLLOW': 30, 'ADAPT_SPEED': 27, 'YIELD': 26}
+INFO:__main__:step 104/500 reward 0.824 man 0.65 fc 0.11 fail 0.05 skip 0.38 kl 0.0114 ce 0.272 |g| 0.24  93s  {'FOLLOW': 48, 'ADAPT_SPEED': 40, 'STOP': 38, 'KEEP': 35, 'LANE_CHANGE': 32, 'YIELD': 23}
+INFO:__main__:step 105/500 reward 1.084 man 0.79 fc 0.01 fail 0.00 skip 0.38 kl 0.0055 ce 0.209 |g| 0.24  91s  {'STOP': 63, 'KEEP': 49, 'NUDGE': 38, 'TURN': 21, 'SLOW': 20, 'ACCELERATE': 16}
+INFO:__main__:step 106/500 reward 0.901 man 0.59 fc 0.02 fail 0.03 skip 0.62 kl 0.0058 ce 0.277 |g| 0.20  67s  {'STOP': 72, 'FOLLOW': 54, 'ADAPT_SPEED': 44, 'ACCELERATE': 30, 'TURN': 17, 'YIELD': 16}
+INFO:__main__:step 107/500 reward 1.085 man 0.68 fc 0.04 fail 0.01 skip 0.62 kl 0.0138 ce 0.137 |g| 0.23  67s  {'NUDGE': 58, 'STOP': 55, 'FOLLOW': 32, 'KEEP': 27, 'ACCELERATE': 25, 'TURN': 18}
+INFO:__main__:step 108/500 reward 0.903 man 0.61 fc 0.07 fail 0.00 skip 0.31 kl 0.0143 ce 0.145 |g| 0.28  98s  {'FOLLOW': 80, 'KEEP': 46, 'SLOW': 27, 'YIELD': 27, 'NUDGE': 26, 'ACCELERATE': 17}
+INFO:__main__:step 109/500 reward 1.163 man 0.76 fc 0.01 fail 0.01 skip 0.38 kl 0.0064 ce 0.147 |g| 0.26  94s  {'FOLLOW': 81, 'STOP': 80, 'YIELD': 32, 'SLOW': 31, 'ACCELERATE': 10, 'LANE_CHANGE': 10}
+INFO:__main__:step 110/500 reward 0.914 man 0.64 fc 0.07 fail 0.00 skip 0.50 kl 0.0174 ce 0.244 |g| 0.26  82s  {'FOLLOW': 65, 'ADAPT_SPEED': 40, 'STOP': 32, 'NUDGE': 25, 'KEEP': 23, 'YIELD': 20}
+INFO:__main__:step 111/500 reward 0.854 man 0.55 fc 0.01 fail 0.00 skip 0.50 kl 0.0090 ce 0.108 |g| 0.29  80s  {'SLOW': 68, 'FOLLOW': 51, 'STOP': 30, 'KEEP': 26, 'NUDGE': 19, 'ACCELERATE': 16}
+INFO:__main__:step 112/500 reward 1.055 man 0.78 fc 0.01 fail 0.00 skip 0.56 kl 0.0145 ce 0.118 |g| 0.34  74s  {'KEEP': 65, 'FOLLOW': 38, 'ACCELERATE': 32, 'ADAPT_SPEED': 32, 'SLOW': 32, 'YIELD': 23}
+INFO:__main__:step 113/500 reward 1.175 man 0.80 fc 0.00 fail 0.02 skip 0.62 kl 0.0068 ce 0.066 |g| 0.21  69s  {'KEEP': 74, 'NUDGE': 48, 'FOLLOW': 39, 'YIELD': 32, 'ADAPT_SPEED': 18, 'STOP': 17}
+INFO:__main__:step 114/500 reward 0.758 man 0.53 fc 0.07 fail 0.00 skip 0.50 kl 0.0079 ce 0.294 |g| 0.28  78s  {'KEEP': 46, 'ADAPT_SPEED': 45, 'ACCELERATE': 29, 'SLOW': 28, 'FOLLOW': 27, 'STOP': 26}
+INFO:__main__:step 115/500 reward 1.097 man 0.79 fc 0.04 fail 0.00 skip 0.44 kl 0.0064 ce 0.139 |g| 0.26  86s  {'KEEP': 56, 'FOLLOW': 54, 'SLOW': 44, 'NUDGE': 33, 'ADAPT_SPEED': 19, 'ACCELERATE': 14}
+INFO:__main__:step 116/500 reward 1.089 man 0.71 fc 0.00 fail 0.00 skip 0.62 kl 0.0096 ce 0.080 |g| 0.18  70s  {'FOLLOW': 93, 'KEEP': 48, 'YIELD': 43, 'SLOW': 32, 'LANE_CHANGE': 21, 'TURN': 12}
+INFO:__main__:step 117/500 reward 1.053 man 0.59 fc 0.00 fail 0.00 skip 0.50 kl 0.0041 ce 0.178 |g| 0.21  83s  {'FOLLOW': 68, 'STOP': 47, 'ADAPT_SPEED': 33, 'TURN': 32, 'SLOW': 21, 'YIELD': 20}
+INFO:__main__:step 118/500 reward 0.960 man 0.55 fc 0.02 fail 0.00 skip 0.44 kl 0.0063 ce 0.082 |g| 0.26  87s  {'FOLLOW': 110, 'STOP': 51, 'SLOW': 21, 'KEEP': 20, 'NUDGE': 19, 'ACCELERATE': 17}
+INFO:__main__:step 119/500 reward 1.181 man 0.75 fc 0.01 fail 0.00 skip 0.44 kl 0.0085 ce 0.101 |g| 0.31  84s  {'STOP': 66, 'KEEP': 61, 'NUDGE': 51, 'FOLLOW': 46, 'SLOW': 16, 'ACCELERATE': 10}
+INFO:__main__:step 120/500 reward 1.243 man 0.70 fc 0.00 fail 0.00 skip 0.50 kl 0.0089 ce 0.223 |g| 0.28  80s  {'FOLLOW': 46, 'NUDGE': 38, 'STOP': 34, 'ACCELERATE': 30, 'SLOW': 28, 'KEEP': 24}
+INFO:__main__:step 121/500 reward 0.885 man 0.72 fc 0.00 fail 0.00 skip 0.44 kl 0.0093 ce 0.074 |g| 0.28  89s  {'ADAPT_SPEED': 78, 'KEEP': 74, 'FOLLOW': 31, 'NUDGE': 21, None: 16, 'SLOW': 11}
+INFO:__main__:step 122/500 reward 0.770 man 0.46 fc 0.01 fail 0.01 skip 0.50 kl 0.0091 ce 0.096 |g| 0.22  77s  {'FOLLOW': 65, 'SLOW': 53, 'TURN': 44, 'ADAPT_SPEED': 20, 'STOP': 18, 'NUDGE': 18}
+INFO:__main__:step 123/500 reward 1.060 man 0.75 fc 0.02 fail 0.01 skip 0.50 kl 0.0098 ce 0.205 |g| 0.27  77s  {'FOLLOW': 61, 'KEEP': 58, 'STOP': 46, 'NUDGE': 28, 'SLOW': 21, 'ACCELERATE': 15}
+INFO:__main__:step 124/500 reward 1.168 man 0.76 fc 0.06 fail 0.00 skip 0.50 kl 0.0107 ce 0.153 |g| 0.25  83s  {'STOP': 53, 'NUDGE': 52, 'FOLLOW': 47, 'KEEP': 36, 'TURN': 29, 'ADAPT_SPEED': 21}
+INFO:__main__:step 125/500 reward 1.158 man 0.75 fc 0.00 fail 0.01 skip 0.62 kl 0.0047 ce 0.214 |g| 0.23  65s  {'KEEP': 68, 'FOLLOW': 52, 'TURN': 47, 'STOP': 35, 'NUDGE': 16, 'SLOW': 16}
+INFO:__main__:step 125 val: {"n": 99, "maneuver_acc": 0.6210526315789474, "false_clear": 0.08974358974358974, "termination": 0.98989898989899, "obj_precision": 0.8459915611814346, "mix": {"FOLLOW": 33, "NUDGE": 15, "STOP": 14, "KEEP": 11, "TURN": 6, "ADAPT_SPEED": 6, "LANE_CHANGE": 5, "YIELD": 4, "SLOW": 3, "ACCELERATE": 2}}
+INFO:__main__:step 126/500 reward 0.708 man 0.62 fc 0.15 fail 0.03 skip 0.44 kl 0.0091 ce 0.177 |g| 0.26  88s  {'KEEP': 64, 'FOLLOW': 61, 'ADAPT_SPEED': 47, 'NUDGE': 27, 'TURN': 16, 'YIELD': 14}
+INFO:__main__:step 127/500 reward 0.979 man 0.61 fc 0.00 fail 0.00 skip 0.50 kl 0.0056 ce 0.135 |g| 0.28  85s  {'STOP': 51, 'FOLLOW': 40, 'NUDGE': 40, 'ADAPT_SPEED': 32, 'KEEP': 32, 'SLOW': 22}
+INFO:__main__:step 128/500 reward 0.981 man 0.64 fc 0.06 fail 0.00 skip 0.50 kl 0.0105 ce 0.138 |g| 0.28  75s  {'FOLLOW': 67, 'KEEP': 58, 'TURN': 28, 'NUDGE': 28, 'STOP': 23, 'ADAPT_SPEED': 20}
+INFO:__main__:step 129/500 reward 0.970 man 0.71 fc 0.04 fail 0.01 skip 0.44 kl 0.0108 ce 0.171 |g| 0.26  85s  {'FOLLOW': 62, 'KEEP': 37, 'ADAPT_SPEED': 37, 'YIELD': 36, 'STOP': 34, 'NUDGE': 16}
+INFO:__main__:step 130/500 reward 1.023 man 0.81 fc 0.05 fail 0.00 skip 0.50 kl 0.0145 ce 0.141 |g| 0.37  78s  {'ADAPT_SPEED': 77, 'KEEP': 46, 'FOLLOW': 44, 'STOP': 35, 'SLOW': 18, 'YIELD': 16}
+INFO:__main__:step 131/500 reward 0.908 man 0.60 fc 0.02 fail 0.01 skip 0.44 kl 0.0102 ce 0.245 |g| 0.29  90s  {'FOLLOW': 64, 'STOP': 53, 'ADAPT_SPEED': 50, 'SLOW': 20, 'TURN': 17, 'KEEP': 15}
+INFO:__main__:step 132/500 reward 0.791 man 0.47 fc 0.04 fail 0.01 skip 0.50 kl 0.0091 ce 0.242 |g| 0.38  83s  {'FOLLOW': 96, 'KEEP': 55, 'TURN': 33, 'NUDGE': 25, 'STOP': 16, 'YIELD': 16}
+INFO:__main__:step 133/500 reward 1.107 man 0.70 fc 0.00 fail 0.02 skip 0.56 kl 0.0184 ce 0.163 |g| 0.31  81s  {'FOLLOW': 63, 'KEEP': 37, 'TURN': 29, 'SLOW': 25, 'NUDGE': 25, 'STOP': 17}
+INFO:__main__:step 134/500 reward 0.826 man 0.55 fc 0.11 fail 0.02 skip 0.44 kl 0.0157 ce 0.337 |g| 0.29  82s  {'FOLLOW': 66, 'NUDGE': 64, 'KEEP': 54, 'ADAPT_SPEED': 21, 'ACCELERATE': 17, 'STOP': 16}
+INFO:__main__:step 135/500 reward 1.336 man 0.88 fc 0.00 fail 0.00 skip 0.62 kl 0.0094 ce 0.059 |g| 0.29  68s  {'FOLLOW': 65, 'KEEP': 43, 'STOP': 41, 'TURN': 39, 'ADAPT_SPEED': 21, 'SLOW': 16}
+INFO:__main__:step 136/500 reward 1.082 man 0.81 fc 0.06 fail 0.00 skip 0.69 kl 0.0090 ce 0.110 |g| 0.21  62s  {'FOLLOW': 95, 'KEEP': 65, 'NUDGE': 32, 'ACCELERATE': 28, 'SLOW': 17, 'ADAPT_SPEED': 15}
+INFO:__main__:step 137/500 reward 1.056 man 0.67 fc 0.00 fail 0.00 skip 0.56 kl 0.0110 ce 0.119 |g| 0.18  76s  {'FOLLOW': 48, 'ADAPT_SPEED': 47, 'STOP': 37, 'NUDGE': 35, 'TURN': 33, 'KEEP': 24}
+INFO:__main__:step 138/500 reward 0.775 man 0.46 fc 0.05 fail 0.00 skip 0.25 kl 0.0156 ce 0.178 |g| 0.33  102s  {'FOLLOW': 69, 'YIELD': 32, 'ACCELERATE': 31, 'NUDGE': 27, 'STOP': 27, 'TURN': 25}
+INFO:__main__:step 139/500 reward 0.964 man 0.77 fc 0.12 fail 0.00 skip 0.31 kl 0.0116 ce 0.128 |g| 0.34  94s  {'KEEP': 74, 'STOP': 66, 'ADAPT_SPEED': 52, 'NUDGE': 25, 'TURN': 16, 'LANE_CHANGE': 14}
+INFO:__main__:step 140/500 reward 0.829 man 0.72 fc 0.10 fail 0.02 skip 0.31 kl 0.0182 ce 0.260 |g| 0.36  96s  {'KEEP': 72, 'FOLLOW': 42, 'NUDGE': 40, 'ADAPT_SPEED': 38, 'SLOW': 17, 'YIELD': 15}
+INFO:__main__:step 141/500 reward 0.744 man 0.50 fc 0.04 fail 0.00 skip 0.44 kl 0.0146 ce 0.254 |g| 0.29  93s  {'KEEP': 63, 'NUDGE': 44, 'FOLLOW': 41, 'ADAPT_SPEED': 32, 'TURN': 26, 'LANE_CHANGE': 26}
+INFO:__main__:step 142/500 reward 0.864 man 0.64 fc 0.03 fail 0.00 skip 0.56 kl 0.0177 ce 0.132 |g| 0.24  74s  {'ADAPT_SPEED': 55, 'FOLLOW': 49, 'STOP': 37, 'ACCELERATE': 32, 'SLOW': 26, 'KEEP': 23}
+INFO:__main__:step 143/500 reward 0.602 man 0.45 fc 0.08 fail 0.00 skip 0.50 kl 0.0213 ce 0.202 |g| 0.37  81s  {'KEEP': 70, 'STOP': 49, 'YIELD': 44, 'FOLLOW': 34, 'NUDGE': 18, 'TURN': 16}
+INFO:__main__:step 144/500 reward 1.119 man 0.75 fc 0.05 fail 0.01 skip 0.56 kl 0.0215 ce 0.203 |g| 0.22  76s  {'FOLLOW': 85, 'KEEP': 44, 'SLOW': 41, 'TURN': 19, 'YIELD': 16, 'NUDGE': 16}
+INFO:__main__:step 145/500 reward 1.013 man 0.76 fc 0.06 fail 0.00 skip 0.62 kl 0.0128 ce 0.119 |g| 0.16  65s  {'KEEP': 117, 'FOLLOW': 60, 'NUDGE': 32, 'TURN': 19, 'LANE_CHANGE': 18, 'ADAPT_SPEED': 7}
+INFO:__main__:step 146/500 reward 1.063 man 0.74 fc 0.03 fail 0.01 skip 0.44 kl 0.0087 ce 0.137 |g| 0.30  80s  {'TURN': 44, 'SLOW': 32, 'FOLLOW': 32, 'YIELD': 32, 'KEEP': 31, 'ACCELERATE': 30}
+INFO:__main__:step 147/500 reward 1.085 man 0.75 fc 0.02 fail 0.00 skip 0.56 kl 0.0153 ce 0.185 |g| 0.28  73s  {'KEEP': 61, 'STOP': 49, 'ADAPT_SPEED': 28, 'SLOW': 27, 'TURN': 22, 'LANE_CHANGE': 16}
+INFO:__main__:step 148/500 reward 1.117 man 0.80 fc 0.01 fail 0.00 skip 0.50 kl 0.0223 ce 0.116 |g| 0.32  78s  {'FOLLOW': 91, 'SLOW': 55, 'NUDGE': 37, 'KEEP': 28, 'ACCELERATE': 17, 'STOP': 17}
+INFO:__main__:step 149/500 reward 1.047 man 0.76 fc 0.00 fail 0.00 skip 0.62 kl 0.0134 ce 0.180 |g| 0.28  66s  {'ADAPT_SPEED': 52, 'YIELD': 48, 'FOLLOW': 44, 'KEEP': 34, 'NUDGE': 30, 'STOP': 26}
+INFO:__main__:step 150/500 reward 0.753 man 0.54 fc 0.12 fail 0.01 skip 0.25 kl 0.0133 ce 0.387 |g| 0.31  101s  {'FOLLOW': 81, 'YIELD': 35, 'ADAPT_SPEED': 33, 'KEEP': 27, 'NUDGE': 26, 'SLOW': 18}
+INFO:__main__:step 150 val: {"n": 99, "maneuver_acc": 0.6736842105263158, "false_clear": 0.0641025641025641, "termination": 1.0, "obj_precision": 0.8179824561403508, "mix": {"FOLLOW": 30, "NUDGE": 14, "STOP": 12, "KEEP": 11, "TURN": 10, "ADAPT_SPEED": 10, "ACCELERATE": 5, "YIELD": 4, "SLOW": 2, "LANE_CHANGE": 1}}
+INFO:__main__:step 151/500 reward 0.731 man 0.48 fc 0.10 fail 0.00 skip 0.38 kl 0.0185 ce 0.308 |g| 0.34  92s  {'KEEP': 57, 'STOP': 49, 'TURN': 42, 'SLOW': 31, 'FOLLOW': 23, 'NUDGE': 22}
+INFO:__main__:step 152/500 reward 0.938 man 0.58 fc 0.05 fail 0.02 skip 0.50 kl 0.0248 ce 0.178 |g| 0.29  83s  {'STOP': 51, 'NUDGE': 51, 'FOLLOW': 46, 'KEEP': 39, 'ADAPT_SPEED': 25, 'YIELD': 15}
+INFO:__main__:step 153/500 reward 0.904 man 0.61 fc 0.00 fail 0.00 skip 0.81 kl 0.0116 ce 0.056 |g| 0.13  53s  {'FOLLOW': 74, 'STOP': 37, 'ADAPT_SPEED': 33, 'YIELD': 30, 'TURN': 23, 'KEEP': 16}
+INFO:__main__:step 154/500 reward 1.040 man 0.71 fc 0.02 fail 0.00 skip 0.56 kl 0.0176 ce 0.136 |g| 0.23  76s  {'FOLLOW': 50, 'NUDGE': 34, 'SLOW': 33, 'STOP': 32, 'ADAPT_SPEED': 27, 'TURN': 25}
+INFO:__main__:step 155/500 reward 0.832 man 0.61 fc 0.03 fail 0.01 skip 0.25 kl 0.0144 ce 0.192 |g| 0.35  103s  {'KEEP': 56, 'STOP': 36, 'SLOW': 32, 'NUDGE': 23, 'TURN': 22, 'ADAPT_SPEED': 20}
+INFO:__main__:step 156/500 reward 0.920 man 0.57 fc 0.03 fail 0.01 skip 0.56 kl 0.0279 ce 0.133 |g| 0.27  73s  {'FOLLOW': 48, 'KEEP': 40, 'NUDGE': 37, 'ADAPT_SPEED': 36, 'STOP': 32, 'TURN': 27}
+INFO:__main__:step 157/500 reward 1.024 man 0.66 fc 0.01 fail 0.00 skip 0.38 kl 0.0097 ce 0.302 |g| 0.26  94s  {'FOLLOW': 60, 'KEEP': 35, 'STOP': 32, 'NUDGE': 26, 'SLOW': 21, 'YIELD': 19}
+INFO:__main__:step 158/500 reward 0.879 man 0.65 fc 0.08 fail 0.00 skip 0.69 kl 0.0192 ce 0.142 |g| 0.18  58s  {'NUDGE': 72, 'KEEP': 68, 'ACCELERATE': 33, 'FOLLOW': 25, 'ADAPT_SPEED': 23, 'STOP': 16}
+INFO:__main__:step 159/500 reward 0.897 man 0.65 fc 0.03 fail 0.00 skip 0.38 kl 0.0202 ce 0.180 |g| 0.28  89s  {'NUDGE': 59, 'STOP': 44, 'FOLLOW': 32, 'KEEP': 31, 'ADAPT_SPEED': 24, 'ACCELERATE': 16}
+INFO:__main__:step 160/500 reward 1.056 man 0.70 fc 0.05 fail 0.01 skip 0.31 kl 0.0097 ce 0.134 |g| 0.33  101s  {'FOLLOW': 69, 'NUDGE': 47, 'KEEP': 39, 'ADAPT_SPEED': 33, 'STOP': 23, 'ACCELERATE': 20}
+INFO:__main__:step 161/500 reward 0.990 man 0.80 fc 0.06 fail 0.00 skip 0.50 kl 0.0126 ce 0.108 |g| 0.25  84s  {'KEEP': 63, 'ADAPT_SPEED': 47, 'STOP': 44, 'FOLLOW': 37, 'NUDGE': 29, 'TURN': 17}
+INFO:__main__:step 162/500 reward 0.832 man 0.52 fc 0.02 fail 0.00 skip 0.44 kl 0.0112 ce 0.104 |g| 0.33  87s  {'FOLLOW': 83, 'SLOW': 45, 'STOP': 33, 'KEEP': 31, 'NUDGE': 30, 'TURN': 16}
+INFO:__main__:step 163/500 reward 0.987 man 0.74 fc 0.12 fail 0.01 skip 0.44 kl 0.0282 ce 0.160 |g| 0.32  87s  {'NUDGE': 57, 'FOLLOW': 55, 'SLOW': 47, 'KEEP': 33, 'ADAPT_SPEED': 24, 'ACCELERATE': 18}
+INFO:__main__:step 164/500 reward 0.913 man 0.64 fc 0.00 fail 0.01 skip 0.50 kl 0.0126 ce 0.302 |g| 0.24  83s  {'KEEP': 41, 'FOLLOW': 40, 'TURN': 39, 'STOP': 33, 'ADAPT_SPEED': 33, 'SLOW': 15}
+INFO:__main__:step 165/500 reward 0.819 man 0.61 fc 0.07 fail 0.00 skip 0.25 kl 0.0166 ce 0.230 |g| 0.33  101s  {'KEEP': 86, 'NUDGE': 50, 'FOLLOW': 43, 'SLOW': 26, 'TURN': 15, 'LANE_CHANGE': 14}
+INFO:__main__:step 166/500 reward 1.106 man 0.75 fc 0.01 fail 0.00 skip 0.38 kl 0.0133 ce 0.197 |g| 0.25  88s  {'FOLLOW': 65, 'ADAPT_SPEED': 53, 'NUDGE': 39, 'KEEP': 37, 'YIELD': 36, 'ACCELERATE': 15}
+INFO:__main__:step 167/500 reward 1.221 man 0.78 fc 0.01 fail 0.01 skip 0.31 kl 0.0148 ce 0.234 |g| 0.31  97s  {'TURN': 66, 'NUDGE': 45, 'KEEP': 32, 'YIELD': 31, 'STOP': 27, 'FOLLOW': 27}
+INFO:__main__:step 168/500 reward 1.276 man 0.85 fc 0.00 fail 0.00 skip 0.50 kl 0.0136 ce 0.118 |g| 0.30  77s  {'FOLLOW': 47, 'ACCELERATE': 45, 'STOP': 34, 'TURN': 32, 'KEEP': 32, 'ADAPT_SPEED': 31}
+INFO:__main__:step 169/500 reward 1.182 man 0.73 fc 0.00 fail 0.00 skip 0.62 kl 0.0151 ce 0.107 |g| 0.28  68s  {'FOLLOW': 74, 'KEEP': 50, 'STOP': 42, 'NUDGE': 33, 'ACCELERATE': 28, 'TURN': 16}
+INFO:__main__:step 170/500 reward 0.871 man 0.63 fc 0.06 fail 0.00 skip 0.62 kl 0.0121 ce 0.066 |g| 0.20  71s  {'KEEP': 100, 'NUDGE': 37, 'FOLLOW': 21, 'LANE_CHANGE': 19, 'ACCELERATE': 16, 'STOP': 16}
+INFO:__main__:step 171/500 reward 0.880 man 0.63 fc 0.14 fail 0.00 skip 0.62 kl 0.0198 ce 0.121 |g| 0.23  67s  {'FOLLOW': 68, 'NUDGE': 43, 'TURN': 41, 'KEEP': 38, 'ACCELERATE': 23, 'STOP': 16}
+INFO:__main__:step 172/500 reward 0.809 man 0.56 fc 0.06 fail 0.00 skip 0.25 kl 0.0177 ce 0.196 |g| 0.30  105s  {'KEEP': 52, 'YIELD': 50, 'NUDGE': 47, 'TURN': 39, 'STOP': 21, 'SLOW': 18}
+INFO:__main__:step 173/500 reward 0.829 man 0.57 fc 0.04 fail 0.01 skip 0.31 kl 0.0196 ce 0.227 |g| 0.34  93s  {'STOP': 73, 'KEEP': 39, 'NUDGE': 37, 'FOLLOW': 33, 'ACCELERATE': 19, 'YIELD': 19}
+INFO:__main__:step 174/500 reward 1.163 man 0.76 fc 0.04 fail 0.00 skip 0.56 kl 0.0099 ce 0.068 |g| 0.27  74s  {'FOLLOW': 79, 'STOP': 47, 'TURN': 31, 'ACCELERATE': 30, 'SLOW': 24, 'NUDGE': 17}
+INFO:__main__:step 175/500 reward 1.000 man 0.62 fc 0.05 fail 0.01 skip 0.62 kl 0.0141 ce 0.074 |g| 0.40  73s  {'STOP': 80, 'KEEP': 55, 'TURN': 37, 'FOLLOW': 24, 'LANE_CHANGE': 22, 'NUDGE': 17}
+INFO:__main__:step 175 val: {"n": 99, "maneuver_acc": 0.6210526315789474, "false_clear": 0.0641025641025641, "termination": 1.0, "obj_precision": 0.818565400843882, "mix": {"FOLLOW": 29, "NUDGE": 16, "STOP": 14, "KEEP": 13, "TURN": 8, "ADAPT_SPEED": 7, "ACCELERATE": 4, "LANE_CHANGE": 3, "YIELD": 3, "SLOW": 2}}
+INFO:__main__:step 176/500 reward 0.904 man 0.59 fc 0.12 fail 0.00 skip 0.31 kl 0.0113 ce 0.125 |g| 0.28  100s  {'FOLLOW': 64, 'STOP': 50, 'KEEP': 44, 'ADAPT_SPEED': 29, 'LANE_CHANGE': 27, 'NUDGE': 26}
+INFO:__main__:step 177/500 reward 0.997 man 0.59 fc 0.00 fail 0.00 skip 0.44 kl 0.0082 ce 0.275 |g| 0.25  85s  {'FOLLOW': 82, 'STOP': 58, 'KEEP': 33, 'TURN': 27, 'YIELD': 21, 'ADAPT_SPEED': 17}
+INFO:__main__:step 178/500 reward 1.329 man 0.87 fc 0.00 fail 0.00 skip 0.38 kl 0.0110 ce 0.130 |g| 0.26  94s  {'NUDGE': 50, 'FOLLOW': 50, 'SLOW': 33, 'YIELD': 32, 'TURN': 31, 'ADAPT_SPEED': 28}
+INFO:__main__:step 179/500 reward 1.208 man 0.78 fc 0.00 fail 0.00 skip 0.38 kl 0.0188 ce 0.204 |g| 0.31  93s  {'KEEP': 63, 'NUDGE': 37, 'TURN': 33, 'ACCELERATE': 32, 'FOLLOW': 26, 'SLOW': 18}
+INFO:__main__:step 180/500 reward 0.921 man 0.58 fc 0.03 fail 0.00 skip 0.38 kl 0.0218 ce 0.180 |g| 0.31  95s  {'FOLLOW': 65, 'KEEP': 42, 'ADAPT_SPEED': 39, 'STOP': 29, 'LANE_CHANGE': 23, 'NUDGE': 20}
+INFO:__main__:step 181/500 reward 0.858 man 0.55 fc 0.00 fail 0.00 skip 0.50 kl 0.0201 ce 0.133 |g| 0.30  81s  {'FOLLOW': 76, 'ADAPT_SPEED': 35, 'TURN': 35, 'YIELD': 35, 'NUDGE': 19, 'KEEP': 16}
+INFO:__main__:step 182/500 reward 1.092 man 0.78 fc 0.04 fail 0.00 skip 0.62 kl 0.0168 ce 0.121 |g| 0.21  65s  {'KEEP': 70, 'FOLLOW': 47, 'ADAPT_SPEED': 39, 'STOP': 32, 'NUDGE': 20, 'LANE_CHANGE': 16}
+INFO:__main__:step 183/500 reward 0.754 man 0.57 fc 0.06 fail 0.00 skip 0.44 kl 0.0196 ce 0.231 |g| 0.41  85s  {'FOLLOW': 52, 'TURN': 49, 'KEEP': 45, 'ADAPT_SPEED': 36, 'STOP': 35, 'ACCELERATE': 17}
+INFO:__main__:step 184/500 reward 1.032 man 0.68 fc 0.02 fail 0.00 skip 0.44 kl 0.0284 ce 0.187 |g| 0.29  82s  {'NUDGE': 59, 'KEEP': 53, 'FOLLOW': 41, 'ADAPT_SPEED': 36, 'LANE_CHANGE': 22, 'STOP': 16}
+INFO:__main__:step 185/500 reward 1.148 man 0.73 fc 0.00 fail 0.01 skip 0.44 kl 0.0124 ce 0.162 |g| 0.34  82s  {'FOLLOW': 100, 'NUDGE': 43, 'YIELD': 31, 'ADAPT_SPEED': 25, 'KEEP': 16, 'TURN': 16}
+INFO:__main__:step 186/500 reward 1.205 man 0.79 fc 0.02 fail 0.00 skip 0.56 kl 0.0067 ce 0.244 |g| 0.24  75s  {'FOLLOW': 74, 'ADAPT_SPEED': 32, 'KEEP': 31, 'SLOW': 29, 'TURN': 28, 'LANE_CHANGE': 26}
+INFO:__main__:step 187/500 reward 1.103 man 0.74 fc 0.06 fail 0.00 skip 0.62 kl 0.0099 ce 0.108 |g| 0.22  70s  {'FOLLOW': 92, 'KEEP': 50, 'ACCELERATE': 37, 'TURN': 31, 'NUDGE': 23, 'YIELD': 16}
+INFO:__main__:step 188/500 reward 1.072 man 0.73 fc 0.00 fail 0.00 skip 0.62 kl 0.0198 ce 0.064 |g| 0.19  72s  {'KEEP': 76, 'FOLLOW': 66, 'STOP': 51, 'YIELD': 20, 'LANE_CHANGE': 16, 'NUDGE': 12}
+INFO:__main__:step 189/500 reward 1.058 man 0.68 fc 0.05 fail 0.00 skip 0.56 kl 0.0280 ce 0.124 |g| 0.24  75s  {'KEEP': 81, 'NUDGE': 80, 'ADAPT_SPEED': 27, 'FOLLOW': 22, 'TURN': 17, 'STOP': 16}
+INFO:__main__:step 190/500 reward 1.125 man 0.74 fc 0.00 fail 0.01 skip 0.44 kl 0.0073 ce 0.096 |g| 0.24  80s  {'FOLLOW': 85, 'KEEP': 56, 'STOP': 31, 'TURN': 26, 'NUDGE': 26, 'ACCELERATE': 18}
+INFO:__main__:step 191/500 reward 1.083 man 0.70 fc 0.00 fail 0.00 skip 0.62 kl 0.0263 ce 0.054 |g| 0.29  71s  {'STOP': 93, 'KEEP': 44, 'FOLLOW': 40, 'NUDGE': 32, 'ADAPT_SPEED': 27, 'TURN': 10}
+INFO:__main__:step 192/500 reward 0.947 man 0.60 fc 0.05 fail 0.00 skip 0.31 kl 0.0081 ce 0.107 |g| 0.27  99s  {'STOP': 60, 'NUDGE': 46, 'FOLLOW': 38, 'KEEP': 31, 'YIELD': 22, 'TURN': 20}
+INFO:__main__:step 193/500 reward 1.054 man 0.75 fc 0.01 fail 0.00 skip 0.44 kl 0.0079 ce 0.200 |g| 0.28  87s  {'FOLLOW': 79, 'STOP': 61, 'KEEP': 46, 'ADAPT_SPEED': 32, 'NUDGE': 19, 'TURN': 8}
+INFO:__main__:step 194/500 reward 0.901 man 0.62 fc 0.00 fail 0.02 skip 0.44 kl 0.0145 ce 0.183 |g| 0.29  90s  {'KEEP': 56, 'FOLLOW': 36, 'ADAPT_SPEED': 31, 'STOP': 31, 'ACCELERATE': 29, 'NUDGE': 29}
+INFO:__main__:step 195/500 reward 0.997 man 0.62 fc 0.02 fail 0.00 skip 0.50 kl 0.0129 ce 0.233 |g| 0.29  76s  {'STOP': 83, 'NUDGE': 52, 'FOLLOW': 37, 'ADAPT_SPEED': 25, 'SLOW': 21, 'KEEP': 13}
+INFO:__main__:step 196/500 reward 0.945 man 0.58 fc 0.02 fail 0.07 skip 0.44 kl 0.0120 ce 0.083 |g| 0.34  92s  {'FOLLOW': 92, 'TURN': 32, 'SLOW': 32, 'NUDGE': 22, 'STOP': 21, None: 18}
+INFO:__main__:step 197/500 reward 0.972 man 0.59 fc 0.03 fail 0.00 skip 0.44 kl 0.0172 ce 0.202 |g| 0.28  88s  {'FOLLOW': 99, 'SLOW': 39, 'NUDGE': 35, 'ADAPT_SPEED': 31, 'KEEP': 18, 'STOP': 18}
+INFO:__main__:step 198/500 reward 0.693 man 0.53 fc 0.12 fail 0.01 skip 0.38 kl 0.0209 ce 0.214 |g| 0.31  90s  {'KEEP': 68, 'NUDGE': 49, 'ADAPT_SPEED': 48, 'SLOW': 26, 'YIELD': 21, 'STOP': 18}
+INFO:__main__:step 199/500 reward 0.858 man 0.54 fc 0.00 fail 0.00 skip 0.38 kl 0.0116 ce 0.218 |g| 0.27  89s  {'KEEP': 60, 'STOP': 57, 'ADAPT_SPEED': 32, 'TURN': 30, 'NUDGE': 29, 'FOLLOW': 27}
+INFO:__main__:step 200/500 reward 0.884 man 0.62 fc 0.11 fail 0.01 skip 0.19 kl 0.0116 ce 0.292 |g| 0.28  111s  {'KEEP': 75, 'FOLLOW': 46, 'TURN': 33, 'STOP': 28, 'LANE_CHANGE': 28, 'ADAPT_SPEED': 18}
+INFO:__main__:step 200 val: {"n": 99, "maneuver_acc": 0.6421052631578947, "false_clear": 0.0641025641025641, "termination": 1.0, "obj_precision": 0.8030303030303031, "mix": {"FOLLOW": 30, "NUDGE": 18, "STOP": 12, "KEEP": 12, "TURN": 8, "ADAPT_SPEED": 8, "YIELD": 3, "SLOW": 3, "LANE_CHANGE": 2, "ACCELERATE": 2, "null": 1}}
+INFO:__main__:step 201/500 reward 0.653 man 0.45 fc 0.04 fail 0.00 skip 0.44 kl 0.0194 ce 0.238 |g| 0.34  87s  {'KEEP': 62, 'ADAPT_SPEED': 44, 'FOLLOW': 42, 'STOP': 39, 'SLOW': 27, 'NUDGE': 25}
+INFO:__main__:step 202/500 reward 1.195 man 0.81 fc 0.03 fail 0.00 skip 0.75 kl 0.0068 ce 0.102 |g| 0.23  56s  {'FOLLOW': 67, 'STOP': 62, 'SLOW': 35, 'NUDGE': 31, 'TURN': 29, 'ADAPT_SPEED': 19}
+INFO:__main__:step 203/500 reward 0.960 man 0.76 fc 0.05 fail 0.01 skip 0.69 kl 0.0086 ce 0.287 |g| 0.27  67s  {'FOLLOW': 80, 'ADAPT_SPEED': 48, 'KEEP': 39, 'NUDGE': 33, 'SLOW': 18, 'STOP': 17}
+INFO:__main__:step 204/500 reward 0.850 man 0.60 fc 0.07 fail 0.00 skip 0.50 kl 0.0156 ce 0.280 |g| 0.30  74s  {'NUDGE': 84, 'ADAPT_SPEED': 38, 'KEEP': 37, 'SLOW': 30, 'YIELD': 24, 'FOLLOW': 19}
+INFO:__main__:step 205/500 reward 0.948 man 0.77 fc 0.06 fail 0.08 skip 0.62 kl 0.0128 ce 0.101 |g| 0.28  68s  {'FOLLOW': 50, 'TURN': 48, 'STOP': 35, 'ADAPT_SPEED': 33, 'KEEP': 22, 'SLOW': 21}
+INFO:__main__:step 206/500 reward 1.193 man 0.84 fc 0.02 fail 0.02 skip 0.56 kl 0.0179 ce 0.055 |g| 0.30  72s  {'STOP': 60, 'KEEP': 48, 'ADAPT_SPEED': 46, 'FOLLOW': 39, 'NUDGE': 36, 'TURN': 16}
+INFO:__main__:step 207/500 reward 0.988 man 0.62 fc 0.00 fail 0.00 skip 0.62 kl 0.0110 ce 0.118 |g| 0.19  63s  {'FOLLOW': 82, 'NUDGE': 63, 'STOP': 63, 'ADAPT_SPEED': 36, 'SLOW': 10, 'TURN': 2}
+INFO:__main__:step 208/500 reward 1.062 man 0.72 fc 0.09 fail 0.01 skip 0.31 kl 0.0196 ce 0.185 |g| 0.29  99s  {'ADAPT_SPEED': 43, 'TURN': 42, 'FOLLOW': 41, 'NUDGE': 36, 'KEEP': 29, 'ACCELERATE': 28}
+INFO:__main__:step 209/500 reward 0.957 man 0.66 fc 0.04 fail 0.00 skip 0.56 kl 0.0218 ce 0.249 |g| 0.31  75s  {'KEEP': 68, 'NUDGE': 40, 'FOLLOW': 36, 'ACCELERATE': 32, 'YIELD': 29, 'SLOW': 21}
+INFO:__main__:step 210/500 reward 1.059 man 0.66 fc 0.03 fail 0.03 skip 0.50 kl 0.0164 ce 0.127 |g| 0.25  82s  {'STOP': 64, 'FOLLOW': 62, 'NUDGE': 34, 'KEEP': 33, 'ADAPT_SPEED': 17, 'LANE_CHANGE': 17}
+INFO:__main__:step 211/500 reward 1.102 man 0.73 fc 0.02 fail 0.00 skip 0.69 kl 0.0235 ce 0.142 |g| 0.23  62s  {'STOP': 80, 'FOLLOW': 41, 'ADAPT_SPEED': 38, 'SLOW': 33, 'NUDGE': 27, 'TURN': 19}
+INFO:__main__:step 212/500 reward 0.978 man 0.72 fc 0.00 fail 0.01 skip 0.69 kl 0.0272 ce 0.157 |g| 0.26  63s  {'ADAPT_SPEED': 73, 'FOLLOW': 47, 'KEEP': 26, 'NUDGE': 22, 'SLOW': 20, 'STOP': 18}
+INFO:__main__:step 213/500 reward 1.181 man 0.87 fc 0.01 fail 0.00 skip 0.50 kl 0.0139 ce 0.087 |g| 0.24  83s  {'FOLLOW': 78, 'ACCELERATE': 63, 'KEEP': 43, 'NUDGE': 33, 'ADAPT_SPEED': 26, 'TURN': 10}
+INFO:__main__:step 214/500 reward 0.818 man 0.58 fc 0.00 fail 0.00 skip 0.31 kl 0.0166 ce 0.221 |g| 0.33  98s  {'ADAPT_SPEED': 56, 'STOP': 40, 'FOLLOW': 38, 'NUDGE': 36, 'LANE_CHANGE': 23, 'SLOW': 23}
+INFO:__main__:step 215/500 reward 1.014 man 0.59 fc 0.02 fail 0.00 skip 0.44 kl 0.0124 ce 0.246 |g| 0.31  78s  {'NUDGE': 51, 'FOLLOW': 47, 'STOP': 38, 'SLOW': 29, 'KEEP': 28, 'ADAPT_SPEED': 21}
+INFO:__main__:step 216/500 reward 0.833 man 0.61 fc 0.00 fail 0.00 skip 0.56 kl 0.0290 ce 0.132 |g| 0.24  75s  {'FOLLOW': 65, 'KEEP': 61, 'NUDGE': 43, 'ADAPT_SPEED': 33, 'STOP': 17, 'TURN': 16}
+INFO:__main__:step 217/500 reward 0.886 man 0.62 fc 0.08 fail 0.01 skip 0.44 kl 0.0082 ce 0.176 |g| 0.39  91s  {'FOLLOW': 82, 'TURN': 47, 'STOP': 39, 'YIELD': 32, 'ADAPT_SPEED': 31, 'KEEP': 20}
+INFO:__main__:step 218/500 reward 1.143 man 0.79 fc 0.01 fail 0.00 skip 0.62 kl 0.0070 ce 0.089 |g| 0.23  65s  {'ADAPT_SPEED': 58, 'STOP': 45, 'NUDGE': 33, 'ACCELERATE': 31, 'FOLLOW': 31, 'KEEP': 17}
+INFO:__main__:step 219/500 reward 0.791 man 0.50 fc 0.00 fail 0.00 skip 0.44 kl 0.0091 ce 0.171 |g| 0.29  91s  {'FOLLOW': 50, 'ADAPT_SPEED': 44, 'STOP': 44, 'KEEP': 35, 'NUDGE': 24, 'SLOW': 22}
+INFO:__main__:step 220/500 reward 1.066 man 0.73 fc 0.10 fail 0.00 skip 0.44 kl 0.0096 ce 0.210 |g| 0.27  82s  {'STOP': 51, 'KEEP': 47, 'NUDGE': 47, 'FOLLOW': 30, 'ACCELERATE': 28, 'ADAPT_SPEED': 27}
+INFO:__main__:step 221/500 reward 0.869 man 0.55 fc 0.06 fail 0.02 skip 0.38 kl 0.0180 ce 0.142 |g| 0.60  98s  {'FOLLOW': 78, 'YIELD': 44, 'NUDGE': 26, 'SLOW': 25, 'KEEP': 23, 'ACCELERATE': 17}
+INFO:__main__:step 222/500 reward 1.229 man 0.70 fc 0.01 fail 0.02 skip 0.38 kl 0.0086 ce 0.178 |g| 0.26  92s  {'FOLLOW': 73, 'TURN': 71, 'ACCELERATE': 39, 'LANE_CHANGE': 29, 'SLOW': 17, 'STOP': 10}
+INFO:__main__:step 223/500 reward 1.297 man 0.86 fc 0.00 fail 0.00 skip 0.31 kl 0.0050 ce 0.194 |g| 0.26  102s  {'FOLLOW': 98, 'TURN': 36, 'NUDGE': 34, 'ADAPT_SPEED': 22, 'STOP': 17, 'KEEP': 17}
+INFO:__main__:step 224/500 reward 0.992 man 0.59 fc 0.00 fail 0.04 skip 0.31 kl 0.0111 ce 0.212 |g| 0.26  94s  {'FOLLOW': 92, 'ACCELERATE': 35, 'STOP': 33, 'ADAPT_SPEED': 26, 'NUDGE': 16, None: 16}
+INFO:__main__:step 225/500 reward 1.051 man 0.72 fc 0.00 fail 0.01 skip 0.75 kl 0.0279 ce 0.048 |g| 0.18  58s  {'KEEP': 68, 'NUDGE': 64, 'TURN': 48, 'SLOW': 43, 'FOLLOW': 18, 'LANE_CHANGE': 6}
+INFO:__main__:step 225 val: {"n": 99, "maneuver_acc": 0.6526315789473685, "false_clear": 0.01282051282051282, "termination": 1.0, "obj_precision": 0.7976190476190477, "mix": {"FOLLOW": 36, "NUDGE": 15, "KEEP": 11, "STOP": 9, "TURN": 8, "ADAPT_SPEED": 6, "ACCELERATE": 5, "LANE_CHANGE": 3, "YIELD": 3, "SLOW": 3}}
+INFO:__main__:step 226/500 reward 1.295 man 0.89 fc 0.01 fail 0.00 skip 0.75 kl 0.0295 ce 0.062 |g| 0.17  54s  {'KEEP': 65, 'TURN': 61, 'STOP': 48, 'FOLLOW': 34, 'SLOW': 19, 'ADAPT_SPEED': 15}
+INFO:__main__:step 227/500 reward 1.194 man 0.81 fc 0.08 fail 0.00 skip 0.44 kl 0.0087 ce 0.130 |g| 0.28  90s  {'FOLLOW': 56, 'YIELD': 29, 'TURN': 27, 'STOP': 25, 'KEEP': 23, 'ADAPT_SPEED': 21}
+INFO:__main__:step 228/500 reward 0.939 man 0.56 fc 0.02 fail 0.00 skip 0.50 kl 0.0209 ce 0.202 |g| 0.28  81s  {'STOP': 89, 'ADAPT_SPEED': 47, 'FOLLOW': 45, 'NUDGE': 30, 'TURN': 16, 'SLOW': 10}
+INFO:__main__:step 229/500 reward 0.961 man 0.64 fc 0.03 fail 0.00 skip 0.19 kl 0.0128 ce 0.193 |g| 0.38  107s  {'ADAPT_SPEED': 46, 'FOLLOW': 44, 'YIELD': 39, 'TURN': 37, 'KEEP': 26, 'STOP': 23}
+INFO:__main__:step 230/500 reward 1.055 man 0.68 fc 0.04 fail 0.00 skip 0.50 kl 0.0103 ce 0.136 |g| 0.20  82s  {'STOP': 77, 'FOLLOW': 71, 'SLOW': 33, 'TURN': 29, 'KEEP': 23, 'NUDGE': 16}
+INFO:__main__:step 231/500 reward 0.867 man 0.71 fc 0.01 fail 0.00 skip 0.69 kl 0.0220 ce 0.186 |g| 0.29  63s  {'FOLLOW': 64, 'KEEP': 54, 'ADAPT_SPEED': 53, 'SLOW': 28, 'NUDGE': 19, 'TURN': 16}
+INFO:__main__:step 232/500 reward 0.789 man 0.52 fc 0.03 fail 0.01 skip 0.56 kl 0.0124 ce 0.224 |g| 0.28  75s  {'KEEP': 49, 'NUDGE': 47, 'STOP': 39, 'FOLLOW': 29, 'ACCELERATE': 26, 'ADAPT_SPEED': 18}
+INFO:__main__:step 233/500 reward 1.099 man 0.73 fc 0.00 fail 0.00 skip 0.50 kl 0.0242 ce 0.199 |g| 0.26  81s  {'FOLLOW': 53, 'NUDGE': 34, 'STOP': 34, 'TURN': 28, 'KEEP': 28, 'ADAPT_SPEED': 27}
+INFO:__main__:step 234/500 reward 0.782 man 0.48 fc 0.00 fail 0.00 skip 0.31 kl 0.0111 ce 0.189 |g| 0.33  98s  {'STOP': 58, 'ADAPT_SPEED': 53, 'FOLLOW': 35, 'KEEP': 26, 'TURN': 24, 'LANE_CHANGE': 19}
+INFO:__main__:step 235/500 reward 0.781 man 0.61 fc 0.11 fail 0.03 skip 0.50 kl 0.0082 ce 0.188 |g| 0.30  77s  {'FOLLOW': 59, 'KEEP': 50, 'ADAPT_SPEED': 42, 'STOP': 34, 'TURN': 19, 'NUDGE': 14}
+INFO:__main__:step 236/500 reward 1.025 man 0.75 fc 0.00 fail 0.00 skip 0.56 kl 0.0184 ce 0.073 |g| 0.28  74s  {'KEEP': 62, 'ADAPT_SPEED': 48, 'SLOW': 38, 'FOLLOW': 31, 'TURN': 25, 'NUDGE': 19}
+INFO:__main__:step 237/500 reward 1.028 man 0.63 fc 0.01 fail 0.02 skip 0.38 kl 0.0190 ce 0.124 |g| 0.41  90s  {'STOP': 79, 'FOLLOW': 34, 'NUDGE': 27, 'KEEP': 25, 'YIELD': 20, 'TURN': 18}
+INFO:__main__:step 238/500 reward 0.936 man 0.57 fc 0.00 fail 0.01 skip 0.50 kl 0.0187 ce 0.240 |g| 0.33  81s  {'FOLLOW': 84, 'STOP': 45, 'NUDGE': 34, 'KEEP': 25, 'SLOW': 20, 'ADAPT_SPEED': 20}
+INFO:__main__:step 239/500 reward 0.881 man 0.62 fc 0.11 fail 0.00 skip 0.56 kl 0.0198 ce 0.115 |g| 0.28  74s  {'FOLLOW': 70, 'KEEP': 61, 'STOP': 42, 'TURN': 33, 'ADAPT_SPEED': 22, 'NUDGE': 16}
+INFO:__main__:step 240/500 reward 0.998 man 0.81 fc 0.14 fail 0.00 skip 0.44 kl 0.0209 ce 0.211 |g| 0.35  89s  {'KEEP': 80, 'NUDGE': 31, 'STOP': 29, 'LANE_CHANGE': 26, 'FOLLOW': 26, 'ADAPT_SPEED': 26}
+INFO:__main__:step 241/500 reward 1.028 man 0.73 fc 0.03 fail 0.00 skip 0.31 kl 0.0173 ce 0.298 |g| 0.36  91s  {'KEEP': 65, 'FOLLOW': 62, 'NUDGE': 37, 'TURN': 33, 'ADAPT_SPEED': 19, 'STOP': 18}
+INFO:__main__:step 242/500 reward 0.756 man 0.57 fc 0.10 fail 0.00 skip 0.50 kl 0.0226 ce 0.271 |g| 0.29  80s  {'KEEP': 91, 'ADAPT_SPEED': 44, 'NUDGE': 40, 'FOLLOW': 29, 'YIELD': 16, 'TURN': 16}
+INFO:__main__:step 243/500 reward 0.928 man 0.58 fc 0.12 fail 0.00 skip 0.38 kl 0.0174 ce 0.177 |g| 0.24  90s  {'NUDGE': 86, 'FOLLOW': 68, 'STOP': 34, 'KEEP': 34, 'TURN': 22, 'ACCELERATE': 7}
+INFO:__main__:step 244/500 reward 0.999 man 0.63 fc 0.02 fail 0.02 skip 0.31 kl 0.0186 ce 0.367 |g| 0.35  96s  {'FOLLOW': 110, 'NUDGE': 24, 'LANE_CHANGE': 23, 'TURN': 22, 'YIELD': 20, 'ADAPT_SPEED': 19}
+INFO:__main__:step 245/500 reward 1.138 man 0.75 fc 0.02 fail 0.00 skip 0.50 kl 0.0302 ce 0.139 |g| 0.28  83s  {'NUDGE': 63, 'YIELD': 47, 'KEEP': 41, 'ADAPT_SPEED': 40, 'FOLLOW': 36, 'TURN': 20}
+INFO:__main__:step 246/500 reward 1.047 man 0.65 fc 0.00 fail 0.03 skip 0.38 kl 0.0115 ce 0.213 |g| 0.30  96s  {'FOLLOW': 69, 'TURN': 48, 'NUDGE': 33, 'KEEP': 31, 'SLOW': 24, 'ACCELERATE': 19}
+INFO:__main__:step 247/500 reward 0.789 man 0.55 fc 0.14 fail 0.00 skip 0.50 kl 0.0178 ce 0.240 |g| 0.23  82s  {'YIELD': 53, 'KEEP': 44, 'ADAPT_SPEED': 39, 'NUDGE': 32, 'FOLLOW': 26, 'STOP': 22}
+INFO:__main__:step 248/500 reward 0.997 man 0.70 fc 0.03 fail 0.00 skip 0.44 kl 0.0093 ce 0.127 |g| 0.24  88s  {'FOLLOW': 95, 'ADAPT_SPEED': 74, 'NUDGE': 30, 'KEEP': 20, 'STOP': 17, 'YIELD': 12}
+INFO:__main__:step 249/500 reward 0.928 man 0.70 fc 0.06 fail 0.00 skip 0.50 kl 0.0140 ce 0.155 |g| 0.23  80s  {'STOP': 77, 'KEEP': 65, 'ACCELERATE': 33, 'NUDGE': 33, 'FOLLOW': 19, 'ADAPT_SPEED': 17}
+INFO:__main__:step 250/500 reward 0.960 man 0.68 fc 0.04 fail 0.00 skip 0.50 kl 0.0335 ce 0.160 |g| 0.33  82s  {'ADAPT_SPEED': 60, 'STOP': 54, 'YIELD': 47, 'ACCELERATE': 29, 'KEEP': 26, 'FOLLOW': 22}
+INFO:__main__:step 250 val: {"n": 99, "maneuver_acc": 0.6526315789473685, "false_clear": 0.038461538461538464, "termination": 1.0, "obj_precision": 0.825, "mix": {"FOLLOW": 33, "NUDGE": 17, "STOP": 11, "KEEP": 10, "ADAPT_SPEED": 10, "TURN": 6, "ACCELERATE": 4, "LANE_CHANGE": 3, "YIELD": 3, "SLOW": 2}}
+INFO:__main__:step 251/500 reward 0.898 man 0.63 fc 0.02 fail 0.00 skip 0.31 kl 0.0195 ce 0.223 |g| 0.30  95s  {'FOLLOW': 55, 'KEEP': 47, 'STOP': 44, 'NUDGE': 33, 'ADAPT_SPEED': 29, 'YIELD': 16}
+INFO:__main__:step 252/500 reward 1.025 man 0.69 fc 0.00 fail 0.00 skip 0.69 kl 0.0233 ce 0.028 |g| 0.21  66s  {'FOLLOW': 48, 'ADAPT_SPEED': 46, 'STOP': 46, 'NUDGE': 39, 'ACCELERATE': 19, 'SLOW': 18}
+INFO:__main__:step 253/500 reward 1.173 man 0.76 fc 0.02 fail 0.00 skip 0.44 kl 0.0240 ce 0.193 |g| 0.26  89s  {'FOLLOW': 64, 'ACCELERATE': 47, 'NUDGE': 34, 'STOP': 33, 'SLOW': 24, 'KEEP': 21}
+INFO:__main__:step 254/500 reward 1.217 man 0.85 fc 0.01 fail 0.00 skip 0.62 kl 0.0211 ce 0.065 |g| 0.27  68s  {'KEEP': 84, 'FOLLOW': 66, 'NUDGE': 51, 'ADAPT_SPEED': 31, 'ACCELERATE': 11, 'LANE_CHANGE': 7}
+INFO:__main__:step 255/500 reward 1.177 man 0.81 fc 0.01 fail 0.00 skip 0.50 kl 0.0151 ce 0.104 |g| 0.28  83s  {'FOLLOW': 81, 'KEEP': 37, 'ADAPT_SPEED': 37, 'NUDGE': 36, 'SLOW': 26, 'LANE_CHANGE': 19}
+INFO:__main__:step 256/500 reward 1.147 man 0.79 fc 0.02 fail 0.01 skip 0.44 kl 0.0196 ce 0.318 |g| 0.31  87s  {'KEEP': 57, 'FOLLOW': 44, 'NUDGE': 35, 'ADAPT_SPEED': 26, 'SLOW': 24, 'ACCELERATE': 17}
+INFO:__main__:step 257/500 reward 1.025 man 0.65 fc 0.00 fail 0.00 skip 0.62 kl 0.0225 ce 0.114 |g| 0.22  69s  {'KEEP': 67, 'NUDGE': 64, 'STOP': 48, 'FOLLOW': 43, 'ADAPT_SPEED': 16, 'YIELD': 16}
+INFO:__main__:step 258/500 reward 1.029 man 0.74 fc 0.02 fail 0.00 skip 0.56 kl 0.0079 ce 0.102 |g| 0.22  72s  {'STOP': 75, 'ADAPT_SPEED': 49, 'NUDGE': 39, 'FOLLOW': 31, 'KEEP': 22, 'YIELD': 16}
+INFO:__main__:step 259/500 reward 1.094 man 0.76 fc 0.09 fail 0.01 skip 0.62 kl 0.0276 ce 0.144 |g| 0.25  69s  {'FOLLOW': 83, 'NUDGE': 40, 'STOP': 32, 'KEEP': 23, None: 19, 'YIELD': 18}
+INFO:__main__:step 260/500 reward 1.155 man 0.70 fc 0.00 fail 0.00 skip 0.50 kl 0.0073 ce 0.128 |g| 0.23  79s  {'ADAPT_SPEED': 57, 'FOLLOW': 52, 'NUDGE': 43, 'LANE_CHANGE': 29, 'KEEP': 27, 'YIELD': 19}
+INFO:__main__:step 261/500 reward 1.225 man 0.76 fc 0.00 fail 0.00 skip 0.62 kl 0.0099 ce 0.046 |g| 0.19  71s  {'NUDGE': 53, 'STOP': 41, 'FOLLOW': 41, 'KEEP': 34, 'TURN': 25, 'YIELD': 17}
+INFO:__main__:step 262/500 reward 0.859 man 0.66 fc 0.04 fail 0.02 skip 0.38 kl 0.0232 ce 0.294 |g| 0.31  95s  {'KEEP': 68, 'FOLLOW': 60, 'STOP': 50, 'TURN': 24, 'NUDGE': 23, 'ADAPT_SPEED': 20}
+INFO:__main__:step 263/500 reward 0.860 man 0.59 fc 0.06 fail 0.00 skip 0.31 kl 0.0163 ce 0.271 |g| 0.40  90s  {'FOLLOW': 91, 'NUDGE': 63, 'KEEP': 33, 'STOP': 19, 'SLOW': 19, 'TURN': 14}
+INFO:__main__:step 264/500 reward 1.138 man 0.70 fc 0.03 fail 0.01 skip 0.56 kl 0.0207 ce 0.340 |g| 0.29  77s  {'FOLLOW': 64, 'TURN': 50, 'NUDGE': 49, 'ADAPT_SPEED': 20, 'YIELD': 16, 'STOP': 16}
+INFO:__main__:step 265/500 reward 0.982 man 0.68 fc 0.00 fail 0.00 skip 0.62 kl 0.0130 ce 0.149 |g| 0.24  67s  {'STOP': 56, 'FOLLOW': 48, 'ADAPT_SPEED': 38, 'KEEP': 32, 'NUDGE': 31, 'TURN': 17}
+INFO:__main__:step 266/500 reward 1.179 man 0.77 fc 0.02 fail 0.00 skip 0.44 kl 0.0154 ce 0.148 |g| 0.26  81s  {'STOP': 51, 'KEEP': 39, 'ACCELERATE': 34, 'ADAPT_SPEED': 31, 'FOLLOW': 24, 'TURN': 22}
+INFO:__main__:step 267/500 reward 1.105 man 0.80 fc 0.04 fail 0.00 skip 0.50 kl 0.0148 ce 0.160 |g| 0.27  76s  {'FOLLOW': 81, 'KEEP': 44, 'ADAPT_SPEED': 37, 'TURN': 31, 'NUDGE': 31, 'ACCELERATE': 16}
+INFO:__main__:step 268/500 reward 1.014 man 0.72 fc 0.02 fail 0.00 skip 0.38 kl 0.0210 ce 0.120 |g| 0.28  92s  {'STOP': 57, 'FOLLOW': 52, 'NUDGE': 45, 'ADAPT_SPEED': 29, 'KEEP': 26, 'SLOW': 18}
+INFO:__main__:step 269/500 reward 0.879 man 0.59 fc 0.04 fail 0.00 skip 0.50 kl 0.0242 ce 0.141 |g| 0.27  76s  {'ACCELERATE': 56, 'ADAPT_SPEED': 51, 'FOLLOW': 30, 'NUDGE': 27, 'YIELD': 26, 'KEEP': 20}
+INFO:__main__:step 270/500 reward 1.104 man 0.79 fc 0.00 fail 0.01 skip 0.50 kl 0.0190 ce 0.137 |g| 0.32  81s  {'STOP': 81, 'KEEP': 35, 'FOLLOW': 33, 'YIELD': 32, 'LANE_CHANGE': 19, 'ADAPT_SPEED': 18}
+INFO:__main__:step 271/500 reward 1.334 man 0.91 fc 0.00 fail 0.00 skip 0.62 kl 0.0205 ce 0.143 |g| 0.30  65s  {'STOP': 65, 'ADAPT_SPEED': 50, 'NUDGE': 49, 'SLOW': 23, 'KEEP': 21, 'TURN': 18}
+INFO:__main__:step 272/500 reward 1.199 man 0.76 fc 0.00 fail 0.00 skip 0.50 kl 0.0167 ce 0.207 |g| 0.33  79s  {'ACCELERATE': 61, 'KEEP': 41, 'STOP': 33, 'YIELD': 32, 'FOLLOW': 27, 'TURN': 22}
+INFO:__main__:step 273/500 reward 1.088 man 0.68 fc 0.00 fail 0.00 skip 0.50 kl 0.0173 ce 0.267 |g| 0.24  80s  {'TURN': 61, 'NUDGE': 59, 'ADAPT_SPEED': 42, 'FOLLOW': 32, 'YIELD': 31, 'LANE_CHANGE': 16}
+INFO:__main__:step 274/500 reward 1.031 man 0.70 fc 0.00 fail 0.00 skip 0.62 kl 0.0355 ce 0.076 |g| 0.22  69s  {'FOLLOW': 68, 'ADAPT_SPEED': 61, 'STOP': 32, 'NUDGE': 31, 'KEEP': 16, None: 16}
+INFO:__main__:step 275/500 reward 1.067 man 0.78 fc 0.06 fail 0.00 skip 0.44 kl 0.0430 ce 0.160 |g| 0.33  86s  {'TURN': 48, 'KEEP': 47, 'ADAPT_SPEED': 39, 'FOLLOW': 35, 'SLOW': 25, None: 16}
+INFO:__main__:step 275 val: {"n": 99, "maneuver_acc": 0.5789473684210527, "false_clear": 0.05128205128205128, "termination": 1.0, "obj_precision": 0.8034188034188033, "mix": {"FOLLOW": 29, "NUDGE": 17, "STOP": 12, "KEEP": 12, "TURN": 8, "ADAPT_SPEED": 8, "YIELD": 4, "ACCELERATE": 3, "SLOW": 3, "LANE_CHANGE": 2, "null": 1}}
+INFO:__main__:step 276/500 reward 0.977 man 0.73 fc 0.08 fail 0.00 skip 0.56 kl 0.0199 ce 0.222 |g| 0.20  73s  {'KEEP': 77, 'ADAPT_SPEED': 47, 'STOP': 44, 'NUDGE': 39, 'TURN': 32, 'YIELD': 16}
+INFO:__main__:step 277/500 reward 0.797 man 0.52 fc 0.00 fail 0.07 skip 0.38 kl 0.0138 ce 0.118 |g| 0.37  90s  {'FOLLOW': 42, 'YIELD': 38, 'KEEP': 37, 'NUDGE': 33, 'TURN': 23, None: 20}
+INFO:__main__:step 278/500 reward 1.219 man 0.77 fc 0.00 fail 0.00 skip 0.38 kl 0.0195 ce 0.180 |g| 0.29  86s  {'FOLLOW': 70, 'NUDGE': 41, 'YIELD': 29, 'ACCELERATE': 28, 'STOP': 24, 'TURN': 21}
+INFO:__main__:step 279/500 reward 0.830 man 0.57 fc 0.03 fail 0.00 skip 0.25 kl 0.0255 ce 0.162 |g| 0.30  103s  {'FOLLOW': 62, 'NUDGE': 46, 'ADAPT_SPEED': 33, 'KEEP': 25, 'ACCELERATE': 21, 'STOP': 20}
+INFO:__main__:step 280/500 reward 0.865 man 0.63 fc 0.04 fail 0.00 skip 0.44 kl 0.0152 ce 0.205 |g| 0.32  86s  {'KEEP': 71, 'FOLLOW': 58, 'STOP': 38, 'TURN': 28, 'NUDGE': 23, 'ADAPT_SPEED': 17}
+INFO:__main__:step 281/500 reward 1.060 man 0.74 fc 0.02 fail 0.00 skip 0.44 kl 0.0264 ce 0.158 |g| 0.31  81s  {'FOLLOW': 41, 'STOP': 41, 'NUDGE': 34, 'KEEP': 33, 'TURN': 33, 'ADAPT_SPEED': 29}
+INFO:__main__:step 282/500 reward 0.886 man 0.55 fc 0.02 fail 0.02 skip 0.50 kl 0.0161 ce 0.077 |g| 0.26  84s  {'FOLLOW': 61, 'ADAPT_SPEED': 50, 'STOP': 33, 'NUDGE': 31, 'ACCELERATE': 25, None: 22}
+INFO:__main__:step 283/500 reward 1.135 man 0.77 fc 0.05 fail 0.00 skip 0.81 kl 0.0351 ce 0.048 |g| 0.16  52s  {'FOLLOW': 81, 'NUDGE': 49, 'YIELD': 48, 'KEEP': 41, 'STOP': 32, 'LANE_CHANGE': 5}
+INFO:__main__:step 284/500 reward 1.293 man 0.86 fc 0.00 fail 0.00 skip 0.56 kl 0.0097 ce 0.148 |g| 0.24  76s  {'FOLLOW': 80, 'STOP': 68, 'TURN': 33, 'YIELD': 17, 'KEEP': 17, 'ADAPT_SPEED': 16}
+INFO:__main__:step 285/500 reward 1.100 man 0.87 fc 0.00 fail 0.00 skip 0.56 kl 0.0193 ce 0.148 |g| 0.28  72s  {'ADAPT_SPEED': 70, 'KEEP': 62, 'STOP': 37, 'FOLLOW': 34, 'YIELD': 23, 'TURN': 14}
+INFO:__main__:step 286/500 reward 0.905 man 0.65 fc 0.03 fail 0.00 skip 0.56 kl 0.0367 ce 0.124 |g| 0.34  72s  {'FOLLOW': 49, 'KEEP': 47, 'NUDGE': 47, 'ADAPT_SPEED': 39, 'STOP': 34, 'SLOW': 17}
+INFO:__main__:step 287/500 reward 1.077 man 0.76 fc 0.05 fail 0.00 skip 0.75 kl 0.0152 ce 0.056 |g| 0.14  54s  {'FOLLOW': 98, 'KEEP': 58, 'ADAPT_SPEED': 35, 'STOP': 32, 'YIELD': 16, 'TURN': 16}
+INFO:__main__:step 288/500 reward 0.855 man 0.64 fc 0.11 fail 0.00 skip 0.50 kl 0.0099 ce 0.172 |g| 0.24  83s  {'FOLLOW': 83, 'KEEP': 55, 'TURN': 26, 'ADAPT_SPEED': 24, 'STOP': 23, 'NUDGE': 16}
+INFO:__main__:step 289/500 reward 1.122 man 0.73 fc 0.03 fail 0.00 skip 0.56 kl 0.0257 ce 0.238 |g| 0.26  75s  {'ACCELERATE': 58, 'FOLLOW': 43, 'NUDGE': 41, 'KEEP': 31, 'ADAPT_SPEED': 21, 'SLOW': 21}
+INFO:__main__:step 290/500 reward 1.279 man 0.86 fc 0.02 fail 0.01 skip 0.44 kl 0.0254 ce 0.126 |g| 0.25  86s  {'STOP': 63, 'NUDGE': 40, 'ACCELERATE': 38, 'ADAPT_SPEED': 34, 'KEEP': 31, 'FOLLOW': 29}
+INFO:__main__:step 291/500 reward 0.898 man 0.62 fc 0.06 fail 0.01 skip 0.44 kl 0.0312 ce 0.134 |g| 0.28  90s  {'FOLLOW': 65, 'KEEP': 51, 'ADAPT_SPEED': 37, 'NUDGE': 32, 'TURN': 27, None: 19}
+INFO:__main__:step 292/500 reward 1.168 man 0.78 fc 0.01 fail 0.01 skip 0.50 kl 0.0146 ce 0.133 |g| 0.25  80s  {'FOLLOW': 72, 'NUDGE': 42, 'KEEP': 41, 'ADAPT_SPEED': 37, 'YIELD': 21, 'ACCELERATE': 15}
+INFO:__main__:step 293/500 reward 0.895 man 0.56 fc 0.00 fail 0.00 skip 0.44 kl 0.0114 ce 0.257 |g| 0.32  81s  {'NUDGE': 51, 'FOLLOW': 44, 'YIELD': 40, 'SLOW': 34, 'STOP': 32, 'TURN': 32}
+INFO:__main__:step 294/500 reward 1.016 man 0.64 fc 0.00 fail 0.00 skip 0.56 kl 0.0244 ce 0.122 |g| 0.26  72s  {'FOLLOW': 93, 'ADAPT_SPEED': 38, 'NUDGE': 27, 'TURN': 25, 'SLOW': 23, 'KEEP': 23}
+INFO:__main__:step 295/500 reward 0.859 man 0.57 fc 0.02 fail 0.02 skip 0.38 kl 0.0192 ce 0.233 |g| 0.31  94s  {'FOLLOW': 84, 'STOP': 62, 'KEEP': 25, 'ADAPT_SPEED': 21, 'TURN': 20, 'SLOW': 16}
+INFO:__main__:step 296/500 reward 1.134 man 0.78 fc 0.00 fail 0.00 skip 0.62 kl 0.0167 ce 0.074 |g| 0.26  70s  {'STOP': 82, 'ADAPT_SPEED': 45, 'YIELD': 28, 'KEEP': 22, 'FOLLOW': 16, 'ACCELERATE': 16}
+INFO:__main__:step 297/500 reward 1.052 man 0.69 fc 0.00 fail 0.01 skip 0.38 kl 0.0133 ce 0.311 |g| 0.36  88s  {'FOLLOW': 74, 'TURN': 44, 'YIELD': 38, 'KEEP': 36, 'ADAPT_SPEED': 34, 'LANE_CHANGE': 11}
+INFO:__main__:step 298/500 reward 1.208 man 0.70 fc 0.00 fail 0.00 skip 0.62 kl 0.0114 ce 0.146 |g| 0.19  64s  {'FOLLOW': 59, 'STOP': 53, 'NUDGE': 44, 'ADAPT_SPEED': 34, 'KEEP': 23, 'TURN': 15}
+INFO:__main__:step 299/500 reward 1.025 man 0.70 fc 0.00 fail 0.00 skip 0.44 kl 0.0219 ce 0.138 |g| 0.28  83s  {'FOLLOW': 76, 'ADAPT_SPEED': 49, 'STOP': 47, 'YIELD': 26, 'SLOW': 21, 'ACCELERATE': 12}
+INFO:__main__:step 300/500 reward 1.127 man 0.73 fc 0.02 fail 0.00 skip 0.44 kl 0.0193 ce 0.217 |g| 0.36  87s  {'TURN': 56, 'ADAPT_SPEED': 45, 'FOLLOW': 42, 'KEEP': 29, 'NUDGE': 27, 'STOP': 23}
+INFO:__main__:step 300 val: {"n": 99, "maneuver_acc": 0.6631578947368421, "false_clear": 0.05128205128205128, "termination": 1.0, "obj_precision": 0.827922077922078, "mix": {"FOLLOW": 33, "NUDGE": 15, "STOP": 12, "KEEP": 12, "ADAPT_SPEED": 7, "TURN": 6, "LANE_CHANGE": 4, "YIELD": 4, "ACCELERATE": 4, "SLOW": 2}}
+INFO:__main__:step 301/500 reward 1.043 man 0.62 fc 0.01 fail 0.00 skip 0.56 kl 0.0262 ce 0.136 |g| 0.21  70s  {'FOLLOW': 64, 'NUDGE': 60, 'KEEP': 30, 'STOP': 29, 'ACCELERATE': 23, 'TURN': 17}
+INFO:__main__:step 302/500 reward 1.209 man 0.75 fc 0.01 fail 0.00 skip 0.62 kl 0.0134 ce 0.160 |g| 0.23  68s  {'NUDGE': 57, 'KEEP': 49, 'TURN': 42, 'FOLLOW': 35, 'ADAPT_SPEED': 34, 'STOP': 17}
+INFO:__main__:step 303/500 reward 1.109 man 0.78 fc 0.00 fail 0.00 skip 0.50 kl 0.0213 ce 0.102 |g| 0.30  75s  {'KEEP': 59, 'STOP': 55, 'FOLLOW': 52, 'ACCELERATE': 18, 'ADAPT_SPEED': 18, 'YIELD': 16}
+INFO:__main__:step 304/500 reward 1.152 man 0.76 fc 0.07 fail 0.01 skip 0.62 kl 0.0109 ce 0.134 |g| 0.25  70s  {'FOLLOW': 62, 'TURN': 35, 'ADAPT_SPEED': 35, 'YIELD': 34, 'STOP': 22, 'KEEP': 21}
+INFO:__main__:step 305/500 reward 0.732 man 0.55 fc 0.17 fail 0.01 skip 0.38 kl 0.0158 ce 0.284 |g| 0.37  92s  {'KEEP': 75, 'FOLLOW': 67, 'TURN': 42, 'ADAPT_SPEED': 29, 'SLOW': 15, 'LANE_CHANGE': 15}
+INFO:__main__:step 306/500 reward 0.849 man 0.62 fc 0.04 fail 0.00 skip 0.44 kl 0.0182 ce 0.364 |g| 0.30  84s  {'ADAPT_SPEED': 60, 'KEEP': 57, 'NUDGE': 28, 'STOP': 28, 'YIELD': 22, 'FOLLOW': 20}
+INFO:__main__:step 307/500 reward 0.782 man 0.68 fc 0.05 fail 0.00 skip 0.56 kl 0.0153 ce 0.182 |g| 0.20  74s  {'ADAPT_SPEED': 94, 'KEEP': 61, 'STOP': 32, 'YIELD': 31, 'SLOW': 19, 'NUDGE': 14}
+INFO:__main__:step 308/500 reward 0.906 man 0.59 fc 0.03 fail 0.01 skip 0.56 kl 0.0185 ce 0.104 |g| 0.29  73s  {'STOP': 55, 'FOLLOW': 44, 'KEEP': 43, 'SLOW': 33, 'TURN': 31, 'ACCELERATE': 18}
+INFO:__main__:step 309/500 reward 0.755 man 0.52 fc 0.04 fail 0.00 skip 0.44 kl 0.0115 ce 0.125 |g| 0.31  87s  {'SLOW': 47, 'FOLLOW': 43, 'STOP': 36, 'YIELD': 34, 'ADAPT_SPEED': 33, 'KEEP': 20}
+INFO:__main__:step 310/500 reward 1.062 man 0.64 fc 0.00 fail 0.00 skip 0.75 kl 0.0319 ce 0.046 |g| 0.19  57s  {'FOLLOW': 84, 'STOP': 70, 'ADAPT_SPEED': 46, 'YIELD': 24, 'TURN': 16, 'NUDGE': 12}
+INFO:__main__:step 311/500 reward 1.207 man 0.85 fc 0.03 fail 0.00 skip 0.69 kl 0.0199 ce 0.053 |g| 0.22  63s  {'NUDGE': 43, 'KEEP': 37, 'YIELD': 32, 'FOLLOW': 32, 'STOP': 31, 'ACCELERATE': 31}
+INFO:__main__:step 312/500 reward 0.699 man 0.45 fc 0.05 fail 0.00 skip 0.38 kl 0.0154 ce 0.227 |g| 0.32  89s  {'FOLLOW': 69, 'KEEP': 67, 'NUDGE': 39, 'ADAPT_SPEED': 31, 'STOP': 22, 'YIELD': 18}
+INFO:__main__:step 313/500 reward 1.033 man 0.76 fc 0.01 fail 0.01 skip 0.44 kl 0.0177 ce 0.113 |g| 0.31  88s  {'FOLLOW': 47, 'ADAPT_SPEED': 44, 'KEEP': 41, 'SLOW': 33, 'LANE_CHANGE': 31, 'STOP': 17}
+INFO:__main__:step 314/500 reward 1.051 man 0.70 fc 0.00 fail 0.00 skip 0.75 kl 0.0253 ce 0.128 |g| 0.25  54s  {'STOP': 68, 'KEEP': 57, 'TURN': 48, 'ADAPT_SPEED': 35, 'YIELD': 16, 'NUDGE': 15}
+INFO:__main__:step 315/500 reward 0.992 man 0.73 fc 0.05 fail 0.00 skip 0.44 kl 0.0310 ce 0.182 |g| 0.35  86s  {'ADAPT_SPEED': 50, 'KEEP': 45, 'FOLLOW': 44, 'NUDGE': 42, 'STOP': 21, 'ACCELERATE': 19}
+INFO:__main__:step 316/500 reward 1.160 man 0.76 fc 0.02 fail 0.00 skip 0.44 kl 0.0113 ce 0.189 |g| 0.27  88s  {'FOLLOW': 67, 'NUDGE': 64, 'STOP': 56, 'KEEP': 35, 'ADAPT_SPEED': 19, 'LANE_CHANGE': 13}
+INFO:__main__:step 317/500 reward 1.050 man 0.74 fc 0.00 fail 0.00 skip 0.62 kl 0.0154 ce 0.091 |g| 0.22  64s  {'FOLLOW': 107, 'STOP': 34, 'SLOW': 27, 'ADAPT_SPEED': 21, 'KEEP': 20, 'ACCELERATE': 18}
+INFO:__main__:step 318/500 reward 0.982 man 0.61 fc 0.00 fail 0.00 skip 0.62 kl 0.0149 ce 0.084 |g| 0.24  64s  {'FOLLOW': 89, 'KEEP': 55, 'STOP': 38, 'ACCELERATE': 29, 'NUDGE': 23, 'ADAPT_SPEED': 14}
+INFO:__main__:step 319/500 reward 1.000 man 0.68 fc 0.01 fail 0.00 skip 0.25 kl 0.0208 ce 0.257 |g| 0.33  98s  {'FOLLOW': 44, 'ADAPT_SPEED': 44, 'STOP': 41, 'ACCELERATE': 31, 'TURN': 28, 'YIELD': 20}
+INFO:__main__:step 320/500 reward 0.635 man 0.42 fc 0.08 fail 0.00 skip 0.75 kl 0.0467 ce 0.076 |g| 0.24  56s  {'KEEP': 64, 'NUDGE': 48, 'TURN': 38, 'FOLLOW': 33, 'ACCELERATE': 22, 'SLOW': 18}
+INFO:__main__:step 321/500 reward 1.093 man 0.75 fc 0.01 fail 0.01 skip 0.38 kl 0.0102 ce 0.184 |g| 0.26  90s  {'SLOW': 50, 'NUDGE': 38, 'TURN': 31, 'ADAPT_SPEED': 30, 'FOLLOW': 27, 'ACCELERATE': 25}
+INFO:__main__:step 322/500 reward 1.083 man 0.68 fc 0.00 fail 0.00 skip 0.44 kl 0.0133 ce 0.239 |g| 0.33  86s  {'FOLLOW': 65, 'KEEP': 47, 'NUDGE': 46, 'STOP': 35, 'SLOW': 28, 'YIELD': 27}
+INFO:__main__:step 323/500 reward 1.105 man 0.75 fc 0.00 fail 0.00 skip 0.44 kl 0.0186 ce 0.259 |g| 0.24  89s  {'FOLLOW': 66, 'ADAPT_SPEED': 48, 'SLOW': 30, 'KEEP': 27, 'YIELD': 21, 'NUDGE': 21}
+INFO:__main__:step 324/500 reward 0.919 man 0.61 fc 0.07 fail 0.00 skip 0.62 kl 0.0160 ce 0.066 |g| 0.22  67s  {'FOLLOW': 76, 'STOP': 49, 'KEEP': 42, 'NUDGE': 39, 'ADAPT_SPEED': 28, 'YIELD': 14}
+INFO:__main__:step 325/500 reward 1.188 man 0.79 fc 0.00 fail 0.00 skip 0.50 kl 0.0124 ce 0.137 |g| 0.29  78s  {'FOLLOW': 64, 'ACCELERATE': 48, 'TURN': 42, 'SLOW': 32, 'YIELD': 27, 'ADAPT_SPEED': 22}
+INFO:__main__:step 325 val: {"n": 99, "maneuver_acc": 0.6421052631578947, "false_clear": 0.038461538461538464, "termination": 1.0, "obj_precision": 0.825, "mix": {"FOLLOW": 31, "NUDGE": 16, "STOP": 14, "KEEP": 11, "ADAPT_SPEED": 7, "ACCELERATE": 6, "TURN": 5, "LANE_CHANGE": 3, "YIELD": 3, "SLOW": 2, "null": 1}}
+INFO:__main__:step 326/500 reward 1.054 man 0.71 fc 0.01 fail 0.02 skip 0.50 kl 0.0104 ce 0.168 |g| 0.30  80s  {'FOLLOW': 53, 'STOP': 52, 'ACCELERATE': 52, 'KEEP': 31, 'ADAPT_SPEED': 27, 'YIELD': 22}
+INFO:__main__:step 327/500 reward 1.061 man 0.72 fc 0.01 fail 0.00 skip 0.50 kl 0.0134 ce 0.241 |g| 0.30  78s  {'FOLLOW': 71, 'TURN': 36, 'ACCELERATE': 35, 'STOP': 29, 'ADAPT_SPEED': 26, 'KEEP': 26}
+INFO:__main__:step 328/500 reward 1.058 man 0.63 fc 0.02 fail 0.01 skip 0.44 kl 0.0129 ce 0.187 |g| 0.32  90s  {'FOLLOW': 56, 'NUDGE': 44, 'STOP': 44, 'SLOW': 28, 'ACCELERATE': 26, 'LANE_CHANGE': 16}
+INFO:__main__:step 329/500 reward 1.025 man 0.61 fc 0.00 fail 0.01 skip 0.50 kl 0.0177 ce 0.196 |g| 0.29  82s  {'TURN': 48, 'STOP': 46, 'FOLLOW': 46, 'NUDGE': 31, 'KEEP': 28, None: 17}
+INFO:__main__:step 330/500 reward 0.681 man 0.45 fc 0.09 fail 0.00 skip 0.56 kl 0.0086 ce 0.121 |g| 0.24  76s  {'FOLLOW': 99, 'KEEP': 43, 'TURN': 37, 'NUDGE': 22, 'ADAPT_SPEED': 21, 'SLOW': 17}
+INFO:__main__:step 331/500 reward 1.400 man 0.82 fc 0.02 fail 0.00 skip 0.50 kl 0.0190 ce 0.073 |g| 0.29  81s  {'NUDGE': 89, 'ADAPT_SPEED': 48, 'FOLLOW': 34, 'TURN': 27, 'STOP': 23, 'ACCELERATE': 16}
+INFO:__main__:step 332/500 reward 0.854 man 0.60 fc 0.06 fail 0.02 skip 0.31 kl 0.0169 ce 0.239 |g| 0.33  97s  {'FOLLOW': 74, 'KEEP': 72, 'ACCELERATE': 39, 'STOP': 19, 'SLOW': 15, 'TURN': 14}
+INFO:__main__:step 333/500 reward 0.758 man 0.61 fc 0.04 fail 0.00 skip 0.50 kl 0.0180 ce 0.152 |g| 0.24  77s  {'ADAPT_SPEED': 91, 'FOLLOW': 83, 'NUDGE': 21, 'YIELD': 17, 'TURN': 16, 'KEEP': 14}
+INFO:__main__:step 334/500 reward 1.223 man 0.75 fc 0.02 fail 0.00 skip 0.62 kl 0.0306 ce 0.066 |g| 0.21  70s  {'FOLLOW': 70, 'SLOW': 43, 'NUDGE': 31, 'KEEP': 24, 'ADAPT_SPEED': 17, 'STOP': 16}
+INFO:__main__:step 335/500 reward 1.167 man 0.79 fc 0.00 fail 0.00 skip 0.56 kl 0.0133 ce 0.061 |g| 0.25  75s  {'FOLLOW': 63, 'KEEP': 53, 'STOP': 47, 'SLOW': 38, 'ADAPT_SPEED': 30, 'NUDGE': 23}
+INFO:__main__:step 336/500 reward 1.048 man 0.69 fc 0.00 fail 0.00 skip 0.50 kl 0.0083 ce 0.144 |g| 0.29  78s  {'STOP': 63, 'FOLLOW': 61, 'ACCELERATE': 32, 'KEEP': 32, 'YIELD': 27, 'TURN': 17}
+INFO:__main__:step 337/500 reward 1.046 man 0.70 fc 0.00 fail 0.00 skip 0.62 kl 0.0223 ce 0.068 |g| 0.24  68s  {'FOLLOW': 66, 'KEEP': 48, 'STOP': 41, 'ACCELERATE': 26, 'SLOW': 21, 'ADAPT_SPEED': 21}
+INFO:__main__:step 338/500 reward 1.098 man 0.77 fc 0.07 fail 0.00 skip 0.69 kl 0.0348 ce 0.079 |g| 0.23  60s  {'STOP': 48, 'KEEP': 42, 'FOLLOW': 41, 'NUDGE': 30, 'TURN': 29, 'ADAPT_SPEED': 26}
+INFO:__main__:step 339/500 reward 1.137 man 0.74 fc 0.02 fail 0.00 skip 0.56 kl 0.0064 ce 0.108 |g| 0.26  71s  {'FOLLOW': 82, 'STOP': 48, 'KEEP': 36, 'TURN': 23, 'NUDGE': 23, 'ACCELERATE': 16}
+INFO:__main__:step 340/500 reward 1.082 man 0.79 fc 0.01 fail 0.01 skip 0.56 kl 0.0100 ce 0.133 |g| 0.24  69s  {'FOLLOW': 65, 'KEEP': 50, 'NUDGE': 37, 'ADAPT_SPEED': 33, 'TURN': 16, 'STOP': 16}
+INFO:__main__:step 341/500 reward 0.935 man 0.58 fc 0.01 fail 0.00 skip 0.31 kl 0.0174 ce 0.248 |g| 0.38  102s  {'FOLLOW': 52, 'ADAPT_SPEED': 34, 'KEEP': 33, 'ACCELERATE': 31, 'NUDGE': 25, 'STOP': 24}
+INFO:__main__:step 342/500 reward 0.962 man 0.61 fc 0.01 fail 0.00 skip 0.44 kl 0.0224 ce 0.124 |g| 0.36  86s  {'FOLLOW': 62, 'SLOW': 52, 'STOP': 41, 'ACCELERATE': 41, None: 19, 'KEEP': 18}
+INFO:__main__:step 343/500 reward 1.013 man 0.72 fc 0.02 fail 0.00 skip 0.62 kl 0.0119 ce 0.099 |g| 0.23  68s  {'FOLLOW': 62, 'KEEP': 38, 'SLOW': 35, 'ADAPT_SPEED': 33, 'YIELD': 31, 'STOP': 28}
+INFO:__main__:step 344/500 reward 0.959 man 0.69 fc 0.04 fail 0.04 skip 0.38 kl 0.0309 ce 0.144 |g| 0.30  93s  {'FOLLOW': 66, 'KEEP': 52, 'TURN': 39, 'SLOW': 35, 'STOP': 21, 'ADAPT_SPEED': 20}
+INFO:__main__:step 345/500 reward 0.918 man 0.55 fc 0.02 fail 0.00 skip 0.56 kl 0.0117 ce 0.184 |g| 0.25  76s  {'FOLLOW': 117, 'STOP': 47, 'SLOW': 31, 'NUDGE': 24, 'ADAPT_SPEED': 17, 'TURN': 9}
+INFO:__main__:step 346/500 reward 0.757 man 0.61 fc 0.02 fail 0.00 skip 0.38 kl 0.0144 ce 0.173 |g| 0.34  99s  {'ADAPT_SPEED': 75, 'FOLLOW': 52, 'KEEP': 48, 'NUDGE': 26, 'STOP': 24, 'LANE_CHANGE': 11}
+INFO:__main__:step 347/500 reward 1.268 man 0.82 fc 0.00 fail 0.03 skip 0.62 kl 0.0148 ce 0.081 |g| 0.38  69s  {'FOLLOW': 140, 'YIELD': 48, 'TURN': 23, 'ADAPT_SPEED': 16, 'LANE_CHANGE': 14, None: 9}
+INFO:__main__:step 348/500 reward 1.152 man 0.79 fc 0.02 fail 0.00 skip 0.44 kl 0.0187 ce 0.160 |g| 0.37  86s  {'KEEP': 78, 'FOLLOW': 38, 'YIELD': 32, 'NUDGE': 28, 'STOP': 25, 'ADAPT_SPEED': 21}
+INFO:__main__:step 349/500 reward 0.992 man 0.61 fc 0.02 fail 0.00 skip 0.62 kl 0.0273 ce 0.185 |g| 0.25  66s  {'NUDGE': 61, 'FOLLOW': 52, 'ADAPT_SPEED': 31, 'KEEP': 30, 'STOP': 23, 'YIELD': 21}
+INFO:__main__:step 350/500 reward 1.102 man 0.77 fc 0.00 fail 0.00 skip 0.69 kl 0.0129 ce 0.090 |g| 0.21  64s  {'FOLLOW': 84, 'NUDGE': 37, 'SLOW': 36, 'KEEP': 32, 'ADAPT_SPEED': 32, 'STOP': 31}
+INFO:__main__:step 350 val: {"n": 99, "maneuver_acc": 0.6421052631578947, "false_clear": 0.038461538461538464, "termination": 1.0, "obj_precision": 0.7891566265060241, "mix": {"FOLLOW": 35, "NUDGE": 15, "KEEP": 12, "STOP": 11, "TURN": 7, "ADAPT_SPEED": 7, "YIELD": 5, "ACCELERATE": 4, "LANE_CHANGE": 2, "SLOW": 1}}
+INFO:__main__:step 351/500 reward 1.086 man 0.77 fc 0.05 fail 0.01 skip 0.56 kl 0.0240 ce 0.256 |g| 0.27  75s  {'FOLLOW': 40, 'ACCELERATE': 35, 'STOP': 33, 'KEEP': 33, 'YIELD': 28, 'NUDGE': 27}
+INFO:__main__:step 352/500 reward 1.252 man 0.89 fc 0.01 fail 0.00 skip 0.62 kl 0.0236 ce 0.143 |g| 0.25  68s  {'NUDGE': 60, 'FOLLOW': 48, 'YIELD': 39, 'KEEP': 35, 'STOP': 31, 'SLOW': 22}
+INFO:__main__:step 353/500 reward 0.791 man 0.61 fc 0.14 fail 0.01 skip 0.50 kl 0.0271 ce 0.204 |g| 0.29  82s  {'FOLLOW': 77, 'KEEP': 57, 'STOP': 49, None: 17, 'YIELD': 16, 'NUDGE': 13}
+INFO:__main__:step 354/500 reward 1.244 man 0.87 fc 0.00 fail 0.00 skip 0.56 kl 0.0188 ce 0.089 |g| 0.19  75s  {'FOLLOW': 69, 'ADAPT_SPEED': 45, 'NUDGE': 44, 'KEEP': 34, 'STOP': 32, 'YIELD': 16}
+INFO:__main__:step 355/500 reward 0.795 man 0.57 fc 0.03 fail 0.02 skip 0.50 kl 0.0140 ce 0.248 |g| 0.29  78s  {'KEEP': 52, 'FOLLOW': 48, 'YIELD': 30, 'TURN': 29, 'NUDGE': 24, 'ADAPT_SPEED': 22}
+INFO:__main__:step 356/500 reward 0.937 man 0.59 fc 0.02 fail 0.00 skip 0.44 kl 0.0111 ce 0.157 |g| 0.35  84s  {'FOLLOW': 80, 'SLOW': 54, 'ADAPT_SPEED': 35, 'NUDGE': 23, 'TURN': 20, 'ACCELERATE': 19}
+INFO:__main__:step 357/500 reward 0.902 man 0.56 fc 0.00 fail 0.00 skip 0.50 kl 0.0151 ce 0.170 |g| 0.32  80s  {'FOLLOW': 96, 'ADAPT_SPEED': 48, 'STOP': 42, 'NUDGE': 20, 'SLOW': 19, 'ACCELERATE': 16}
+INFO:__main__:step 358/500 reward 0.924 man 0.63 fc 0.06 fail 0.00 skip 0.56 kl 0.0195 ce 0.152 |g| 0.29  75s  {'ADAPT_SPEED': 78, 'FOLLOW': 76, 'KEEP': 38, 'NUDGE': 25, 'TURN': 18, 'STOP': 16}
+INFO:__main__:step 359/500 reward 1.122 man 0.78 fc 0.10 fail 0.00 skip 0.56 kl 0.0114 ce 0.096 |g| 0.26  78s  {'FOLLOW': 104, 'STOP': 50, 'KEEP': 43, 'NUDGE': 35, 'ADAPT_SPEED': 16, 'LANE_CHANGE': 4}
+INFO:__main__:step 360/500 reward 1.016 man 0.74 fc 0.04 fail 0.00 skip 0.62 kl 0.0191 ce 0.111 |g| 0.21  64s  {'ADAPT_SPEED': 62, 'FOLLOW': 47, 'YIELD': 42, 'KEEP': 35, 'STOP': 31, 'NUDGE': 19}
+INFO:__main__:step 361/500 reward 1.143 man 0.80 fc 0.00 fail 0.00 skip 0.50 kl 0.0112 ce 0.107 |g| 0.30  83s  {'STOP': 61, 'FOLLOW': 53, 'YIELD': 42, 'SLOW': 39, 'ADAPT_SPEED': 35, 'KEEP': 19}
+INFO:__main__:step 362/500 reward 1.160 man 0.81 fc 0.00 fail 0.01 skip 0.62 kl 0.0100 ce 0.099 |g| 0.23  62s  {'STOP': 42, 'FOLLOW': 38, 'KEEP': 36, 'TURN': 33, 'ADAPT_SPEED': 32, 'ACCELERATE': 29}
+INFO:__main__:step 363/500 reward 0.847 man 0.70 fc 0.06 fail 0.01 skip 0.50 kl 0.0277 ce 0.120 |g| 0.27  76s  {'KEEP': 93, 'ADAPT_SPEED': 47, 'STOP': 32, 'FOLLOW': 31, 'NUDGE': 17, 'LANE_CHANGE': 16}
+INFO:__main__:step 364/500 reward 1.117 man 0.76 fc 0.00 fail 0.00 skip 0.56 kl 0.0248 ce 0.171 |g| 0.23  71s  {'NUDGE': 59, 'FOLLOW': 57, 'ADAPT_SPEED': 46, 'KEEP': 18, 'TURN': 16, 'YIELD': 16}
+INFO:__main__:step 365/500 reward 1.002 man 0.71 fc 0.06 fail 0.00 skip 0.25 kl 0.0201 ce 0.155 |g| 0.37  104s  {'FOLLOW': 75, 'KEEP': 48, 'NUDGE': 31, 'ADAPT_SPEED': 27, 'ACCELERATE': 27, 'STOP': 15}
+INFO:__main__:step 366/500 reward 0.918 man 0.66 fc 0.05 fail 0.00 skip 0.38 kl 0.0141 ce 0.173 |g| 0.25  93s  {'FOLLOW': 58, 'ADAPT_SPEED': 41, 'KEEP': 35, 'YIELD': 32, 'NUDGE': 29, 'SLOW': 23}
+INFO:__main__:step 367/500 reward 0.789 man 0.54 fc 0.03 fail 0.02 skip 0.62 kl 0.0275 ce 0.106 |g| 0.29  67s  {'FOLLOW': 79, 'ADAPT_SPEED': 64, 'NUDGE': 34, 'YIELD': 25, 'STOP': 13, 'TURN': 11}
+INFO:__main__:step 368/500 reward 0.971 man 0.57 fc 0.01 fail 0.00 skip 0.50 kl 0.0246 ce 0.159 |g| 0.34  85s  {'FOLLOW': 55, 'TURN': 50, 'ADAPT_SPEED': 42, 'YIELD': 35, 'STOP': 32, 'KEEP': 19}
+INFO:__main__:step 369/500 reward 1.038 man 0.66 fc 0.00 fail 0.00 skip 0.75 kl 0.0089 ce 0.055 |g| 0.16  55s  {'FOLLOW': 89, 'ADAPT_SPEED': 48, 'TURN': 47, 'YIELD': 32, 'ACCELERATE': 16, 'KEEP': 16}
+INFO:__main__:step 370/500 reward 1.068 man 0.70 fc 0.05 fail 0.02 skip 0.44 kl 0.0153 ce 0.123 |g| 0.29  88s  {'FOLLOW': 68, 'ADAPT_SPEED': 35, 'YIELD': 24, 'TURN': 24, 'LANE_CHANGE': 20, 'ACCELERATE': 19}
+INFO:__main__:step 371/500 reward 1.040 man 0.60 fc 0.02 fail 0.00 skip 0.44 kl 0.0216 ce 0.144 |g| 0.29  81s  {'FOLLOW': 62, 'TURN': 59, 'KEEP': 28, 'SLOW': 28, 'ADAPT_SPEED': 20, 'STOP': 19}
+INFO:__main__:step 372/500 reward 0.938 man 0.62 fc 0.06 fail 0.00 skip 0.44 kl 0.0196 ce 0.303 |g| 0.26  85s  {'FOLLOW': 67, 'STOP': 55, 'KEEP': 52, 'NUDGE': 27, 'ADAPT_SPEED': 24, 'ACCELERATE': 16}
+INFO:__main__:step 373/500 reward 1.182 man 0.79 fc 0.00 fail 0.00 skip 0.62 kl 0.0209 ce 0.102 |g| 0.22  72s  {'FOLLOW': 98, 'NUDGE': 44, 'ADAPT_SPEED': 31, 'YIELD': 24, 'STOP': 21, 'KEEP': 19}
+INFO:__main__:step 374/500 reward 1.000 man 0.68 fc 0.02 fail 0.00 skip 0.44 kl 0.0113 ce 0.152 |g| 0.29  89s  {'TURN': 56, 'ADAPT_SPEED': 49, 'FOLLOW': 44, 'KEEP': 34, 'STOP': 24, 'YIELD': 22}
+INFO:__main__:step 375/500 reward 1.039 man 0.69 fc 0.03 fail 0.00 skip 0.56 kl 0.0227 ce 0.107 |g| 0.24  74s  {'FOLLOW': 64, 'ADAPT_SPEED': 55, 'NUDGE': 43, 'TURN': 32, 'SLOW': 16, 'LANE_CHANGE': 16}
+INFO:__main__:step 375 val: {"n": 99, "maneuver_acc": 0.6736842105263158, "false_clear": 0.02564102564102564, "termination": 1.0, "obj_precision": 0.8115079365079365, "mix": {"FOLLOW": 36, "NUDGE": 18, "STOP": 10, "KEEP": 9, "TURN": 7, "ADAPT_SPEED": 6, "ACCELERATE": 5, "SLOW": 4, "LANE_CHANGE": 2, "YIELD": 2}}
+INFO:__main__:step 376/500 reward 1.355 man 0.92 fc 0.02 fail 0.00 skip 0.56 kl 0.0200 ce 0.086 |g| 0.20  71s  {'FOLLOW': 61, 'YIELD': 47, 'KEEP': 41, 'NUDGE': 36, 'STOP': 32, 'ADAPT_SPEED': 22}
+INFO:__main__:step 377/500 reward 1.104 man 0.73 fc 0.01 fail 0.00 skip 0.50 kl 0.0244 ce 0.171 |g| 0.25  77s  {'NUDGE': 58, 'STOP': 43, 'KEEP': 36, 'TURN': 31, 'ADAPT_SPEED': 23, 'FOLLOW': 21}
+INFO:__main__:step 378/500 reward 1.040 man 0.74 fc 0.01 fail 0.00 skip 0.25 kl 0.0200 ce 0.202 |g| 0.33  102s  {'KEEP': 59, 'ADAPT_SPEED': 47, 'TURN': 32, 'FOLLOW': 30, 'NUDGE': 27, 'STOP': 27}
+INFO:__main__:step 379/500 reward 0.956 man 0.75 fc 0.05 fail 0.00 skip 0.62 kl 0.0205 ce 0.082 |g| 0.23  70s  {'FOLLOW': 92, 'ADAPT_SPEED': 57, 'KEEP': 35, 'STOP': 20, 'SLOW': 17, 'NUDGE': 16}
+INFO:__main__:step 380/500 reward 1.072 man 0.71 fc 0.06 fail 0.00 skip 0.31 kl 0.0235 ce 0.247 |g| 0.28  96s  {'FOLLOW': 73, 'KEEP': 60, 'NUDGE': 38, 'ADAPT_SPEED': 29, 'SLOW': 19, 'STOP': 19}
+INFO:__main__:step 381/500 reward 1.066 man 0.66 fc 0.00 fail 0.00 skip 0.44 kl 0.0171 ce 0.076 |g| 0.26  85s  {'FOLLOW': 69, 'STOP': 63, 'KEEP': 46, 'ADAPT_SPEED': 22, 'ACCELERATE': 20, 'LANE_CHANGE': 16}
+INFO:__main__:step 382/500 reward 1.176 man 0.80 fc 0.03 fail 0.00 skip 0.44 kl 0.0190 ce 0.192 |g| 0.32  86s  {'STOP': 53, 'KEEP': 51, 'ADAPT_SPEED': 29, 'TURN': 28, 'FOLLOW': 27, 'NUDGE': 25}
+INFO:__main__:step 383/500 reward 0.977 man 0.62 fc 0.00 fail 0.00 skip 0.56 kl 0.0261 ce 0.076 |g| 0.21  75s  {'FOLLOW': 89, 'ADAPT_SPEED': 59, 'YIELD': 32, 'KEEP': 20, 'ACCELERATE': 18, 'TURN': 18}
+INFO:__main__:step 384/500 reward 1.219 man 0.90 fc 0.07 fail 0.00 skip 0.56 kl 0.0323 ce 0.165 |g| 0.29  73s  {'KEEP': 63, 'FOLLOW': 48, 'STOP': 32, 'ADAPT_SPEED': 32, 'YIELD': 28, 'NUDGE': 18}
+INFO:__main__:step 385/500 reward 1.022 man 0.68 fc 0.02 fail 0.00 skip 0.69 kl 0.0058 ce 0.059 |g| 0.19  59s  {'FOLLOW': 108, 'KEEP': 36, 'ADAPT_SPEED': 35, 'STOP': 29, 'NUDGE': 17, 'SLOW': 13}
+INFO:__main__:step 386/500 reward 1.107 man 0.77 fc 0.00 fail 0.00 skip 0.50 kl 0.0214 ce 0.164 |g| 0.32  79s  {'FOLLOW': 65, 'KEEP': 54, 'ADAPT_SPEED': 30, 'NUDGE': 27, 'STOP': 27, 'ACCELERATE': 18}
+INFO:__main__:step 387/500 reward 1.051 man 0.66 fc 0.00 fail 0.00 skip 0.75 kl 0.0037 ce 0.114 |g| 0.21  56s  {'FOLLOW': 94, 'NUDGE': 40, 'SLOW': 26, 'TURN': 23, 'STOP': 21, 'ADAPT_SPEED': 20}
+INFO:__main__:step 388/500 reward 1.104 man 0.75 fc 0.02 fail 0.00 skip 0.44 kl 0.0208 ce 0.145 |g| 0.28  85s  {'FOLLOW': 53, 'YIELD': 45, 'NUDGE': 37, 'KEEP': 34, 'ADAPT_SPEED': 31, 'STOP': 19}
+INFO:__main__:step 389/500 reward 1.084 man 0.66 fc 0.00 fail 0.01 skip 0.38 kl 0.0116 ce 0.206 |g| 0.33  91s  {'FOLLOW': 87, 'SLOW': 33, 'ACCELERATE': 25, 'STOP': 24, 'NUDGE': 22, 'TURN': 21}
+INFO:__main__:step 390/500 reward 0.911 man 0.67 fc 0.02 fail 0.01 skip 0.44 kl 0.0235 ce 0.386 |g| 0.37  84s  {'FOLLOW': 48, 'YIELD': 45, 'KEEP': 43, 'STOP': 36, 'ACCELERATE': 23, 'ADAPT_SPEED': 20}
+INFO:__main__:step 391/500 reward 0.892 man 0.45 fc 0.01 fail 0.00 skip 0.31 kl 0.0124 ce 0.322 |g| 0.39  98s  {'FOLLOW': 76, 'NUDGE': 37, 'STOP': 32, 'YIELD': 30, 'KEEP': 29, 'ADAPT_SPEED': 18}
+INFO:__main__:step 392/500 reward 0.838 man 0.62 fc 0.02 fail 0.01 skip 0.38 kl 0.0386 ce 0.096 |g| 0.33  88s  {'KEEP': 84, 'STOP': 48, 'ADAPT_SPEED': 30, 'FOLLOW': 28, 'YIELD': 20, 'ACCELERATE': 14}
+INFO:__main__:step 393/500 reward 0.926 man 0.71 fc 0.11 fail 0.00 skip 0.69 kl 0.0267 ce 0.199 |g| 0.27  65s  {'FOLLOW': 99, 'KEEP': 61, 'STOP': 30, 'ADAPT_SPEED': 25, 'NUDGE': 24, 'SLOW': 6}
+INFO:__main__:step 394/500 reward 0.915 man 0.62 fc 0.00 fail 0.00 skip 0.56 kl 0.0256 ce 0.168 |g| 0.26  80s  {'KEEP': 55, 'STOP': 52, 'NUDGE': 43, 'ADAPT_SPEED': 37, 'LANE_CHANGE': 21, 'YIELD': 16}
+INFO:__main__:step 395/500 reward 1.004 man 0.68 fc 0.02 fail 0.01 skip 0.69 kl 0.0220 ce 0.212 |g| 0.20  65s  {'FOLLOW': 96, 'STOP': 48, 'KEEP': 33, 'ADAPT_SPEED': 23, 'NUDGE': 19, 'ACCELERATE': 18}
+INFO:__main__:step 396/500 reward 1.059 man 0.80 fc 0.00 fail 0.00 skip 0.56 kl 0.0149 ce 0.121 |g| 0.27  72s  {'KEEP': 107, 'FOLLOW': 59, 'ADAPT_SPEED': 37, 'STOP': 21, 'LANE_CHANGE': 17, 'TURN': 7}
+INFO:__main__:step 397/500 reward 1.198 man 0.81 fc 0.01 fail 0.00 skip 0.50 kl 0.0192 ce 0.087 |g| 0.22  82s  {'FOLLOW': 95, 'ADAPT_SPEED': 51, 'KEEP': 34, 'YIELD': 31, 'ACCELERATE': 17, 'TURN': 16}
+INFO:__main__:step 398/500 reward 1.343 man 0.80 fc 0.00 fail 0.00 skip 0.81 kl 0.0186 ce 0.037 |g| 0.25  51s  {'FOLLOW': 81, 'KEEP': 50, 'LANE_CHANGE': 34, 'TURN': 29, 'NUDGE': 16, 'ADAPT_SPEED': 16}
+INFO:__main__:step 399/500 reward 1.213 man 0.74 fc 0.00 fail 0.00 skip 0.69 kl 0.0250 ce 0.117 |g| 0.22  63s  {'FOLLOW': 83, 'STOP': 48, 'NUDGE': 45, 'KEEP': 34, 'SLOW': 20, 'TURN': 16}
+INFO:__main__:step 400/500 reward 1.135 man 0.77 fc 0.09 fail 0.01 skip 0.44 kl 0.0406 ce 0.138 |g| 0.30  86s  {'FOLLOW': 83, 'KEEP': 52, 'TURN': 32, 'STOP': 30, 'ADAPT_SPEED': 28, 'NUDGE': 20}
+INFO:__main__:step 400 val: {"n": 99, "maneuver_acc": 0.7263157894736842, "false_clear": 0.038461538461538464, "termination": 1.0, "obj_precision": 0.8313253012048193, "mix": {"FOLLOW": 37, "NUDGE": 16, "STOP": 13, "KEEP": 11, "TURN": 5, "ADAPT_SPEED": 5, "ACCELERATE": 4, "YIELD": 3, "SLOW": 3, "LANE_CHANGE": 2}}
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-1/best (992 tensors)
+INFO:__main__:  <- new best (val maneuver acc 0.726), saved
+INFO:__main__:step 401/500 reward 1.245 man 0.78 fc 0.04 fail 0.00 skip 0.69 kl 0.0207 ce 0.153 |g| 0.21  66s  {'FOLLOW': 83, 'TURN': 48, 'NUDGE': 40, 'KEEP': 30, 'ADAPT_SPEED': 19, 'YIELD': 16}
+INFO:__main__:step 402/500 reward 1.074 man 0.73 fc 0.02 fail 0.00 skip 0.56 kl 0.0163 ce 0.111 |g| 0.26  77s  {'FOLLOW': 62, 'KEEP': 49, 'NUDGE': 48, 'SLOW': 31, 'ADAPT_SPEED': 27, 'YIELD': 22}
+INFO:__main__:step 403/500 reward 0.791 man 0.52 fc 0.03 fail 0.00 skip 0.38 kl 0.0250 ce 0.234 |g| 0.40  94s  {'STOP': 71, 'NUDGE': 53, 'FOLLOW': 25, 'KEEP': 23, 'ADAPT_SPEED': 19, 'ACCELERATE': 17}
+INFO:__main__:step 404/500 reward 1.065 man 0.80 fc 0.00 fail 0.00 skip 0.56 kl 0.0231 ce 0.144 |g| 0.29  72s  {'FOLLOW': 55, 'ADAPT_SPEED': 42, 'KEEP': 38, 'NUDGE': 35, 'YIELD': 29, 'SLOW': 25}
+INFO:__main__:step 405/500 reward 1.112 man 0.77 fc 0.00 fail 0.00 skip 0.25 kl 0.0239 ce 0.115 |g| 0.38  108s  {'KEEP': 56, 'NUDGE': 38, 'ACCELERATE': 35, 'FOLLOW': 31, 'YIELD': 21, 'SLOW': 20}
+INFO:__main__:step 406/500 reward 1.070 man 0.76 fc 0.00 fail 0.00 skip 0.56 kl 0.0142 ce 0.094 |g| 0.27  71s  {'FOLLOW': 76, 'ADAPT_SPEED': 37, 'YIELD': 32, 'KEEP': 30, 'SLOW': 27, 'NUDGE': 22}
+INFO:__main__:step 407/500 reward 1.043 man 0.77 fc 0.07 fail 0.00 skip 0.62 kl 0.0213 ce 0.076 |g| 0.21  64s  {'FOLLOW': 96, 'KEEP': 47, 'ADAPT_SPEED': 43, 'TURN': 27, 'YIELD': 17, 'STOP': 16}
+INFO:__main__:step 408/500 reward 0.787 man 0.52 fc 0.00 fail 0.01 skip 0.56 kl 0.0287 ce 0.097 |g| 0.30  78s  {'KEEP': 60, 'ADAPT_SPEED': 48, 'FOLLOW': 45, 'NUDGE': 29, 'STOP': 25, 'LANE_CHANGE': 19}
+INFO:__main__:step 409/500 reward 0.907 man 0.68 fc 0.07 fail 0.00 skip 0.62 kl 0.0381 ce 0.076 |g| 0.22  71s  {'KEEP': 97, 'FOLLOW': 49, 'ADAPT_SPEED': 42, 'TURN': 19, 'STOP': 18, 'NUDGE': 18}
+INFO:__main__:step 410/500 reward 0.989 man 0.61 fc 0.01 fail 0.00 skip 0.31 kl 0.0138 ce 0.303 |g| 0.40  101s  {'FOLLOW': 116, 'TURN': 39, 'KEEP': 35, 'YIELD': 27, 'STOP': 18, 'LANE_CHANGE': 16}
+INFO:__main__:step 411/500 reward 0.932 man 0.64 fc 0.00 fail 0.01 skip 0.50 kl 0.0297 ce 0.202 |g| 0.32  82s  {'ADAPT_SPEED': 59, 'FOLLOW': 56, 'STOP': 38, 'KEEP': 38, 'ACCELERATE': 32, 'SLOW': 20}
+INFO:__main__:step 412/500 reward 0.849 man 0.52 fc 0.02 fail 0.04 skip 0.56 kl 0.0314 ce 0.154 |g| 0.28  73s  {'NUDGE': 62, 'YIELD': 45, 'FOLLOW': 35, 'ADAPT_SPEED': 33, 'TURN': 20, 'KEEP': 16}
+INFO:__main__:step 413/500 reward 1.046 man 0.70 fc 0.00 fail 0.00 skip 0.62 kl 0.0064 ce 0.089 |g| 0.27  65s  {'FOLLOW': 91, 'ADAPT_SPEED': 48, 'STOP': 32, 'YIELD': 32, 'KEEP': 26, 'ACCELERATE': 16}
+INFO:__main__:step 414/500 reward 1.137 man 0.66 fc 0.00 fail 0.00 skip 0.56 kl 0.0125 ce 0.122 |g| 0.25  73s  {'FOLLOW': 83, 'NUDGE': 62, 'SLOW': 31, 'STOP': 26, 'YIELD': 26, 'ADAPT_SPEED': 14}
+INFO:__main__:step 415/500 reward 0.891 man 0.63 fc 0.05 fail 0.00 skip 0.50 kl 0.0171 ce 0.081 |g| 0.30  79s  {'FOLLOW': 98, 'TURN': 40, 'YIELD': 32, 'ADAPT_SPEED': 31, 'ACCELERATE': 20, 'LANE_CHANGE': 15}
+INFO:__main__:step 416/500 reward 1.074 man 0.71 fc 0.00 fail 0.00 skip 0.56 kl 0.0107 ce 0.180 |g| 0.27  74s  {'FOLLOW': 70, 'NUDGE': 34, 'KEEP': 32, 'STOP': 29, 'YIELD': 28, 'LANE_CHANGE': 19}
+INFO:__main__:step 417/500 reward 1.128 man 0.77 fc 0.04 fail 0.00 skip 0.50 kl 0.0344 ce 0.151 |g| 0.26  80s  {'FOLLOW': 73, 'STOP': 49, 'SLOW': 32, 'ACCELERATE': 30, 'TURN': 29, 'KEEP': 22}
+INFO:__main__:step 418/500 reward 1.289 man 0.78 fc 0.03 fail 0.02 skip 0.50 kl 0.0224 ce 0.171 |g| 0.25  79s  {'FOLLOW': 62, 'NUDGE': 62, 'STOP': 44, 'YIELD': 23, 'KEEP': 21, 'ACCELERATE': 16}
+INFO:__main__:step 419/500 reward 1.125 man 0.73 fc 0.01 fail 0.00 skip 0.69 kl 0.0218 ce 0.099 |g| 0.17  61s  {'FOLLOW': 77, 'ADAPT_SPEED': 73, 'ACCELERATE': 32, 'STOP': 21, 'KEEP': 19, 'NUDGE': 16}
+INFO:__main__:step 420/500 reward 1.000 man 0.67 fc 0.02 fail 0.00 skip 0.50 kl 0.0322 ce 0.185 |g| 0.35  79s  {'FOLLOW': 59, 'SLOW': 46, 'YIELD': 36, 'NUDGE': 23, 'ADAPT_SPEED': 23, 'ACCELERATE': 23}
+INFO:__main__:step 421/500 reward 1.152 man 0.75 fc 0.02 fail 0.01 skip 0.50 kl 0.0237 ce 0.181 |g| 0.30  83s  {'NUDGE': 39, 'TURN': 36, 'KEEP': 36, 'FOLLOW': 30, 'STOP': 24, 'YIELD': 22}
+INFO:__main__:step 422/500 reward 1.188 man 0.74 fc 0.00 fail 0.00 skip 0.62 kl 0.0227 ce 0.117 |g| 0.28  64s  {'FOLLOW': 36, 'STOP': 36, 'KEEP': 35, 'ADAPT_SPEED': 33, 'NUDGE': 32, 'ACCELERATE': 31}
+INFO:__main__:step 423/500 reward 0.866 man 0.57 fc 0.03 fail 0.00 skip 0.44 kl 0.0280 ce 0.261 |g| 0.31  84s  {'KEEP': 61, 'FOLLOW': 46, 'SLOW': 41, 'STOP': 32, 'ACCELERATE': 27, 'TURN': 18}
+INFO:__main__:step 424/500 reward 1.105 man 0.64 fc 0.04 fail 0.00 skip 0.44 kl 0.0207 ce 0.300 |g| 0.32  84s  {'FOLLOW': 68, 'TURN': 43, 'STOP': 40, 'NUDGE': 38, 'SLOW': 26, 'YIELD': 15}
+INFO:__main__:step 425/500 reward 1.197 man 0.75 fc 0.00 fail 0.00 skip 0.62 kl 0.0175 ce 0.159 |g| 0.24  65s  {'FOLLOW': 54, 'SLOW': 38, 'YIELD': 37, 'KEEP': 37, 'TURN': 32, 'LANE_CHANGE': 20}
+INFO:__main__:step 425 val: {"n": 99, "maneuver_acc": 0.6736842105263158, "false_clear": 0.01282051282051282, "termination": 1.0, "obj_precision": 0.7960784313725491, "mix": {"FOLLOW": 32, "NUDGE": 18, "STOP": 12, "KEEP": 11, "TURN": 8, "ADAPT_SPEED": 5, "ACCELERATE": 4, "LANE_CHANGE": 3, "YIELD": 3, "SLOW": 3}}
+INFO:__main__:step 426/500 reward 0.861 man 0.65 fc 0.02 fail 0.04 skip 0.38 kl 0.0240 ce 0.137 |g| 0.32  86s  {'FOLLOW': 64, 'STOP': 45, 'NUDGE': 40, 'KEEP': 36, 'SLOW': 24, None: 15}
+INFO:__main__:step 427/500 reward 1.238 man 0.81 fc 0.00 fail 0.00 skip 0.62 kl 0.0570 ce 0.118 |g| 0.22  67s  {'FOLLOW': 69, 'KEEP': 55, 'NUDGE': 52, 'TURN': 30, 'STOP': 16, 'ADAPT_SPEED': 14}
+INFO:__main__:step 428/500 reward 1.117 man 0.77 fc 0.00 fail 0.00 skip 0.69 kl 0.0273 ce 0.068 |g| 0.22  60s  {'STOP': 79, 'FOLLOW': 47, 'ACCELERATE': 32, 'SLOW': 31, 'KEEP': 27, 'NUDGE': 21}
+INFO:__main__:step 429/500 reward 1.039 man 0.67 fc 0.00 fail 0.00 skip 0.81 kl 0.0480 ce 0.055 |g| 0.24  51s  {'FOLLOW': 80, 'STOP': 48, 'SLOW': 41, 'KEEP': 25, 'NUDGE': 23, 'YIELD': 18}
+INFO:__main__:step 430/500 reward 0.957 man 0.62 fc 0.07 fail 0.00 skip 0.44 kl 0.0163 ce 0.174 |g| 0.32  85s  {'STOP': 61, 'FOLLOW': 57, 'NUDGE': 30, 'KEEP': 29, 'ADAPT_SPEED': 23, 'LANE_CHANGE': 21}
+INFO:__main__:step 431/500 reward 1.084 man 0.76 fc 0.04 fail 0.00 skip 0.56 kl 0.0210 ce 0.092 |g| 0.29  70s  {'STOP': 72, 'FOLLOW': 71, 'KEEP': 57, 'ADAPT_SPEED': 23, 'SLOW': 17, 'LANE_CHANGE': 16}
+INFO:__main__:step 432/500 reward 1.169 man 0.74 fc 0.00 fail 0.00 skip 0.38 kl 0.0236 ce 0.273 |g| 0.40  90s  {'FOLLOW': 57, 'YIELD': 46, 'STOP': 45, 'KEEP': 42, 'ACCELERATE': 17, 'TURN': 17}
+INFO:__main__:step 433/500 reward 1.049 man 0.69 fc 0.00 fail 0.00 skip 0.62 kl 0.0274 ce 0.132 |g| 0.24  69s  {'FOLLOW': 55, 'KEEP': 51, 'NUDGE': 36, 'SLOW': 33, 'LANE_CHANGE': 32, 'ADAPT_SPEED': 31}
+INFO:__main__:step 434/500 reward 1.279 man 0.81 fc 0.00 fail 0.00 skip 0.75 kl 0.0117 ce 0.158 |g| 0.20  57s  {'KEEP': 48, 'ACCELERATE': 48, 'NUDGE': 45, 'FOLLOW': 38, 'STOP': 28, 'YIELD': 20}
+INFO:__main__:step 435/500 reward 0.718 man 0.50 fc 0.01 fail 0.01 skip 0.44 kl 0.0377 ce 0.221 |g| 0.31  84s  {'KEEP': 70, 'STOP': 46, 'NUDGE': 41, 'ADAPT_SPEED': 33, 'FOLLOW': 31, 'SLOW': 13}
+INFO:__main__:step 436/500 reward 1.147 man 0.79 fc 0.00 fail 0.00 skip 0.44 kl 0.0242 ce 0.070 |g| 0.31  84s  {'STOP': 47, 'ADAPT_SPEED': 37, 'SLOW': 36, 'NUDGE': 33, 'FOLLOW': 27, 'KEEP': 20}
+INFO:__main__:step 437/500 reward 0.784 man 0.41 fc 0.04 fail 0.00 skip 0.25 kl 0.0250 ce 0.193 |g| 0.35  102s  {'FOLLOW': 49, 'TURN': 45, 'ACCELERATE': 36, 'YIELD': 31, 'KEEP': 30, 'ADAPT_SPEED': 27}
+INFO:__main__:step 438/500 reward 1.093 man 0.63 fc 0.02 fail 0.00 skip 0.50 kl 0.0193 ce 0.101 |g| 0.25  80s  {'FOLLOW': 94, 'ACCELERATE': 46, 'NUDGE': 30, 'TURN': 17, 'LANE_CHANGE': 17, 'YIELD': 16}
+INFO:__main__:step 439/500 reward 1.054 man 0.76 fc 0.07 fail 0.00 skip 0.50 kl 0.0347 ce 0.131 |g| 0.27  82s  {'KEEP': 75, 'NUDGE': 45, 'FOLLOW': 33, 'ADAPT_SPEED': 28, 'ACCELERATE': 27, 'TURN': 16}
+INFO:__main__:step 440/500 reward 0.596 man 0.38 fc 0.10 fail 0.00 skip 0.38 kl 0.0188 ce 0.178 |g| 0.33  88s  {'KEEP': 78, 'FOLLOW': 49, 'ACCELERATE': 36, 'NUDGE': 33, 'SLOW': 20, 'TURN': 13}
+INFO:__main__:step 441/500 reward 1.142 man 0.68 fc 0.00 fail 0.00 skip 0.38 kl 0.0249 ce 0.235 |g| 0.29  90s  {'FOLLOW': 63, 'NUDGE': 47, 'ACCELERATE': 35, 'SLOW': 29, 'KEEP': 19, 'LANE_CHANGE': 18}
+INFO:__main__:step 442/500 reward 1.037 man 0.66 fc 0.05 fail 0.00 skip 0.56 kl 0.0297 ce 0.115 |g| 0.29  73s  {'STOP': 80, 'FOLLOW': 52, 'TURN': 49, 'NUDGE': 31, 'KEEP': 18, 'ADAPT_SPEED': 16}
+INFO:__main__:step 443/500 reward 1.008 man 0.78 fc 0.00 fail 0.00 skip 0.69 kl 0.0110 ce 0.110 |g| 0.32  61s  {'FOLLOW': 72, 'ADAPT_SPEED': 58, 'KEEP': 44, 'STOP': 32, 'SLOW': 23, 'TURN': 16}
+INFO:__main__:step 444/500 reward 1.327 man 0.94 fc 0.00 fail 0.00 skip 0.75 kl 0.0051 ce 0.068 |g| 0.15  56s  {'KEEP': 80, 'STOP': 55, 'FOLLOW': 30, 'ACCELERATE': 24, 'NUDGE': 18, 'TURN': 17}
+INFO:__main__:step 445/500 reward 1.178 man 0.79 fc 0.00 fail 0.00 skip 0.50 kl 0.0360 ce 0.091 |g| 0.26  79s  {'KEEP': 75, 'TURN': 48, 'YIELD': 25, 'ADAPT_SPEED': 23, 'STOP': 23, 'NUDGE': 21}
+INFO:__main__:step 446/500 reward 1.229 man 0.78 fc 0.07 fail 0.00 skip 0.56 kl 0.0295 ce 0.146 |g| 0.27  72s  {'STOP': 77, 'KEEP': 49, 'FOLLOW': 36, 'NUDGE': 31, 'ACCELERATE': 18, 'TURN': 17}
+INFO:__main__:step 447/500 reward 1.005 man 0.67 fc 0.03 fail 0.00 skip 0.75 kl 0.0399 ce 0.089 |g| 0.20  56s  {'FOLLOW': 132, 'KEEP': 34, 'ADAPT_SPEED': 31, 'NUDGE': 17, 'SLOW': 16, 'YIELD': 15}
+INFO:__main__:step 448/500 reward 0.868 man 0.59 fc 0.00 fail 0.00 skip 0.69 kl 0.0194 ce 0.122 |g| 0.19  65s  {'STOP': 87, 'ADAPT_SPEED': 50, 'NUDGE': 43, 'FOLLOW': 26, 'KEEP': 21, 'YIELD': 10}
+INFO:__main__:step 449/500 reward 1.134 man 0.72 fc 0.00 fail 0.00 skip 0.56 kl 0.0091 ce 0.174 |g| 0.25  73s  {'FOLLOW': 62, 'NUDGE': 60, 'KEEP': 32, 'STOP': 32, 'ACCELERATE': 23, 'YIELD': 16}
+INFO:__main__:step 450/500 reward 1.214 man 0.73 fc 0.00 fail 0.00 skip 0.50 kl 0.0109 ce 0.154 |g| 0.23  75s  {'FOLLOW': 70, 'NUDGE': 64, 'STOP': 30, 'TURN': 29, 'YIELD': 27, 'ADAPT_SPEED': 19}
+INFO:__main__:step 450 val: {"n": 99, "maneuver_acc": 0.6526315789473685, "false_clear": 0.038461538461538464, "termination": 1.0, "obj_precision": 0.7690763052208835, "mix": {"FOLLOW": 33, "NUDGE": 17, "STOP": 12, "KEEP": 9, "TURN": 8, "LANE_CHANGE": 7, "ADAPT_SPEED": 5, "ACCELERATE": 3, "SLOW": 3, "YIELD": 2}}
+INFO:__main__:step 451/500 reward 0.765 man 0.41 fc 0.00 fail 0.00 skip 0.44 kl 0.0206 ce 0.195 |g| 0.38  83s  {'FOLLOW': 75, 'NUDGE': 52, 'SLOW': 50, 'YIELD': 28, 'KEEP': 16, 'ADAPT_SPEED': 10}
+INFO:__main__:step 452/500 reward 0.927 man 0.55 fc 0.02 fail 0.00 skip 0.56 kl 0.0368 ce 0.111 |g| 0.28  71s  {'STOP': 52, 'SLOW': 45, 'FOLLOW': 44, 'KEEP': 32, 'ACCELERATE': 31, 'YIELD': 19}
+INFO:__main__:step 453/500 reward 0.848 man 0.49 fc 0.00 fail 0.01 skip 0.62 kl 0.0180 ce 0.172 |g| 0.22  70s  {'FOLLOW': 84, None: 38, 'STOP': 32, 'ADAPT_SPEED': 21, 'ACCELERATE': 20, 'KEEP': 18}
+INFO:__main__:step 454/500 reward 1.191 man 0.77 fc 0.00 fail 0.00 skip 0.56 kl 0.0254 ce 0.115 |g| 0.27  76s  {'TURN': 64, 'FOLLOW': 50, 'STOP': 45, 'ADAPT_SPEED': 31, 'NUDGE': 26, 'LANE_CHANGE': 16}
+INFO:__main__:step 455/500 reward 0.975 man 0.60 fc 0.02 fail 0.00 skip 0.38 kl 0.0234 ce 0.186 |g| 0.29  86s  {'FOLLOW': 62, 'STOP': 51, 'NUDGE': 45, 'KEEP': 34, 'TURN': 31, None: 16}
+INFO:__main__:step 456/500 reward 1.031 man 0.65 fc 0.06 fail 0.01 skip 0.44 kl 0.0268 ce 0.361 |g| 0.32  89s  {'FOLLOW': 69, 'NUDGE': 63, 'KEEP': 32, 'ACCELERATE': 30, 'YIELD': 24, 'STOP': 18}
+INFO:__main__:step 457/500 reward 1.064 man 0.75 fc 0.02 fail 0.00 skip 0.44 kl 0.0505 ce 0.143 |g| 0.32  85s  {'FOLLOW': 76, 'ADAPT_SPEED': 47, 'KEEP': 38, 'SLOW': 38, 'LANE_CHANGE': 27, 'YIELD': 16}
+INFO:__main__:step 458/500 reward 0.965 man 0.64 fc 0.02 fail 0.01 skip 0.50 kl 0.0481 ce 0.169 |g| 0.33  78s  {'FOLLOW': 64, 'NUDGE': 42, 'ADAPT_SPEED': 40, 'KEEP': 34, 'ACCELERATE': 28, 'LANE_CHANGE': 17}
+INFO:__main__:step 459/500 reward 1.168 man 0.78 fc 0.00 fail 0.00 skip 0.50 kl 0.0156 ce 0.068 |g| 0.29  78s  {'STOP': 90, 'FOLLOW': 44, 'ADAPT_SPEED': 30, 'KEEP': 29, 'NUDGE': 26, 'SLOW': 16}
+INFO:__main__:step 460/500 reward 1.086 man 0.70 fc 0.00 fail 0.04 skip 0.62 kl 0.0378 ce 0.074 |g| 0.20  70s  {'ACCELERATE': 47, 'FOLLOW': 45, 'KEEP': 39, 'LANE_CHANGE': 37, 'STOP': 30, 'ADAPT_SPEED': 20}
+INFO:__main__:step 461/500 reward 0.870 man 0.56 fc 0.00 fail 0.00 skip 0.56 kl 0.0135 ce 0.116 |g| 0.26  75s  {'FOLLOW': 92, 'ADAPT_SPEED': 43, 'NUDGE': 43, 'SLOW': 39, 'TURN': 17, 'STOP': 16}
+INFO:__main__:step 462/500 reward 1.160 man 0.78 fc 0.00 fail 0.00 skip 0.44 kl 0.0221 ce 0.125 |g| 0.29  87s  {'FOLLOW': 75, 'KEEP': 59, 'STOP': 55, 'NUDGE': 45, 'SLOW': 15, 'ADAPT_SPEED': 7}
+INFO:__main__:step 463/500 reward 1.068 man 0.78 fc 0.00 fail 0.01 skip 0.50 kl 0.0315 ce 0.129 |g| 0.28  82s  {'FOLLOW': 106, 'KEEP': 61, 'ADAPT_SPEED': 47, 'NUDGE': 19, 'SLOW': 17, 'STOP': 3}
+INFO:__main__:step 464/500 reward 1.137 man 0.82 fc 0.00 fail 0.00 skip 0.75 kl 0.0362 ce 0.065 |g| 0.19  57s  {'ADAPT_SPEED': 68, 'FOLLOW': 64, 'YIELD': 32, 'ACCELERATE': 27, 'NUDGE': 25, 'SLOW': 19}
+INFO:__main__:step 465/500 reward 1.127 man 0.69 fc 0.01 fail 0.00 skip 0.69 kl 0.0113 ce 0.038 |g| 0.25  64s  {'FOLLOW': 155, 'SLOW': 21, 'ACCELERATE': 20, 'YIELD': 16, 'STOP': 16, 'TURN': 12}
+INFO:__main__:step 466/500 reward 0.824 man 0.51 fc 0.03 fail 0.00 skip 0.38 kl 0.0188 ce 0.202 |g| 0.30  87s  {'STOP': 55, 'ACCELERATE': 46, 'NUDGE': 37, 'KEEP': 28, 'FOLLOW': 26, 'ADAPT_SPEED': 24}
+INFO:__main__:step 467/500 reward 1.134 man 0.75 fc 0.00 fail 0.00 skip 0.50 kl 0.0301 ce 0.181 |g| 0.29  78s  {'FOLLOW': 75, 'KEEP': 43, 'NUDGE': 33, 'STOP': 31, 'LANE_CHANGE': 23, 'ADAPT_SPEED': 22}
+INFO:__main__:step 468/500 reward 1.111 man 0.80 fc 0.00 fail 0.00 skip 0.50 kl 0.0285 ce 0.089 |g| 0.25  81s  {'ADAPT_SPEED': 93, 'YIELD': 32, 'STOP': 32, 'NUDGE': 22, 'FOLLOW': 22, 'KEEP': 20}
+INFO:__main__:step 469/500 reward 0.855 man 0.66 fc 0.02 fail 0.04 skip 0.56 kl 0.0302 ce 0.133 |g| 0.22  76s  {'KEEP': 51, 'ADAPT_SPEED': 50, 'YIELD': 31, 'FOLLOW': 29, 'SLOW': 22, 'NUDGE': 18}
+INFO:__main__:step 470/500 reward 0.855 man 0.53 fc 0.00 fail 0.00 skip 0.56 kl 0.0110 ce 0.187 |g| 0.25  78s  {'FOLLOW': 91, 'ADAPT_SPEED': 51, 'NUDGE': 22, 'LANE_CHANGE': 20, 'KEEP': 19, None: 16}
+INFO:__main__:step 471/500 reward 1.105 man 0.69 fc 0.01 fail 0.00 skip 0.50 kl 0.0150 ce 0.094 |g| 0.26  76s  {'FOLLOW': 100, 'NUDGE': 54, 'STOP': 32, 'TURN': 31, 'ADAPT_SPEED': 30, 'ACCELERATE': 5}
+INFO:__main__:step 472/500 reward 1.146 man 0.80 fc 0.00 fail 0.00 skip 0.69 kl 0.0204 ce 0.177 |g| 0.19  58s  {'KEEP': 49, 'ACCELERATE': 48, 'FOLLOW': 34, 'SLOW': 33, 'NUDGE': 25, 'TURN': 20}
+INFO:__main__:step 473/500 reward 1.010 man 0.65 fc 0.05 fail 0.00 skip 0.56 kl 0.0259 ce 0.115 |g| 0.23  77s  {'KEEP': 63, 'STOP': 53, 'FOLLOW': 34, 'TURN': 32, 'LANE_CHANGE': 24, 'NUDGE': 16}
+INFO:__main__:step 474/500 reward 1.149 man 0.69 fc 0.02 fail 0.00 skip 0.56 kl 0.0225 ce 0.099 |g| 0.24  77s  {'KEEP': 53, 'NUDGE': 52, 'FOLLOW': 42, 'ACCELERATE': 39, 'TURN': 32, 'YIELD': 15}
+INFO:__main__:step 475/500 reward 0.894 man 0.56 fc 0.02 fail 0.00 skip 0.44 kl 0.0236 ce 0.146 |g| 0.33  89s  {'FOLLOW': 75, 'KEEP': 58, 'NUDGE': 37, 'ACCELERATE': 25, 'STOP': 23, 'LANE_CHANGE': 13}
+INFO:__main__:step 475 val: {"n": 99, "maneuver_acc": 0.7052631578947368, "false_clear": 0.02564102564102564, "termination": 1.0, "obj_precision": 0.8273809523809523, "mix": {"FOLLOW": 31, "NUDGE": 16, "STOP": 12, "KEEP": 12, "ADAPT_SPEED": 8, "TURN": 6, "ACCELERATE": 5, "LANE_CHANGE": 3, "YIELD": 3, "SLOW": 2, "null": 1}}
+INFO:__main__:step 476/500 reward 0.898 man 0.54 fc 0.04 fail 0.00 skip 0.50 kl 0.0310 ce 0.077 |g| 0.26  78s  {'KEEP': 69, 'FOLLOW': 60, 'NUDGE': 52, 'SLOW': 35, 'ACCELERATE': 17, 'ADAPT_SPEED': 11}
+INFO:__main__:step 477/500 reward 1.083 man 0.63 fc 0.00 fail 0.00 skip 0.50 kl 0.0349 ce 0.146 |g| 0.38  77s  {'NUDGE': 69, 'FOLLOW': 63, 'STOP': 38, 'KEEP': 30, 'SLOW': 23, 'TURN': 15}
+INFO:__main__:step 478/500 reward 1.008 man 0.68 fc 0.05 fail 0.01 skip 0.44 kl 0.0296 ce 0.103 |g| 0.29  88s  {'FOLLOW': 52, 'NUDGE': 43, 'STOP': 42, 'KEEP': 36, 'ADAPT_SPEED': 29, 'SLOW': 17}
+INFO:__main__:step 479/500 reward 1.061 man 0.77 fc 0.01 fail 0.00 skip 0.50 kl 0.0464 ce 0.110 |g| 0.26  82s  {'ADAPT_SPEED': 71, 'NUDGE': 46, 'STOP': 34, 'FOLLOW': 33, 'KEEP': 27, 'SLOW': 17}
+INFO:__main__:step 480/500 reward 1.365 man 0.96 fc 0.00 fail 0.00 skip 0.81 kl 0.0213 ce 0.036 |g| 0.19  48s  {'ADAPT_SPEED': 52, 'FOLLOW': 48, 'KEEP': 38, 'TURN': 37, 'STOP': 32, 'NUDGE': 17}
+INFO:__main__:step 481/500 reward 1.124 man 0.71 fc 0.00 fail 0.00 skip 0.44 kl 0.0217 ce 0.171 |g| 0.29  88s  {'NUDGE': 55, 'FOLLOW': 45, 'SLOW': 36, 'KEEP': 35, 'STOP': 32, 'ADAPT_SPEED': 24}
+INFO:__main__:step 482/500 reward 1.164 man 0.78 fc 0.00 fail 0.01 skip 0.56 kl 0.0296 ce 0.143 |g| 0.30  72s  {'FOLLOW': 93, 'ACCELERATE': 49, 'STOP': 34, 'ADAPT_SPEED': 32, 'NUDGE': 16, 'TURN': 12}
+INFO:__main__:step 483/500 reward 1.347 man 0.81 fc 0.00 fail 0.00 skip 0.69 kl 0.0469 ce 0.083 |g| 0.27  62s  {'FOLLOW': 52, 'KEEP': 50, 'NUDGE': 45, 'TURN': 42, 'STOP': 27, 'LANE_CHANGE': 18}
+INFO:__main__:step 484/500 reward 1.062 man 0.72 fc 0.00 fail 0.00 skip 0.56 kl 0.0166 ce 0.062 |g| 0.25  75s  {'FOLLOW': 66, 'KEEP': 44, 'ACCELERATE': 37, 'ADAPT_SPEED': 33, 'STOP': 28, 'TURN': 17}
+INFO:__main__:step 485/500 reward 1.076 man 0.75 fc 0.06 fail 0.01 skip 0.44 kl 0.0350 ce 0.151 |g| 0.36  86s  {'FOLLOW': 64, 'TURN': 46, 'SLOW': 34, 'KEEP': 28, 'YIELD': 26, 'NUDGE': 21}
+INFO:__main__:step 486/500 reward 1.020 man 0.74 fc 0.02 fail 0.00 skip 0.50 kl 0.0529 ce 0.125 |g| 0.22  75s  {'KEEP': 80, 'FOLLOW': 47, 'STOP': 32, 'ADAPT_SPEED': 32, 'SLOW': 28, 'YIELD': 18}
+INFO:__main__:step 487/500 reward 0.887 man 0.69 fc 0.09 fail 0.00 skip 0.44 kl 0.0327 ce 0.155 |g| 0.31  84s  {'FOLLOW': 52, 'KEEP': 45, 'STOP': 44, 'TURN': 26, 'ACCELERATE': 26, 'ADAPT_SPEED': 17}
+INFO:__main__:step 488/500 reward 1.174 man 0.75 fc 0.02 fail 0.00 skip 0.38 kl 0.0399 ce 0.159 |g| 0.34  93s  {'FOLLOW': 57, 'KEEP': 43, 'ACCELERATE': 37, 'TURN': 23, 'NUDGE': 23, 'STOP': 21}
+INFO:__main__:step 489/500 reward 1.191 man 0.90 fc 0.01 fail 0.00 skip 0.69 kl 0.0188 ce 0.040 |g| 0.16  61s  {'ADAPT_SPEED': 76, 'KEEP': 49, 'STOP': 48, 'FOLLOW': 31, 'NUDGE': 19, 'SLOW': 18}
+INFO:__main__:step 490/500 reward 1.070 man 0.79 fc 0.00 fail 0.00 skip 0.69 kl 0.0214 ce 0.032 |g| 0.16  64s  {'KEEP': 67, 'ADAPT_SPEED': 60, 'STOP': 31, 'ACCELERATE': 30, 'TURN': 18, 'NUDGE': 18}
+INFO:__main__:step 491/500 reward 1.148 man 0.73 fc 0.01 fail 0.00 skip 0.62 kl 0.0299 ce 0.131 |g| 0.18  72s  {'FOLLOW': 63, 'NUDGE': 49, 'STOP': 48, 'ADAPT_SPEED': 21, 'ACCELERATE': 17, 'YIELD': 17}
+INFO:__main__:step 492/500 reward 1.094 man 0.66 fc 0.01 fail 0.00 skip 0.62 kl 0.0263 ce 0.060 |g| 0.23  69s  {'FOLLOW': 68, 'STOP': 62, 'KEEP': 36, 'ACCELERATE': 30, 'NUDGE': 24, 'TURN': 17}
+INFO:__main__:step 493/500 reward 1.218 man 0.83 fc 0.02 fail 0.02 skip 0.50 kl 0.0191 ce 0.122 |g| 0.29  81s  {'FOLLOW': 65, 'KEEP': 56, 'NUDGE': 43, 'STOP': 29, 'ADAPT_SPEED': 23, 'LANE_CHANGE': 23}
+INFO:__main__:step 494/500 reward 1.064 man 0.70 fc 0.01 fail 0.00 skip 0.62 kl 0.0302 ce 0.097 |g| 0.26  70s  {'FOLLOW': 42, 'ADAPT_SPEED': 38, 'KEEP': 34, 'NUDGE': 30, 'YIELD': 22, 'ACCELERATE': 22}
+INFO:__main__:step 495/500 reward 1.081 man 0.60 fc 0.00 fail 0.00 skip 0.19 kl 0.0270 ce 0.267 |g| 0.35  109s  {'FOLLOW': 79, 'ACCELERATE': 51, 'NUDGE': 34, 'STOP': 31, 'TURN': 21, 'YIELD': 19}
+INFO:__main__:step 496/500 reward 1.072 man 0.70 fc 0.00 fail 0.00 skip 0.38 kl 0.0117 ce 0.144 |g| 0.39  92s  {'FOLLOW': 81, 'STOP': 43, 'SLOW': 32, 'KEEP': 31, 'TURN': 21, 'ACCELERATE': 21}
+INFO:__main__:step 497/500 reward 1.016 man 0.69 fc 0.02 fail 0.00 skip 0.69 kl 0.0582 ce 0.083 |g| 0.25  62s  {'KEEP': 85, 'NUDGE': 64, 'FOLLOW': 43, 'ACCELERATE': 25, 'TURN': 16, 'SLOW': 13}
+INFO:__main__:step 498/500 reward 1.057 man 0.69 fc 0.05 fail 0.00 skip 0.56 kl 0.0491 ce 0.135 |g| 0.25  72s  {'STOP': 68, 'KEEP': 41, 'NUDGE': 35, 'YIELD': 33, 'ADAPT_SPEED': 28, 'SLOW': 20}
+INFO:__main__:step 499/500 reward 1.026 man 0.74 fc 0.00 fail 0.01 skip 0.56 kl 0.0194 ce 0.212 |g| 0.29  74s  {'ADAPT_SPEED': 54, 'KEEP': 49, 'FOLLOW': 48, 'SLOW': 34, 'NUDGE': 26, 'STOP': 21}
+INFO:__main__:step 500/500 reward 1.208 man 0.76 fc 0.04 fail 0.01 skip 0.50 kl 0.0315 ce 0.127 |g| 0.26  76s  {'FOLLOW': 69, 'KEEP': 32, 'STOP': 32, 'ADAPT_SPEED': 29, 'LANE_CHANGE': 27, 'TURN': 22}
+INFO:__main__:step 500 val: {"n": 99, "maneuver_acc": 0.6842105263157895, "false_clear": 0.01282051282051282, "termination": 1.0, "obj_precision": 0.8008130081300814, "mix": {"FOLLOW": 31, "NUDGE": 18, "STOP": 12, "KEEP": 11, "ADAPT_SPEED": 9, "TURN": 6, "ACCELERATE": 4, "LANE_CHANGE": 3, "YIELD": 3, "SLOW": 2}}
+----------------------------------------------------------------
+Finished 2026-09-14T13:08:43+02:00
+Check what this actually used:  seff 316
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/vla/.netrc.
+wandb: Currently logged in as: karmishthannauth27 (karmishthannauth27-technical-university-of-munich) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run stage1-job316
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /home/vla/projects/alpamayo2edge/wandb/run-20260914_130843-stage1-job316
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Resuming run stage1-job316
+wandb: ⭐️ View project at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: 🚀 View run at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job316
+wandb: updating run metadata
+wandb: uploading data
+wandb: 🚀 View run stage1-job316 at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job316
+wandb: ⭐️ View project at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: Synced 4 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260914_130843-stage1-job316/logs
