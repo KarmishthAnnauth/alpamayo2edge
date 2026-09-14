@@ -46,7 +46,7 @@ from . import checkpoint, losses
 from .config import load_config
 from .data.dataset import Stage1Dataset, collate_student, move_batch
 from .data.splits import load_split
-from .eval import coc_score
+from .eval import coc_score, gt_reward
 from .student import lora
 from .student.edge_wrapper import EdgeStudent
 
@@ -125,39 +125,109 @@ def adapters_off(root: torch.nn.Module):
 
 def _coc_logp(student, batch) -> tuple[torch.Tensor, torch.Tensor]:
     """Per-token log-probs of the CoC positions, (B, n) with a validity mask."""
+    return _span_logps(student, batch)["coc"]
+
+
+def _span_logps(student, batch) -> dict:
+    """One forward; per-token log-probs for the CoC span and, when the batch
+    carries trajectory positions (joint rollouts, D-039), the trajectory span."""
     out = student.ar_forward(batch, capture_layers=())
-    n = int(batch["coc_pos"].sum(1).max())
-    lg, tgt, ok = losses.gather_targets(out["logits"], batch["input_ids"], batch["coc_pos"], n)
-    logp = -F.cross_entropy(lg.float().transpose(1, 2), tgt, reduction="none")
-    return logp, ok
+    res = {}
+    for key, pos in (("coc", "coc_pos"), ("traj", "traj_pos")):
+        n = int(batch[pos].sum(1).max())
+        if n == 0:
+            continue
+        lg, tgt, ok = losses.gather_targets(out["logits"], batch["input_ids"], batch[pos], n)
+        res[key] = (-F.cross_entropy(lg.float().transpose(1, 2), tgt, reduction="none"), ok)
+    return res
 
 
-def _val_eval(cfg, student, ds_val, n: int, pad_id: int, max_new: int) -> dict:
-    """Light free-running check on val: maneuver accuracy, false-clear, mix."""
+def _rollout_traj(student, item, gen_ctx, G, pad_id, max_new):
+    """Joint CoC + trajectory rollouts for one prompt; returns per-sample
+    (text, terminated, n_coc_tokens, bins|None, ade|None)."""
+    student.eval()
+    with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
+        gb = move_batch(collate_student([{"student": gen_ctx}] * G, pad_id))
+        outs = student.generate_coc_and_traj(gb, max_coc_tokens=max_new)
+    student.train()
+    vocab_lo = student.new_token_range[0]
+    valid = [j for j, o in enumerate(outs) if o["bins"] is not None]
+    ades = {}
+    if valid:
+        hx = torch.as_tensor(item["hist_xyz"]).float()[None]
+        hr = torch.as_tensor(item["hist_rot"]).float()[None]
+        toks = torch.stack([outs[j]["bins"] for j in valid])
+        xyz = student.detokenize_traj(toks, hx.expand(len(valid), -1, -1),
+                                      hr.expand(len(valid), -1, -1, -1))
+        for jj, j in enumerate(valid):
+            ades[j] = gt_reward.ade_xy(xyz[jj].numpy(), item["gt_future_xyz"])
+    rows = []
+    for j, o in enumerate(outs):
+        text, term = decode_coc(student.tokenizer, o["coc_ids"], vocab_lo)
+        rows.append((text, term, len(o["coc_ids"]), o["bins"], ades.get(j)))
+    return rows
+
+
+def _gen_ctx(ds, i, item, route: bool):
+    """Generation prompt for window i, with the GT-derived route hint when
+    `route` is on. The dataset's own context has no route; rebuild it."""
+    if not route:
+        return item["student"], None
+    path = ds.shards[i]
+    window = ds._window(path.parent.name, int(path.stem))
+    hint = gt_reward.route_hint(gt_reward.kinematics(item["gt_future_xyz"]))
+    return ds.ctx.build(window, coc_text=None, nav_text=hint), hint
+
+
+def _rate(xs):
+    xs = [x for x in xs if x is not None]
+    return sum(xs) / len(xs) if xs else None
+
+
+def _val_eval(cfg, student, ds_val, n: int, pad_id: int, max_new: int, route: bool,
+              traj: bool = False) -> dict:
+    """Free-running check on val. Teacher-relative fields (maneuver acc vs the
+    cached trace) AND teacher-free ones (`gt_reward.gt_metrics`): consistency
+    with the driver's speed/path, GT false-clear, ungrounded hazard mentions,
+    direction vs the direction taken. `gt_score` drives selection."""
     student.eval()
     rows = []
     vocab_lo = student.new_token_range[0]
     with torch.no_grad():
         for i in range(min(n, len(ds_val))):
             item = ds_val[i]
-            batch = move_batch(collate_student([item], pad_id))
-            with torch.autocast("cuda", dtype=torch.bfloat16):
-                ids = student.generate_coc_text(batch, max_new_tokens=max_new)[0]
-            text, term = decode_coc(student.tokenizer, ids, vocab_lo)
-            s = coc_score.score_pair(text, str(item["coc_text"]))
-            if s is not None:
-                s["terminated"] = term
-                rows.append(s)
+            ctx, _ = _gen_ctx(ds_val, i, item, route)
+            ade = None
+            if traj:
+                text, term, _, _, ade = _rollout_traj(student, item, ctx, 1, pad_id, max_new)[0]
+            else:
+                batch = move_batch(collate_student([{"student": ctx}], pad_id))
+                with torch.autocast("cuda", dtype=torch.bfloat16):
+                    ids = student.generate_coc_text(batch, max_new_tokens=max_new)[0]
+                text, term = decode_coc(student.tokenizer, ids, vocab_lo)
+            k = gt_reward.kinematics(item["gt_future_xyz"])
+            g = gt_reward.gt_metrics(text, k)
+            s = coc_score.score_pair(text, str(item["coc_text"])) or {}
+            rows.append({**g, "terminated": term, "ade": ade,
+                         "maneuver_match": s.get("maneuver_match"),
+                         "obj_precision": s.get("obj_precision")})
     student.train()
-    haz = [r for r in rows if r["hazard_window"]]
-    mm = [r["maneuver_match"] for r in rows if r["maneuver_match"] is not None]
+    consistent = _rate([r["consistent"] for r in rows]) or 0.0
+    gt_fc = _rate([r["gt_false_clear"] for r in rows]) or 0.0
+    ade_mean = _rate([r["ade"] for r in rows])
     return {
         "n": len(rows),
-        "maneuver_acc": sum(mm) / max(len(mm), 1),
-        "false_clear": sum(r["false_clear"] for r in haz) / max(len(haz), 1),
-        "termination": sum(r["terminated"] for r in rows) / max(len(rows), 1),
-        "obj_precision": sum(r["obj_precision"] for r in rows if r["obj_precision"] is not None)
-                         / max(sum(1 for r in rows if r["obj_precision"] is not None), 1),
+        "traj_ade": ade_mean,
+        "neg_ade": (-ade_mean) if ade_mean is not None else None,
+        "traj_decoded": _rate([r["ade"] is not None for r in rows]),
+        "gt_score": consistent - gt_fc,
+        "gt_consistent": consistent,
+        "gt_false_clear": gt_fc,
+        "hazard_ungrounded": _rate([r["hazard_ungrounded"] for r in rows]),
+        "direction_ok": _rate([r["direction_ok"] for r in rows]),
+        "maneuver_acc": _rate([r["maneuver_match"] for r in rows]),
+        "obj_precision": _rate([r["obj_precision"] for r in rows]),
+        "termination": _rate([r["terminated"] for r in rows]),
         "mix": dict(Counter(r["student_maneuver"] for r in rows).most_common()),
     }
 
@@ -174,6 +244,15 @@ def main(cfg_path: str, smoke: bool = False) -> None:
         log.info("SMOKE: G=%d prompts=%d steps=%d eval=%d", G, B, steps, eval_n)
     torch.backends.cuda.matmul.allow_tf32 = True
     random.seed(int(rl.get("seed", 0)))
+    # RL-only camera set (D-038): the reward is valid against what a driver can
+    # see, and the 1-camera teacher reproduced its own committed labels 48% of
+    # the time vs 72% on 4. The context builder reads data.cameras at call time.
+    if rl.get("cameras"):
+        cfg.raw["data"]["cameras"] = list(rl.cameras)
+    log.info("cameras: %s", list(cfg.data.raw["cameras"]))
+    route = bool(rl.get("route_hint", False))
+    mode = str(rl.reward.get("mode", "teacher"))
+    log.info("reward mode: %s   route hint: %s", mode, route)
 
     # --- policy: merged SFT checkpoint + fresh adapters ------------------
     student = EdgeStudent(cfg).cuda()
@@ -225,7 +304,9 @@ def main(cfg_path: str, smoke: bool = False) -> None:
     best_acc, cursor = -1.0, 0
     hist = open(run_dir / "steps.jsonl", "a")
 
-    base = _val_eval(cfg, student, ds_val, eval_n, pad_id, max_new)
+    traj_mode = (mode == "traj")
+    w_traj = float(rl.get("traj_loss_weight", 1.0))
+    base = _val_eval(cfg, student, ds_val, eval_n, pad_id, max_new, route, traj_mode)
     log.info("step 0 val: %s", json.dumps(base))
 
     for step in range(1, steps + 1):
@@ -245,22 +326,40 @@ def main(cfg_path: str, smoke: bool = False) -> None:
             path = ds.shards[i]
             window = ds._window(path.parent.name, int(path.stem))
             teacher = str(item["coc_text"]).strip()
+            k = gt_reward.kinematics(item["gt_future_xyz"])
+            hint = gt_reward.route_hint(k) if route else None
+            gen_ctx = ds.ctx.build(window, coc_text=None, nav_text=hint) if route else item["student"]
 
             # ---- rollouts: G samples of the same prompt ----
-            student.eval()
-            with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
-                gb = move_batch(collate_student([item] * G, pad_id))
-                rows = student.generate_coc_text(gb, max_new_tokens=max_new)
-            student.train()
-            texts, rewards, terms = [], [], []
-            for ids in rows:
-                text, term = decode_coc(student.tokenizer, ids, vocab_lo)
-                r, s = coc_reward(text, teacher, term, len(ids), rl.reward)
+            texts, rewards, terms, bins_list = [], [], [], []
+            if traj_mode:
+                samples = _rollout_traj(student, item, gen_ctx, G, pad_id, max_new)
+            else:
+                student.eval()
+                with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
+                    gb = move_batch(collate_student([{"student": gen_ctx}] * G, pad_id))
+                    rows = student.generate_coc_text(gb, max_new_tokens=max_new)
+                student.train()
+                samples = [(*decode_coc(student.tokenizer, ids, vocab_lo), len(ids), None, None)
+                           for ids in rows]
+            for text, term, n_ids, bins, ade in samples:
+                if traj_mode:
+                    r, s = gt_reward.traj_reward(ade, text, term, n_ids, k, teacher, rl.reward)
+                    if ade is not None:
+                        stats["ade_sum"] += ade; stats["ade_n"] += 1
+                elif mode == "gt":
+                    r, s = gt_reward.gt_reward(text, term, n_ids, k, teacher, rl.reward)
+                else:
+                    r, s = coc_reward(text, teacher, term, n_ids, rl.reward)
+                bins_list.append(bins)
                 texts.append(text); rewards.append(r); terms.append(term)
                 mix[s.get("student_maneuver") if isinstance(s, dict) else None] += 1
                 stats["fail"] += int(bool(s.get("fail"))) if isinstance(s, dict) else 0
                 stats["false_clear"] += int(bool(s.get("false_clear"))) if isinstance(s, dict) else 0
                 stats["man_match"] += int(bool(s.get("maneuver_match"))) if isinstance(s, dict) else 0
+                for comp in ("kin", "dir", "hazard", "teacher"):        # gt mode components
+                    if isinstance(s, dict) and comp in s:
+                        stats[comp] += float(s[comp])
             rew_all += rewards
             adv = group_advantages(rewards)
             stats["groups"] += 1
@@ -274,32 +373,55 @@ def main(cfg_path: str, smoke: bool = False) -> None:
                 adv = [0.0] * len(rewards)
 
             # ---- policy + reference log-probs on the sampled CoCs ----
-            keep = [(t, a) for t, a in zip(texts, adv) if t]      # empty text: no tokens
+            keep = [(t, a, bn) for t, a, bn in zip(texts, adv, bins_list) if t]   # empty text: no tokens
             if not keep:
                 stats["skipped"] += 1
                 continue
-            ctxs = [{"student": ds.ctx.build(window, coc_text=t, for_generation=True)}
-                    for t, _ in keep]
-            sb = move_batch(collate_student(ctxs, pad_id))
-            A = torch.tensor([a for _, a in keep], device="cuda").view(-1, 1)
-            with torch.autocast("cuda", dtype=torch.bfloat16):
-                with torch.no_grad(), adapters_off(student._decoder_layers()):
-                    ref_logp, _ = _coc_logp(student, sb)
-                logp, ok = _coc_logp(student, sb)
-            okf = ok.float()
-            ratio = torch.exp(logp - logp.detach())               # 1 with grad d logp
-            d = ref_logp - logp
-            kl = torch.exp(d) - d - 1.0                           # k3, >= 0
-            per_tok = -A * ratio + beta * kl
-            pg = (per_tok * okf).sum() / okf.sum().clamp_min(1) / B
-            pg.backward()
-            kl_all.append(float((kl * okf).sum() / okf.sum().clamp_min(1)))
-            n_tok += int(okf.sum())
+            # Scoring layout = the training layout: CoC teacher-forced from the
+            # sample; in traj mode the sampled bins follow it (a failed sample
+            # has no bins and is scored on its CoC alone).
+            ctxs = [{"student": (ds.ctx.build(window, coc_text=t, traj_bins=bn.tolist(), nav_text=hint)
+                                 if bn is not None else
+                                 ds.ctx.build(window, coc_text=t, for_generation=True, nav_text=hint))}
+                    for t, _, bn in keep]
+            advs = [a for _, a, _ in keep]
+            # Score in chunks with gradient accumulation: the full-vocab logits
+            # over every position of G ~1.7k-token rows do not fit next to the
+            # activations for backward at G=16 (or at G=4 on the Ada's cap).
+            # Each chunk's per-span mean is weighted by its share of the rows,
+            # so the sum equals the un-chunked per-span mean.
+            chunk = int(rl.get("score_chunk", 8))
+            for c0 in range(0, len(ctxs), chunk):
+                cctx, cadv = ctxs[c0:c0 + chunk], advs[c0:c0 + chunk]
+                share = len(cctx) / len(ctxs)
+                sb = move_batch(collate_student(cctx, pad_id))
+                A = torch.tensor(cadv, device="cuda").view(-1, 1)
+                with torch.autocast("cuda", dtype=torch.bfloat16):
+                    with torch.no_grad(), adapters_off(student._decoder_layers()):
+                        ref = _span_logps(student, sb)
+                    pol = _span_logps(student, sb)
+                pg = torch.zeros((), device="cuda")
+                for span, wspan in (("coc", 1.0), ("traj", w_traj)):
+                    if span not in pol:
+                        continue
+                    logp, ok = pol[span]; ref_logp, _ = ref[span]
+                    okf = ok.float()
+                    ratio = torch.exp(logp - logp.detach())           # 1 with grad d logp
+                    d = ref_logp - logp
+                    kl = torch.exp(d) - d - 1.0                       # k3, >= 0
+                    per_tok = -A * ratio + beta * kl
+                    # Per-SPAN mean: 128 trajectory tokens must not drown 14 CoC tokens.
+                    pg = pg + wspan * share * (per_tok * okf).sum() / okf.sum().clamp_min(1) / B
+                    kl_all.append(float((kl * okf).sum() / okf.sum().clamp_min(1)))
+                    n_tok += int(okf.sum())
+                pg.backward()
+                del pol, ref, sb
 
             # ---- CE anchor on the teacher's trace ----
             if ce_aux > 0 and teacher:
                 tb = move_batch(collate_student(
-                    [{"student": ds.ctx.build(window, coc_text=teacher, for_generation=True)}], pad_id))
+                    [{"student": ds.ctx.build(window, coc_text=teacher, for_generation=True,
+                                              nav_text=hint)}], pad_id))
                 with torch.autocast("cuda", dtype=torch.bfloat16):
                     tl, tok_ = _coc_logp(student, tb)
                 ce = -(tl * tok_.float()).sum() / tok_.float().sum().clamp_min(1)
@@ -316,20 +438,45 @@ def main(cfg_path: str, smoke: bool = False) -> None:
                "kl": sum(kl_all) / max(len(kl_all), 1), "ce": stats["ce"] / B,
                "grad_norm": float(gn), "tokens": n_tok, "sec": round(time.time() - t0, 1),
                "mix": dict(mix.most_common(6))}
-        log.info("step %d/%d reward %.3f man %.2f fc %.2f fail %.2f skip %.2f kl %.4f ce %.3f |g| %.2f  %.0fs  %s",
-                 step, steps, rec["reward"], rec["man_match"], rec["false_clear"], rec["fail"],
-                 rec["skipped_groups"], rec["kl"], rec["ce"], rec["grad_norm"], rec["sec"], rec["mix"])
+        if traj_mode:
+            N = max(len(rew_all), 1)
+            rec.update(ade=stats["ade_sum"] / max(stats["ade_n"], 1), decoded=stats["ade_n"] / N,
+                       kin=stats["kin"] / N, dir=stats["dir"] / N)
+            log.info("step %d/%d reward %.3f [ade %.2f m decoded %.2f kin %+.2f dir %+.2f] fail %.2f skip %.2f "
+                     "kl %.4f ce %.3f |g| %.2f  %.0fs  %s", step, steps, rec["reward"], rec["ade"],
+                     rec["decoded"], rec["kin"], rec["dir"], rec["fail"], rec["skipped_groups"],
+                     rec["kl"], rec["ce"], rec["grad_norm"], rec["sec"], rec["mix"])
+        elif mode == "gt":
+            N = max(len(rew_all), 1)
+            rec.update(kin=stats["kin"] / N, dir=stats["dir"] / N, hazard=stats["hazard"] / N,
+                       teacher=stats["teacher"] / N)
+            log.info("step %d/%d reward %.3f [kin %+.2f dir %+.2f haz %+.2f tch %.2f] fail %.2f skip %.2f "
+                     "kl %.4f ce %.3f |g| %.2f  %.0fs  %s", step, steps, rec["reward"], rec["kin"],
+                     rec["dir"], rec["hazard"], rec["teacher"], rec["fail"], rec["skipped_groups"],
+                     rec["kl"], rec["ce"], rec["grad_norm"], rec["sec"], rec["mix"])
+        else:
+            log.info("step %d/%d reward %.3f man %.2f fc %.2f fail %.2f skip %.2f kl %.4f ce %.3f |g| %.2f  %.0fs  %s",
+                     step, steps, rec["reward"], rec["man_match"], rec["false_clear"], rec["fail"],
+                     rec["skipped_groups"], rec["kl"], rec["ce"], rec["grad_norm"], rec["sec"], rec["mix"])
         hist.write(json.dumps(rec) + "\n"); hist.flush()
 
         if step % int(rl.eval_every) == 0 or step == steps:
-            v = _val_eval(cfg, student, ds_val, eval_n, pad_id, max_new)
+            v = _val_eval(cfg, student, ds_val, eval_n, pad_id, max_new, route, traj_mode)
             log.info("step %d val: %s", step, json.dumps(v))
             hist.write(json.dumps({"step": step, "val": v}) + "\n"); hist.flush()
-            if not smoke and v["maneuver_acc"] > best_acc:
-                best_acc = v["maneuver_acc"]
+            sel_key = str(rl.get("select_on", "gt_score"))
+            sel = float(v[sel_key] if v.get(sel_key) is not None else -1e9)
+            if not smoke:
+                # Every eval keeps its adapters (~75 MB): nothing is lost to a
+                # noisy selector, and any step can be scored on full n later.
+                checkpoint.save_adapters(student, run_dir / f"step-{step:04d}", stage="stage1_rl",
+                                         step=step, init_ckpt=str(init), val=v)
+            if not smoke and sel > best_acc:
+                best_acc = sel
                 checkpoint.save(student, run_dir / "best", stage="stage1_rl", step=step,
-                                val_maneuver_acc=float(best_acc), init_ckpt=str(init))
-                log.info("  <- new best (val maneuver acc %.3f), saved", best_acc)
+                                select_on=sel_key, val_select=float(best_acc),
+                                val_maneuver_acc=float(v["maneuver_acc"] or 0.0), init_ckpt=str(init))
+                log.info("  <- new best (val %s %.3f), saved", sel_key, best_acc)
     if smoke:
         log.info("SMOKE OK  peak GPU %.1f GiB", torch.cuda.max_memory_allocated() / 2**30)
 

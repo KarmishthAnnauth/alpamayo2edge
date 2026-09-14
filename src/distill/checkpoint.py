@@ -108,3 +108,38 @@ def load_into(student, path: str | Path) -> dict:
         log.info("%d non-persistent buffers not in checkpoint (expected)", len(missing))
     log.info("loaded merged student <- %s", path)
     return meta
+
+
+# ---------------------------------------------------------------- adapters ----
+ADAPTERS_NAME = "adapters.pt"
+
+
+def save_adapters(student, path: str | Path, **meta) -> Path:
+    """Adapter-only checkpoint: the `lora_*` tensors of the decoder stack plus
+    metadata. ~75 MB for r48 attention-only, against ~8.6 GB for a merged save -
+    which is what makes a checkpoint at EVERY eval affordable (D-038: the
+    step-75 RL weights were lost because only `best/` was kept, selected on a
+    noisy 99-window check). Reload = the run's `init_ckpt` merged weights +
+    `load_adapters`."""
+    path = Path(path)
+    path.mkdir(parents=True, exist_ok=True)
+    root = student._decoder_layers()
+    sd = {n: p.detach().to("cpu", copy=True) for n, p in root.named_parameters() if "lora_" in n}
+    torch.save({"adapters": sd, "meta": {"lora": dict(student.lora_stats), **meta}},
+               path / ADAPTERS_NAME)
+    return path
+
+
+def load_adapters(student, path: str | Path) -> dict:
+    """Load an adapter-only checkpoint into a student whose adapters are already
+    injected (`param_groups_stage1()`) on top of the same `init_ckpt`."""
+    blob = torch.load(Path(path) / ADAPTERS_NAME, map_location="cpu", weights_only=False)
+    root = student._decoder_layers()
+    missing, unexpected = root.load_state_dict(blob["adapters"], strict=False)
+    unexpected = [k for k in unexpected]
+    if unexpected:
+        raise RuntimeError(f"adapter keys not in the model: {unexpected[:3]}...")
+    n_lora = sum(1 for n, _ in root.named_parameters() if "lora_" in n)
+    if n_lora != len(blob["adapters"]):
+        raise RuntimeError(f"model has {n_lora} adapter tensors, file has {len(blob['adapters'])}")
+    return blob["meta"]

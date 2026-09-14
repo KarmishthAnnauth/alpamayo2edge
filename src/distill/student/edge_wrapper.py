@@ -723,6 +723,97 @@ class EdgeStudent(nn.Module):
             "cosmos_framework.model.generator.mot.unified_mot (see D-015).")
 
     @torch.no_grad()
+    def generate_coc_and_traj(self, batch, max_coc_tokens: int = 64,
+                              n_future: int | None = None) -> list[dict]:
+        """One rollout per batch row: free-running CoC, then the trajectory (D-039).
+
+        The RL recipe NVIDIA ships for Alpamayo rolls out the WHOLE completion -
+        chain-of-causation, then trajectory tokens - and rewards the decoded
+        trajectory's ADE against the driver's future, so the CoC earns credit
+        through the plan it leads to. This is that rollout for the student.
+
+        Why one loop and not `generate_coc_text` followed by `generate_traj_tokens`:
+        the G samples of a prompt end their CoC at different lengths, and
+        `reasoner_forward` is causal with no attention mask, so a second
+        right-padded prefill would decode the short rows from padding
+        (eval/coarse_minade.py's batch-size-1 note). Here every row advances one
+        token per step through a small state machine, so the cache stays valid:
+
+            0  CoC: sample over the full vocabulary until the `<|cot_end|>`
+               subwords appear in the decoded tail (or `max_coc_tokens`: fail)
+            1  boundary: the `<|traj_future_start|>` subwords, FORCED - the same
+               tokens `struct_ce` teacher-forces, so the layout matches the
+               scoring context exactly
+            2  trajectory: `n_future` bins, restricted to the future rows
+            3  done: emit pad, ignored
+
+        Returns, per row: {"coc_ids", "terminated", "bins" (region-relative
+        LongTensor of n_future, or None when the CoC failed)}.
+        """
+        from cosmos_framework.model.generator.mot.unified_mot import (
+            ReasonerKVCache, _sample_next_token,
+        )
+        model = self.lm.model
+        n_fut = int(n_future if n_future is not None else prompt_mod.N_FUTURE_TOKENS)
+        boundary = self.tokenizer.encode("<|traj_future_start|>", add_special_tokens=False)
+        cache = ReasonerKVCache.empty(num_layers=len(model.layers))
+        fwd, deltas = self._reasoner_inputs(batch)
+        h = model.reasoner_forward(cache=cache, **fwd)
+        base_mrope = (deltas.to(dtype=torch.long).unsqueeze(0).expand(3, -1, -1)
+                      if deltas is not None else None)
+        gcfg = self.cfg.teacher
+        temperature = float(gcfg.get("gen_temperature", 1.0))
+        top_p = float(gcfg.get("gen_top_p", 1.0))
+        vocab_lo = self.new_token_range[0]
+        stops = ("<|cot_end|>", "</think>")
+        pad = int(self.tokenizer.pad_token_id)
+
+        b = h.shape[0]
+        phase = [0] * b
+        coc: list[list[int]] = [[] for _ in range(b)]
+        bins: list[list[int]] = [[] for _ in range(b)]
+        forced: list[list[int]] = [[] for _ in range(b)]
+        failed = [False] * b
+        logits = self.lm.lm_head(h[:, -1, :])
+        max_steps = int(max_coc_tokens) + len(boundary) + n_fut
+        for step in range(max_steps):
+            free = _sample_next_token(logits, do_sample=True, temperature=temperature,
+                                      top_k=None, top_p=top_p)
+            binned = _sample_next_token(self._restrict_to_future_bins(logits), do_sample=True,
+                                        temperature=temperature, top_k=None, top_p=top_p)
+            tok = torch.full_like(free, pad)
+            for j in range(b):
+                if phase[j] == 0:
+                    tok[j] = free[j]
+                    coc[j].append(int(free[j]))
+                    tail = self.tokenizer.decode([t for t in coc[j][-12:] if t < vocab_lo])
+                    if any(s in tail for s in stops):
+                        phase[j] = 1
+                        forced[j] = list(boundary)
+                    elif len(coc[j]) >= int(max_coc_tokens):
+                        phase[j] = 3
+                        failed[j] = True
+                elif phase[j] == 1:
+                    tok[j] = forced[j].pop(0)
+                    if not forced[j]:
+                        phase[j] = 2
+                elif phase[j] == 2:
+                    tok[j] = binned[j]
+                    bins[j].append(int(binned[j]) - self.future_base)
+                    if len(bins[j]) >= n_fut:
+                        phase[j] = 3
+            if all(p == 3 for p in phase) or step == max_steps - 1:
+                break
+            position_ids = None if base_mrope is None else base_mrope + cache.seq_len
+            h = model.reasoner_forward(tok.unsqueeze(1), cache=cache, position_ids=position_ids)
+            logits = self.lm.lm_head(h[:, -1, :])
+        out = []
+        for j in range(b):
+            ok = (not failed[j]) and len(bins[j]) == n_fut
+            out.append({"coc_ids": coc[j], "terminated": not failed[j],
+                        "bins": torch.tensor(bins[j], dtype=torch.long) if ok else None})
+        return out
+
     def generate_traj_tokens(self, batch, n_tokens: int | None = None) -> torch.Tensor:
         """Student-sampled trajectory tokens, restricted to the future-bin rows.
 

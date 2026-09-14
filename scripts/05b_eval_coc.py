@@ -78,6 +78,12 @@ def main() -> int:
                          "sweeping this shows whether the rare-maneuver mass is still in "
                          "the student's distribution or gone from it.")
     ap.add_argument("--top-p", type=float, default=None, help="default = teacher.gen_top_p")
+    ap.add_argument("--adapters", default=None,
+                    help="adapter-only checkpoint dir (train_grpo_coc saves one per eval as "
+                         "step-NNNN/). Loaded on top of --ckpt, which must then be the run's "
+                         "init_ckpt. Lets any RL step be scored on full n after the fact.")
+    ap.add_argument("--route-hint", action="store_true",
+                    help="give the student the GT-derived route hint, as the RL run did")
     ap.add_argument("--dump", default=None, help="JSONL of every (student, teacher) pair")
     ap.add_argument("--out", default=None, help="JSON summary")
     a = ap.parse_args()
@@ -103,6 +109,10 @@ def main() -> int:
     meta = checkpoint.load_into(student, ckpt)
     log.info("checkpoint: %s (epoch=%s select_on=%s coc_nll=%s)", ckpt, meta.get("epoch"),
              meta.get("select_on"), meta.get("val_coc_nll"))
+    if a.adapters:
+        student.param_groups_stage1()                  # inject, then load the adapters
+        ameta = checkpoint.load_adapters(student, a.adapters)
+        log.info("adapters: %s (step=%s)", a.adapters, ameta.get("step"))
     student.eval()
 
     ds = Stage1Dataset(cfg, student.context_builder(),
@@ -117,6 +127,12 @@ def main() -> int:
     for i in range(n):
         item = ds[i]
         teacher_coc = str(item["coc_text"]).strip()
+        if a.route_hint:
+            from distill.eval import gt_reward
+            path = ds.shards[i]
+            window = ds._window(path.parent.name, int(path.stem))
+            hint = gt_reward.route_hint(gt_reward.kinematics(item["gt_future_xyz"]))
+            item = {**item, "student": ds.ctx.build(window, coc_text=None, nav_text=hint)}
         batch = move_batch(collate_stage1([item], pad_id))
         with torch.autocast("cuda", dtype=torch.bfloat16):
             out = student.generate_coc_text(batch, max_new_tokens=a.max_new_tokens)
