@@ -1356,3 +1356,29 @@ Run 2 (`train_grpo_coc.py`, `stage1_rl.reward.mode: traj`, job 317):
 
 Judge run 2 on val ADE (its objective), then on the teacher-free CoC metrics against run 1's
 step-75 checkpoint (GT-consistent 57%, GT false-clear 15%) and the teacher's own (64%, 16%).
+
+### D-039 outcome — run 2 (job 317) and the route-hint defect
+
+Run 2 (1 camera, `run-314/best`, 200 steps, 6h53m): on the 200-window val, ADE 5.26 -> 4.54 m
+(-14%, monotone after step 25, every rollout decodable), the route hint went from ignored
+(0.08) to read half the time (0.50), the CoC followed the trajectory from ~step 100
+(FOLLOW 79 -> 49, TURN 7 -> 21), termination 0.995. On the full 500 windows, teacher-free:
+GT-consistent 0.73 (SFT 0.70, run 1 0.71, teacher 0.69), direction taken stated correctly
+0.60 (SFT 0.08), GT false-clear 0.23 (unchanged - the trajectory reward barely constrains the
+words on braking scenes; run 1's text reward did move this, 0.22 -> 0.15). Train - val gap on
+teacher agreement 0.036, the smallest of any checkpoint.
+
+**Defect, found by that scoring:** LANE_CHANGE emitted at 3.3x the teacher's rate (TURN
+2.4x). The route hint fired "change to the <side> lane" on 33% of val windows - any 2 m
+lateral offset 60-100 m ahead, i.e. ordinary road curvature - against the teacher's 3.2%,
+and the +0.25 direction term paid the student to echo it. No 6.4 s path detector recovers
+the teacher's LANE_CHANGE windows (arc-residual variants: 0/16), and Alpamayo's nav mode
+carries turns, not lane changes. Fixed in `31d27fd`: the hint is turn-left / turn-right /
+straight, turns read off the final heading (>40 deg; the teacher under-labels turns because
+it narrates the approach), a volunteered lane-change direction checked only against the
+lateral offset. Val trigger rates now: straight 88%, turn left 6.2%, turn right 5.8%.
+
+Run 2's ADE, route-reading and GT-consistency results stand (the hint does not enter the
+ADE term); its maneuver mix and anything about "what the student learned to say" do not.
+It is a superseded experiment, not a candidate checkpoint. Run 3 (job 319, 4 cameras) had
+trained 2 h on the defective hint and was cancelled; job 320 is the same run on the fix.
