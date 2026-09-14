@@ -28,7 +28,19 @@ import numpy as np
 from .coc_score import CLEAR, OBJECTS, objects, parse
 
 REASONS = ("VEHICLE", "VRU", "CONSTRUCTION", "SIGNAL", "SIGN", "JUNCTION")   # things a driver reacts to
-TURN_DEG, LANE_M = 20.0, 2.0
+# A turn is a change of HEADING, read off the last 0.5 s of the path, not the
+# bearing of the end point: a gentle curve carries 20 deg of bearing at 100 m
+# without being a turn. 40 deg of final heading fires on 18% of val windows
+# and catches 14 of the teacher's 21 TURN labels; the teacher itself under-
+# labels turns (4%) because it narrates the approach ("stop", "keep distance").
+TURN_DEG = 40.0
+# There is NO lane-change class in the route. Run 2's hint fired "change lane"
+# on 33% of windows (any 2 m offset at 60-100 m is road curvature) against the
+# teacher's 3%, and the student parroted it at 3.3x. No 6.4 s path detector
+# recovers the teacher's LANE_CHANGE windows (0/16 for arc-residual variants),
+# and Alpamayo's own nav mode carries turns, not lane changes. Lateral offset
+# is kept only to check a lane-change claim the student volunteers.
+LANE_M = 2.0
 
 
 def kinematics(gt_future_xyz) -> dict:
@@ -39,19 +51,20 @@ def kinematics(gt_future_xyz) -> dict:
     dv, vmin = v1 - v0, float(v.min())
     bearing = float(np.degrees(np.arctan2(g[-1, 1], g[-1, 0])))    # + = left
     ylat = float(g[-1, 1])
+    d = np.diff(g, axis=0)
+    heads = np.degrees(np.arctan2(d[:, 1], d[:, 0]))
+    h_end = float(np.median(heads[-5:])) if len(heads) >= 5 else float(heads[-1])
     speed = ("stops" if vmin < 0.5 else "brakes" if dv < -1.5 else
              "speeds" if dv > 1.5 else "holds")
-    if abs(bearing) > TURN_DEG:
-        lateral = "turn_left" if bearing > 0 else "turn_right"
-    elif abs(ylat) > LANE_M:
-        lateral = "lane_left" if ylat > 0 else "lane_right"
+    if abs(h_end) > TURN_DEG:
+        lateral = "turn_left" if h_end > 0 else "turn_right"
     else:
         lateral = "straight"
     # A reaction strong enough to need an explanation: a stop, a hard brake,
     # or a real lateral move. Ordinary driving (the 70% base rate at looser
     # thresholds) is deliberately NOT a reaction here.
     reacted = vmin < 0.5 or dv < -2.5 or abs(ylat) > 1.5
-    return dict(v0=v0, v1=v1, dv=dv, vmin=vmin, bearing=bearing, ylat=ylat,
+    return dict(v0=v0, v1=v1, dv=dv, vmin=vmin, bearing=bearing, ylat=ylat, h_end=h_end,
                 speed=speed, lateral=lateral, reacted=reacted,
                 braked_from_speed=(speed in ("stops", "brakes") and v0 > 3.0))
 
@@ -61,8 +74,6 @@ def route_hint(k: dict) -> str:
     student's `<|route_start|>...<|route_end|>` slot. Direction only - it must
     not leak the speed profile, which is what the student is being graded on."""
     return {"turn_left": "Turn left ahead", "turn_right": "Turn right ahead",
-            "lane_left": "Change to the left lane ahead",
-            "lane_right": "Change to the right lane ahead",
             "straight": "Continue straight"}[k["lateral"]]
 
 
@@ -76,7 +87,7 @@ def kinematic_term(man: str | None, k: dict) -> float:
     if man == "ADAPT_SPEED": return 1.0 if s != "holds" else -0.5
     if man == "ACCELERATE":  return 1.0 if s == "speeds" else (-1.0 if s in ("brakes", "stops") else 0.0)
     if man == "TURN":        return 1.0 if k["lateral"].startswith("turn") else -1.0
-    if man == "LANE_CHANGE": return 1.0 if k["lateral"].startswith("lane") else -1.0
+    if man == "LANE_CHANGE": return 1.0 if abs(k["ylat"]) > LANE_M else -0.5   # a volunteered claim
     if man in ("FOLLOW", "KEEP"):
         return -1.0 if k["braked_from_speed"] else 0.5
     if man == "NUDGE":       return 0.0            # sub-lane; a 6.4 s offset cannot check it
@@ -84,12 +95,17 @@ def kinematic_term(man: str | None, k: dict) -> float:
 
 
 def direction_term(man: str | None, d: str | None, k: dict) -> float:
-    """Against the direction the driver took. The student was told the route,
-    so silence where a direction was taken costs, and a stated direction on a
-    straight run costs."""
+    """Against the direction the driver took. The student was told the route
+    (turns only), so silence where a turn was taken costs, and a stated turn on
+    a straight run costs. A volunteered lane-change direction is checked against
+    the sign of the lateral offset when there is one, and ignored otherwise."""
     lat = k["lateral"]
+    if man == "LANE_CHANGE" and d in ("left", "right"):
+        if abs(k["ylat"]) < 1.5:
+            return 0.0
+        return 1.0 if d == ("left" if k["ylat"] > 0 else "right") else -1.0
     if lat == "straight":
-        return -0.5 if (man in ("TURN", "LANE_CHANGE") and d in ("left", "right")) else 0.0
+        return -0.5 if (man == "TURN" and d in ("left", "right")) else 0.0
     taken = "left" if lat.endswith("left") else "right"
     if d is None:
         return -0.5

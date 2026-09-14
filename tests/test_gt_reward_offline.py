@@ -30,13 +30,14 @@ def test_kinematics_classes():
     assert kinematics(future(5, 10))["speed"] == "speeds"
     assert kinematics(future(8, 8, bearing_deg=70))["lateral"] == "turn_left"      # +y = left
     assert kinematics(future(8, 8, bearing_deg=-70))["lateral"] == "turn_right"
-    assert kinematics(future(12, 12, ylat_end=3.5))["lateral"] == "lane_left"
+    assert kinematics(future(12, 12, ylat_end=3.5))["lateral"] == "straight"       # no lane class
+    assert kinematics(future(12, 12, bearing_deg=15))["lateral"] == "straight"     # a gentle curve
     assert kinematics(future(12, 12))["lateral"] == "straight"
 
 
 def test_route_hint_is_direction_only():
     assert route_hint(kinematics(future(8, 0.0, bearing_deg=70))) == "Turn left ahead"
-    assert route_hint(kinematics(future(12, 12, ylat_end=-3.5))) == "Change to the right lane ahead"
+    assert route_hint(kinematics(future(12, 12, ylat_end=-3.5))) == "Continue straight"   # lane changes are not route
     assert route_hint(kinematics(future(10, 0.0))) == "Continue straight"      # a stop leaks nothing
 
 
@@ -57,7 +58,10 @@ def test_direction_term_uses_direction_taken():
     assert direction_term("TURN", "right", k) == -1.0
     assert direction_term("TURN", None, k) == -0.5                     # silent, though told the route
     ks = kinematics(future(12, 12))
-    assert direction_term("LANE_CHANGE", "left", ks) == -0.5           # claimed a move on a straight run
+    assert direction_term("TURN", "left", ks) == -0.5                  # claimed a turn on a straight run
+    assert direction_term("LANE_CHANGE", "left", ks) == 0.0            # no offset: a volunteered claim is ignored
+    assert direction_term("LANE_CHANGE", "left", kinematics(future(12, 12, ylat_end=3.5))) == 1.0
+    assert direction_term("LANE_CHANGE", "right", kinematics(future(12, 12, ylat_end=3.5))) == -1.0
     assert direction_term("FOLLOW", None, ks) == 0.0
 
 
