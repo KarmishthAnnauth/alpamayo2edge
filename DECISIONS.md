@@ -1382,3 +1382,34 @@ Run 2's ADE, route-reading and GT-consistency results stand (the hint does not e
 ADE term); its maneuver mix and anything about "what the student learned to say" do not.
 It is a superseded experiment, not a candidate checkpoint. Run 3 (job 319, 4 cameras) had
 trained 2 h on the defective hint and was cancelled; job 320 is the same run on the fix.
+
+## D-040 [MEASURED 2026-09-15] The student's trajectory does not depend on its own chain-of-causation - so a trajectory reward cannot train the reasoning
+
+`scripts/05d_coc_intervention.py`: 40 val windows, 7 forced CoCs each ("turn left" /
+"turn right" / "stop" / "accelerate" / "keep lane" / "follow" / the cached teacher trace),
+trajectory tokens decoded after each (2 samples, T=0.6), stats of the decoded plan.
+
+| | run-253 @ 4 cam | run-314 @ 1 cam |
+|---|---:|---:|
+| final heading, "turn left" vs "turn right" | +2.0 vs +4.5 deg | +5.2 vs -0.7 deg |
+| end speed, "accelerate" minus "stop" | +1.35 m/s | -0.05 m/s |
+| ADE across the 7 CoCs | 3.75 - 4.91 m | 5.69 - 7.28 m |
+
+The per-CoC means are the same plan; the within-window spread (heading sd ~20 deg) is
+sampling noise. Stage 1 trained the trajectory path with the teacher's CoC teacher-forced
+and the teacher's trajectory as the target regardless of the text, so the student learned
+trajectory = f(images). Two parallel heads, not a chain.
+
+Consequences: run 3 (job 320, 4 cameras, ADE reward) moved ADE (3.79 -> 3.44 m by step
+125) and did not move the CoC at all (FOLLOW 53 at every check, route read 0.18 flat) -
+and could not have: the credit GRPO assigns to CoC tokens through ADE is noise. Run 2's
+CoC movement came from the 0.25 kin/dir text terms and the hint echo, not the ADE. The
+recipe's reasoning-through-trajectory mechanism presupposes a coupling this SFT student
+does not have.
+
+Decision for run 4 (see HANDOFF-run4.md): per-span advantages - an ADE reward applied
+to the trajectory tokens, a GT-grounded text reward applied to the CoC tokens - plus a
+self-consistency term on both spans (the stated maneuver scored against the kinematics of
+the student's OWN decoded plan: teacher-free, GT-free, and the only term that builds the
+chain rather than assuming it), and the CoC span sampled at T=1.0 in rollouts so the
+sharp 4-camera student's groups contain different reasonings to choose between.
