@@ -1,5 +1,6 @@
 """GRPO-on-CoC (D-037): the pure parts. No GPU, no model."""
 import math
+import pytest
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -43,3 +44,53 @@ def test_group_advantages_normalised_and_skips_flat_groups():
     a = group_advantages([2.0, 0.0, 0.0, 0.0])
     assert math.isclose(sum(a), 0.0, abs_tol=1e-9)
     assert a[0] > 0 and all(x < 0 for x in a[1:])
+
+
+# ---- run 4: per-span rewards (D-040) ----
+import numpy as np                                                       # noqa: E402
+from distill.eval.gt_reward import kinematics, perspan_reward             # noqa: E402
+
+WP = SimpleNamespace(ade=1.0, ade_cap=8.0, kin=1.0, dir=0.5, hazard=0.5, teacher=0.25,
+                     self_consistency=0.5, fail=-2.0, max_tokens=48)
+
+
+def _path(v0, v1, n=64):
+    v = np.linspace(v0, v1, n)
+    x = np.cumsum(v) / 10.0
+    return np.stack([x, np.zeros(n), np.zeros(n)], 1)
+
+
+def test_perspan_good_plan_bad_coc_gets_opposite_sign_advantages():
+    """A rollout whose plan is close to GT but whose CoC contradicts the driver
+    must be favoured on the trajectory span and punished on the CoC span."""
+    gt = _path(10, 0.0)                              # the driver stops
+    k = kinematics(gt)
+    good_plan = _path(10, 0.5)                       # ~GT
+    bad_plan = _path(10, 12)                         # keeps going: ADE large
+    # rollout A: good plan, wrong words; rollout B: bad plan, right words
+    ta, ca, _ = perspan_reward(0.4, good_plan, "Accelerate since the road is clear", True, 10, k, "", WP)
+    tb, cb, _ = perspan_reward(6.0, bad_plan, "Stop for the red light", True, 10, k, "", WP)
+    adv_t = group_advantages([ta, tb])
+    adv_c = group_advantages([ca, cb])
+    assert adv_t[0] > 0 > adv_t[1]                   # trajectory span: A wins
+    assert adv_c[0] < 0 < adv_c[1]                   # CoC span: B wins
+
+
+def test_perspan_failure_is_fail_on_both_spans():
+    k = kinematics(_path(10, 10))
+    t, c, s = perspan_reward(None, None, "Keep lane", False, 64, k, "", WP)
+    assert t == c == -2.0 and s["fail"]
+    t, c, s = perspan_reward(1.0, _path(10, 10), "Keep lane", True, 49, k, "", WP)
+    assert t == c == -2.0
+
+
+def test_perspan_self_consistency_reaches_both_spans():
+    """Same CoC, same GT, same ADE: only the student's own plan differs, so the
+    two rewards differ by exactly the weighted self-consistency term."""
+    k = kinematics(_path(10, 10))                    # driver holds speed
+    text = "Stop for the pedestrian"
+    t1, c1, s1 = perspan_reward(3.0, _path(10, 0.0), text, True, 10, k, "", WP)   # plan stops
+    t2, c2, s2 = perspan_reward(3.0, _path(5, 10), text, True, 10, k, "", WP)     # plan speeds up
+    assert s1["self"] == 1.0 and s2["self"] == -1.0
+    assert t1 - t2 == pytest.approx(0.5 * 2.0)
+    assert c1 - c2 == pytest.approx(0.5 * 2.0)

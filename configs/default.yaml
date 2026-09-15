@@ -357,10 +357,22 @@ stage1_rl:
   # route read 0.08 -> 0.50, FOLLOW 79 -> 49 / LANE_CHANGE 2 -> 21 on 200 windows;
   # GT-consistency of the stated maneuver flat at ~0.70. Run 3 asks how much of
   # the remaining gap is the single view. Same reward, same route hint.
+  # RUN 4 (2026-09-15, D-040): run 3 (job 320) moved val ADE 3.79 -> ~3.4-3.7 m
+  # and the CoC not at all (FOLLOW 53 at every check, route read 0.18 flat), and
+  # 05d_coc_intervention shows why: the student's plan does not depend on its
+  # own CoC (forcing "turn left" vs "turn right" moves the decoded heading 2-6
+  # deg; "stop" vs "accelerate" moves end speed 0-1.4 m/s). One ADE advantage on
+  # both spans trains the trajectory tokens and feeds the CoC noise. So: reward
+  # mode `perspan` - two rewards per joint rollout, each group-normalised on its
+  # own: ADE -> the trajectory span, the GT-grounded text rules -> the CoC span,
+  # and a SELF-CONSISTENCY term (the stated maneuver/direction scored against the
+  # kinematics of the student's own decoded plan) on both - the one term that
+  # builds the coupling instead of assuming it. The CoC is sampled at T=1.0 in
+  # rollouts so the sharp 4-camera student's 16 rollouts differ; val keeps 0.6.
   init_ckpt: /data/vla/alpamayo2edge/runs/stage1/run-253/best   # 4-camera-native SFT (r96+MLP,
                                              # merged); fresh r48 attention adapters on top are
                                              # the policy, the merged weights the reference
-  run_name: rl-run-3-traj-4cam
+  run_name: rl-run-4-perspan
   cameras: [camera_cross_left_120fov, camera_front_wide_120fov, camera_cross_right_120fov,
             camera_front_tele_30fov]         # RL-only override of data.cameras (1 cam for SFT)
   route_hint: true                           # <|route_start|>Turn left ahead<|route_end|> etc.,
@@ -381,17 +393,24 @@ stage1_rl:
   ce_aux: 0.1
   temperature: 0.6
   top_p: 0.98
+  coc_temperature: 1.0                       # run 4: CoC phase of the ROLLOUT only. The trajectory
+                                             # bins and every val decode stay at `temperature`
   max_new_tokens: 64
   eval_every: 25
   eval_windows: 150                          # each val window decodes a trajectory on 4-camera
                                              # contexts (~3x run 2's cost per window)
-  select_on: neg_ade                         # the recipe validates on ADE. gt_score, maneuver
-                                             # acc etc. are logged alongside; every eval also
-                                             # keeps its adapters (~75 MB)
+  select_on: gt_score                        # run 4: the CoC is what this run is for (run 3
+                                             # selected on neg_ade and its val curve was flat
+                                             # noise, +/-0.3 m on 150 windows). ADE is logged
+                                             # alongside; every eval also keeps its adapters
   seed: 0
   reward:
-    mode: traj                               # traj (D-039, the recipe) | gt (text rules) |
-                                             # teacher (run 1's grader)
+    mode: perspan                            # perspan (run 4, D-040) | traj (D-039, the recipe)
+                                             # | gt (text rules) | teacher (run 1's grader)
+    self_consistency: 0.5                    # perspan only: x (kinematic + direction term of the
+                                             # CoC against the student's OWN decoded plan), in
+                                             # [-2, 2]; added to BOTH spans' rewards. 0.5 puts it
+                                             # at the ADE term's scale on the trajectory side
     ade: 1.0                                 # x (-min(ADE, ade_cap) / ade_cap), in [-1, 0]
     ade_cap: 8.0                             # the recipe gates at 3 m; here it is a CAP, and a
                                              # high one: the token path lives at 3-5 m (teacher's
@@ -401,11 +420,16 @@ stage1_rl:
                                              # problem re-entering. 8 m keeps within-group ADE
                                              # differences carrying gradient; past 8 m the plan is
                                              # garbage either way
-    kin: 0.25                                # stated maneuver vs the driver's speed/path (+1/-1)
-    dir: 0.25                                # stated direction vs the direction taken
-    hazard: 0.0                              # (gt mode only) too crude to reward; kept as a metric
-    teacher: 0.0                             # maneuver agreement with the cached trace - off:
-                                             # the trajectory reward is the grounding now
+    # CoC-span reward (perspan) / shaping terms (traj). Run 4 uses the `gt`
+    # grader's weights: in perspan mode these ARE the CoC's objective, and at
+    # run 3's 0.25 they would be swamped by the self-consistency term.
+    kin: 1.0                                 # stated maneuver vs the driver's speed/path (+1/-1)
+    dir: 0.5                                 # stated direction vs the direction taken
+    hazard: 0.5                              # named reason vs whether the driver reacted (the
+                                             # strict `reacted`: stop / hard brake / > 1.5 m
+                                             # lateral); run 3 had it at 0 as "too crude"
+    teacher: 0.25                            # maneuver agreement with the cached trace: a weak
+                                             # prior, not the objective (D-038)
     # run-1 grader fields, still read when mode: teacher
     maneuver: 1.0
     direction: 0.5

@@ -189,3 +189,53 @@ def traj_reward(ade: float | None, student_text: str, terminated: bool, n_coc_to
     r = (float(w.ade) * r_ade + float(w.kin) * kin + float(w.dir) * dr + float(w.teacher) * tm)
     return r, {"ade": float(ade), "r_ade": r_ade, "kin": kin, "dir": dr, "teacher": tm,
                "student_maneuver": s["maneuver"], "fail": False}
+
+
+# ------------------------------------------------------------ per-span ----
+
+def self_consistency_term(man: str | None, direction: str | None, student_xyz) -> float:
+    """Does the CoC describe the plan it precedes? The same kinematic and
+    direction rules, pointed at the kinematics of the student's OWN decoded
+    trajectory instead of the driver's. Teacher-free and GT-free: the only term
+    that can build the CoC -> trajectory chain D-040 found missing (the stage-1
+    student's plan is f(images); forcing "turn left" vs "turn right" moves the
+    decoded heading by 2-6 deg). Range [-2, +2]."""
+    ks = kinematics(student_xyz)
+    return kinematic_term(man, ks) + direction_term(man, direction, ks)
+
+
+def perspan_reward(ade: float | None, student_xyz, student_text: str, terminated: bool,
+                   n_coc_tokens: int, k: dict, teacher_text: str, w) -> tuple[float, float, dict]:
+    """Two rewards for one joint rollout (run 4, D-040): `(r_traj, r_coc, fields)`.
+
+    r_traj  = ade * (-min(ADE, cap) / cap) + self_consistency * sc
+              -> the TRAJECTORY span's advantage
+    r_coc   = kin/dir/hazard/teacher text rules against the driver's future
+              (the `gt` mode grader) + self_consistency * sc
+              -> the COC span's advantage
+
+    Run 3 applied one ADE-based advantage to both spans and moved the CoC not at
+    all - the plan does not depend on the text, so the ADE credit reaching the
+    CoC tokens was noise. Here each span is paid for what it can control, and
+    the self-consistency term `sc` is on both: the CoC is rewarded for
+    describing the plan, the plan for matching the words. A failure
+    (unterminated CoC, no decodable plan) is `fail` on both.
+    """
+    if not terminated or n_coc_tokens > int(w.max_tokens) or ade is None or student_xyz is None:
+        return float(w.fail), float(w.fail), {"fail": True}
+    cap = float(w.ade_cap)
+    r_ade = -min(float(ade), cap) / cap
+    s = parse(student_text)
+    kin = kinematic_term(s["maneuver"], k)
+    dr = direction_term(s["maneuver"], s["direction"], k)
+    hz = hazard_term(s["objects"], k)
+    t = parse(teacher_text) if teacher_text else {"maneuver": None}
+    tm = 1.0 if (t["maneuver"] and s["maneuver"] == t["maneuver"]) else 0.0
+    sc = self_consistency_term(s["maneuver"], s["direction"], student_xyz)
+    w_sc = float(getattr(w, "self_consistency", 0.0) or 0.0)
+    r_traj = float(w.ade) * r_ade + w_sc * sc
+    r_coc = (float(w.kin) * kin + float(w.dir) * dr + float(w.hazard) * hz
+             + float(w.teacher) * tm + w_sc * sc)
+    return r_traj, r_coc, {"ade": float(ade), "r_ade": r_ade, "kin": kin, "dir": dr,
+                           "hazard": hz, "teacher": tm, "self": sc,
+                           "student_maneuver": s["maneuver"], "fail": False}

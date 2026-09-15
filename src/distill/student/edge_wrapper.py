@@ -724,7 +724,8 @@ class EdgeStudent(nn.Module):
 
     @torch.no_grad()
     def generate_coc_and_traj(self, batch, max_coc_tokens: int = 64,
-                              n_future: int | None = None) -> list[dict]:
+                              n_future: int | None = None,
+                              coc_temperature: float | None = None) -> list[dict]:
         """One rollout per batch row: free-running CoC, then the trajectory (D-039).
 
         The RL recipe NVIDIA ships for Alpamayo rolls out the WHOLE completion -
@@ -747,6 +748,12 @@ class EdgeStudent(nn.Module):
             2  trajectory: `n_future` bins, restricted to the future rows
             3  done: emit pad, ignored
 
+        `coc_temperature` (run 4, D-040): the CoC phase's sampling temperature when
+        it should differ from the trajectory phase's (`teacher.gen_temperature`).
+        The 4-camera student is sharp: at T=0.6 the G rollouts of a prompt mostly
+        write the same CoC and a CoC-span advantage has nothing to choose
+        between. The trajectory bins keep the judged temperature.
+
         Returns, per row: {"coc_ids", "terminated", "bins" (region-relative
         LongTensor of n_future, or None when the CoC failed)}.
         """
@@ -764,6 +771,7 @@ class EdgeStudent(nn.Module):
         gcfg = self.cfg.teacher
         temperature = float(gcfg.get("gen_temperature", 1.0))
         top_p = float(gcfg.get("gen_top_p", 1.0))
+        coc_t = float(coc_temperature) if coc_temperature is not None else temperature
         vocab_lo = self.new_token_range[0]
         stops = ("<|cot_end|>", "</think>")
         pad = int(self.tokenizer.pad_token_id)
@@ -777,7 +785,7 @@ class EdgeStudent(nn.Module):
         logits = self.lm.lm_head(h[:, -1, :])
         max_steps = int(max_coc_tokens) + len(boundary) + n_fut
         for step in range(max_steps):
-            free = _sample_next_token(logits, do_sample=True, temperature=temperature,
+            free = _sample_next_token(logits, do_sample=True, temperature=coc_t,
                                       top_k=None, top_p=top_p)
             binned = _sample_next_token(self._restrict_to_future_bins(logits), do_sample=True,
                                         temperature=temperature, top_k=None, top_p=top_p)

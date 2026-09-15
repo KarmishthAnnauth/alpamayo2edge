@@ -14,7 +14,10 @@
                                    # the vision tower's activations are the real cost
 #SBATCH --cpus-per-task=8          # -> DataLoader workers, via $SLURM_CPUS_PER_TASK
 #SBATCH --mem=64G                  # total for the job; exceeding it KILLS the job
-#SBATCH --time=1-00:00:00          # under main's 3-day cap. Exceeding it KILLS the job.
+#SBATCH --time=1-08:00:00          # under main's 3-day cap. Exceeding it KILLS the job.
+                                   # RL run 3 (job 320): 200 steps at ~280 s + 9 evals
+                                   # = ~16.5 h at 4 cameras; run 4 adds a ~15 min smoke
+                                   # and longer CoCs at T=1.0. 32 h leaves ~2x headroom.
                                    # Per-epoch "best" checkpointing means a kill costs at
                                    # most the current epoch, not the run.
                                    # Run 4: was 2-00:00:00. 9477 train clips -> 593
@@ -96,9 +99,12 @@ if "RTX PRO 6000" not in p.name:
 # the caching allocator's reserve and fragmentation are counted. A floor set
 # from the 26.9 figure would admit a job that then OOMs. 44 GiB = observed
 # resident + ~20%. Raise back toward 65 if data.cameras returns to 4 cameras.
-if free < 44:
-    sys.exit(f"only {free:.1f} GiB free on {p.name}; need ~44 GiB "
-             f"(job 313 resident 36.7 GiB at micro_batch 4, 1 camera).")
+# RL at 4 cameras (stage1_rl.cameras overrides data.cameras): job 320 sat at
+# 58.2 GiB resident in nvidia-smi for its whole run. 60 GiB = that + a margin;
+# a co-tenant holding more than ~35 GiB outside SLURM means the job cannot fit.
+if free < 60:
+    sys.exit(f"only {free:.1f} GiB free on {p.name}; need ~60 GiB "
+             f"(job 320 resident 58.2 GiB: GRPO, G=16, 4 cameras, score_chunk 4).")
 GUARD
 
 # --- W&B sidecar ----------------------------------------------------------
@@ -125,6 +131,17 @@ else
     echo "wandb sidecar: skipped (wandb not importable)"
 fi
 
+echo "----------------------------------------------------------------"
+# Smoke first (G=4, 2 prompts, 2 steps, 8 val windows; ~15 min at 4 cameras),
+# under its own run_name so its rows never land in the real run's steps.jsonl.
+# The Ada is the usual smoke card, but at 4 cameras the smoke needs ~28 GiB
+# and the Ada is often not that free; `set -e` makes a smoke failure end the
+# job here, at the cost of minutes instead of a resubmit after the first step.
+RUN_NAME="$(python3 -c "import yaml;print(yaml.safe_load(open('configs/default.yaml'))['stage1_rl']['run_name'])")"
+echo "smoke: run_name ${RUN_NAME}-smoke"
+PYTHONPATH=src python3 -m distill.train_grpo_coc --config configs/default.yaml \
+    --smoke --run-name "${RUN_NAME}-smoke"
+echo "smoke OK - starting ${RUN_NAME} $(date -Is)"
 echo "----------------------------------------------------------------"
 PYTHONPATH=src python3 -m distill.train_grpo_coc --config configs/default.yaml
 echo "----------------------------------------------------------------"

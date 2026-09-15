@@ -7,7 +7,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from distill.eval.gt_reward import (direction_term, gt_metrics, gt_reward, hazard_term,  # noqa: E402
-                                    kinematic_term, kinematics, route_hint)
+                                    kinematic_term, kinematics, route_hint,
+                                    self_consistency_term)
 
 W = SimpleNamespace(kin=1.0, dir=0.5, hazard=0.5, teacher=0.25, fail=-1.0, max_tokens=48)
 
@@ -113,3 +114,19 @@ def test_traj_reward_shape_and_failures():
     # any success beats any failure, even the worst success
     worst, _ = traj_reward(99.0, "Accelerate", True, 8, k, "", WT)         # ade -1, kin -1
     assert worst > -2.0
+
+
+# ---- run 4: self-consistency against the student's own plan (D-040) ----
+
+def test_self_consistency_stop_vs_own_plan():
+    assert self_consistency_term("STOP", None, future(10, 0.0)) == 1.0     # says stop, plan stops
+    assert self_consistency_term("STOP", None, future(5, 10)) == -1.0      # says stop, plan speeds up
+    assert self_consistency_term("ACCELERATE", None, future(5, 10)) == 1.0
+    assert self_consistency_term("ACCELERATE", None, future(10, 0.0)) == -1.0
+
+
+def test_self_consistency_direction_against_own_plan():
+    assert self_consistency_term("TURN", "left", future(8, 8, bearing_deg=70)) == 2.0    # kin + dir
+    assert self_consistency_term("TURN", "left", future(8, 8, bearing_deg=-70)) == 0.0   # kin +1, dir -1
+    assert self_consistency_term("TURN", "right", future(8, 8)) == -1.5                  # straight plan
+    assert self_consistency_term("KEEP", None, future(8, 8, bearing_deg=70)) == 0.0      # silent on a turn
