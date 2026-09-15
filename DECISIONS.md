@@ -1437,3 +1437,9 @@ Queued behind job 320 (run 3, ~3 h from done at submission) and job 321 (user
 05d intervention gaps grow (heading gap from ~3 deg, end-speed gap from ~1 m/s)
 AND the CoC mix moves off FOLLOW 53 / TURN ~3, with 500-window val ADE not worse
 than run 3's.
+
+**Update 2026-09-15 (later):** job 322 ran the smoke only (passed: peak 53.9 GiB,
+both spans rewarded, per-span skip exercised) and was cancelled by the user's
+choice before the real run. Run 3 (job 320) was cancelled at step 165 on the
+flat curve above. **Run 4 is job 325**, queued behind another user's 3-day job
+323 (started 11:24) and a 1 h job 324; log `logs/a2e-grpo-coc-325.out`.
