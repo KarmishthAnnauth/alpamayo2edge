@@ -133,6 +133,11 @@ with a stopping plan scores +1, with an accelerating plan -1). `python -m pytest
   new dump - the user judges by looking at frames next to traces.
 
 ## When job 320 finishes
+Val curve at handover (150-window single-sample ADE): 3.79 / 3.55 / 3.74 / 3.76 / 3.72 /
+3.44 / 3.69 at steps 0..150 - i.e. FLAT at ~3.7 m; the 3.44 that `best/` (step 125) was
+selected on is a low draw. CoC metrics unchanged at every check (FOLLOW 53-60, TURN <= 6,
+direction read 0.12-0.24, GT-consistent 0.71-0.74). Treat run 3 as "no effect" unless the
+500-window scoring says otherwise.
 Score its best (step 125 or later) on 500 val with `--route-hint --cameras <4 cams>` and
 put it in the table; expect ADE improved (~3.3-3.4 m single-sample from 3.79) and the CoC
 metrics unchanged - that is the D-040 prediction and the run-4 motivation. Write the D-039
