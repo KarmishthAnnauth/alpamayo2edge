@@ -1413,3 +1413,27 @@ self-consistency term on both spans (the stated maneuver scored against the kine
 the student's OWN decoded plan: teacher-free, GT-free, and the only term that builds the
 chain rather than assuming it), and the CoC span sampled at T=1.0 in rollouts so the
 sharp 4-camera student's groups contain different reasonings to choose between.
+
+## D-041 [LAUNCHED 2026-09-15] GRPO run 4 = the D-040 design, as job 322
+
+Implemented in `3207af6` exactly as `HANDOFF-run4.md` specifies: `reward.mode:
+perspan` (two rewards per joint rollout, `gt_reward.perspan_reward`; each span's
+advantage group-normalised on its own, a flat span gets zero advantage, a group
+is dropped only when both spans are flat), `self_consistency: 0.5` on both spans
+(`gt_reward.self_consistency_term`: kinematic + direction rules against the
+student's own decoded plan), `coc_temperature: 1.0` in rollouts only, CoC-span
+weights `kin 1.0 / dir 0.5 / hazard 0.5 / teacher 0.25`, `select_on: gt_score`,
+init `run-253/best` at 4 cameras, G=16, 8 prompts/step, 200 steps.
+
+Two departures from the handoff, both operational: (1) no Ada smoke - the Ada
+held a 45 GB vLLM engine of another user's, so `03c_grpo_coc.sh` now runs the
+2-step smoke on the Blackwell under `rl-run-4-perspan-smoke` (own `steps.jsonl`,
+via the new `--run-name`) and `set -e` ends the job if it fails; (2) the sbatch
+memory floor is 60 GiB (job 320 sat at 58.2 GiB resident) and the wall 32 h.
+
+Queued behind job 320 (run 3, ~3 h from done at submission) and job 321 (user
+`vqa`, partition `debug`). Log `logs/a2e-grpo-coc-322.out`; checkpoints
+`runs/stage1_rl/rl-run-4-perspan/`. Success criteria are the handoff's: the
+05d intervention gaps grow (heading gap from ~3 deg, end-speed gap from ~1 m/s)
+AND the CoC mix moves off FOLLOW 53 / TURN ~3, with 500-window val ADE not worse
+than run 3's.
