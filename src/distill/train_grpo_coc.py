@@ -454,7 +454,7 @@ def main(cfg_path: str, smoke: bool = False, run_name: str | None = None) -> Non
                     per_tok = -A * ratio + beta * kl
                     # Per-SPAN mean: 128 trajectory tokens must not drown 14 CoC tokens.
                     pg = pg + wspan * share * (per_tok * okf).sum() / okf.sum().clamp_min(1) / B
-                    kl_all.append(float((kl * okf).sum() / okf.sum().clamp_min(1)))
+                    kl_all.append(float(((kl * okf).sum() / okf.sum().clamp_min(1)).detach()))
                     n_tok += int(okf.sum())
                 pg.backward()
                 del pol, ref, sb
