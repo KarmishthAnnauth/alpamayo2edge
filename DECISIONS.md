@@ -1443,3 +1443,71 @@ both spans rewarded, per-span skip exercised) and was cancelled by the user's
 choice before the real run. Run 3 (job 320) was cancelled at step 165 on the
 flat curve above. **Run 4 is job 325**, queued behind another user's 3-day job
 323 (started 11:24) and a 1 h job 324; log `logs/a2e-grpo-coc-325.out`.
+
+## D-042 [DECIDED 2026-09-17] Run 4 was unreadable, not wrong: the 4-camera init barely moves at lr 1e-5, and half the CoC reward paid for narration
+
+Run 4 (job 325) was stopped at step 75/200. Two separate defects, measured.
+
+**1. The policy does not move, so no reward is observable.** The LoRA weight
+delta is the same in every run at the same step (||B·A||_F at step 50: run 2
+0.161, run 3 0.150, run 4 0.148) - Adam at a fixed lr moves the parameters by a
+fixed amount. What differs is what that displacement DOES:
+
+| run | cameras | KL at steps 51-75 | outcome |
+|---|---|---:|---|
+| 1 | 1 | 0.0050 | fixed the CoC collapse |
+| 2 | 1 | 0.0025 | route read 0.08 -> 0.50 |
+| 3 | 4 | 0.00044 | no effect (D-040) |
+| 4 | 4 | 0.00047 | flat at step 75 |
+
+The 4-camera init (`run-253/best`, r96+MLP, 3 epochs) absorbs the same parameter
+displacement with 5-10x less change in its output distribution than the
+1-camera init (`run-314/best`, r48 attention, 1 epoch). Run 4's KL grew ~1.3x
+per 25 steps, projecting to ~0.0017 at step 200: 7% of run 2's endpoint. So
+lr 1e-5 -> 5e-5 for run 5 (delta scales with lr, KL with delta^2 -> ~0.04 at
+step 200, just past run 2's proven 0.025).
+
+**2. Half the CoC reward paid for narration.** Decomposed over run 4's 75
+logged steps (teacher-match recovered by subtraction; it is not logged):
+
+| term | weight | mean | contribution | share of positive |
+|---|---:|---:|---:|---:|
+| kin | 1.0 | +0.173 | +0.173 | 34% |
+| teacher-match | 0.25 | +0.585 | +0.146 | 29% |
+| hazard | 0.5 | +0.255 | +0.127 | 25% |
+| self-consistency | 0.5 | +0.125 | +0.063 | 12% |
+| dir | 0.5 | -0.033 | -0.017 | 0% |
+
+`hazard` is a bounty on naming an object: its anchor `reacted` is true in
+762/1046 val windows (73%), and within a GRPO group the window is fixed, so
+naming beats silence by 1.5 in 73% of groups and loses by 1.5 in 27% - a net
++0.69 pull per unit weight. That is D-038's narration failure re-entering from
+the GT side; tightening the threshold cannot fix it, `reacted` is already the
+strict definition. `teacher` pays for agreeing with a trace whose turn direction
+is opposite 17% of the time (D-038). Both were 0 in run 3 and were raised in
+run 4's config without evidence. Both go back to 0.
+
+`kin` stays at 1.0 but moves to a hedge-free `strict` scale
+(`gt_reward.kinematic_term(..., strict=True)`, reward only - `gt_metrics` keeps
+the old scale or no run is comparable to another): FOLLOW/KEEP lose the free
++0.5 they collected in the 74% of windows with no braking, and ADAPT_SPEED drops
++1.0 -> +0.5 because it tied or beat the best specific claim in 663/1046 windows
+(63%) while never risking worse than -0.5. What remains is one scale: +1 a
+checkable claim that held, 0 unverifiable, -1 contradicted.
+
+NOT adopted: narrowing `kin` to STOP (speed, braking and heading are measured,
+so SLOW/YIELD/ACCELERATE/TURN are as grounded as STOP; the defect was the hedge,
+not the breadth), and adding object precision (it scores against the TEACHER's
+object list, re-importing the dependence this removes).
+
+**3. 150-window selection was a lottery.** Run 3 step 0 and run 4 step 0
+evaluate the IDENTICAL checkpoint on the IDENTICAL 150 windows: gt_score 0.53 vs
+0.61, ADE 3.79 vs 3.44 m. The denominators are small (44/150 scorable for
+false-clear, 28/150 for direction). `eval_windows` 150 -> 400 (~0.05 noise, ~1 h
+more over the run); final calls still get 500 windows offline.
+
+Run 5 = `rl-run-5-grounded`, everything else held from run 4 (perspan, G=16,
+coc_temperature 1.0, KL 0.03, CE 0.1, select_on gt_score, 200 steps). Watch
+`flat_coc` in the first 25 steps: dropping two terms removes two sources of
+within-group variance, and a quiet window where every rollout says FOLLOW is now
+a flat group.

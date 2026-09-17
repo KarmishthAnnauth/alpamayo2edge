@@ -77,19 +77,38 @@ def route_hint(k: dict) -> str:
             "straight": "Continue straight"}[k["lateral"]]
 
 
-def kinematic_term(man: str | None, k: dict) -> float:
+def kinematic_term(man: str | None, k: dict, strict: bool = False) -> float:
     """+1 consistent, -1 contradicted, 0 uncheckable. FOLLOW/KEEP are checked
-    against the one thing they promise: that nothing required braking."""
+    against the one thing they promise: that nothing required braking.
+
+    `strict` is the REWARD scale (run 5, D-042); the default is the MEASUREMENT
+    scale and must not change, or `gt_metrics` stops being comparable across
+    runs. Two rules differ, and both are about refusing to pay the hedge:
+
+      FOLLOW / KEEP   +0.5 -> 0.0 when the driver did not brake from speed.
+                      Measured on the 1046 val windows that free credit lands in
+                      74% of them, and FOLLOW/KEEP is over half of what the
+                      student says. It is a reward for narrating the status quo.
+      ADAPT_SPEED     +1.0 -> +0.5. It scores +1 whenever the speed changed at
+                      all, which ties or beats the best specific claim in 63% of
+                      windows while never risking worse than -0.5. A hedge that
+                      ties the truth teaches the student to hedge.
+
+    What is left is one scale: +1 a checkable claim that held, 0 unverifiable or
+    unremarkable, -1 contradicted. A correct specific claim now strictly beats
+    every hedge, and a dull window still offers nothing for over-claiming - in a
+    holds/straight window the best any maneuver scores is 0.
+    """
     s = k["speed"]
     if man == "STOP":        return 1.0 if s == "stops" else -1.0
     if man == "SLOW":        return 1.0 if s in ("brakes", "stops") else (-1.0 if s == "speeds" else 0.0)
     if man == "YIELD":       return 1.0 if s in ("brakes", "stops") else (-1.0 if s == "speeds" else 0.0)
-    if man == "ADAPT_SPEED": return 1.0 if s != "holds" else -0.5
+    if man == "ADAPT_SPEED": return (0.5 if strict else 1.0) if s != "holds" else -0.5
     if man == "ACCELERATE":  return 1.0 if s == "speeds" else (-1.0 if s in ("brakes", "stops") else 0.0)
     if man == "TURN":        return 1.0 if k["lateral"].startswith("turn") else -1.0
     if man == "LANE_CHANGE": return 1.0 if abs(k["ylat"]) > LANE_M else -0.5   # a volunteered claim
     if man in ("FOLLOW", "KEEP"):
-        return -1.0 if k["braked_from_speed"] else 0.5
+        return -1.0 if k["braked_from_speed"] else (0.0 if strict else 0.5)
     if man == "NUDGE":       return 0.0            # sub-lane; a 6.4 s offset cannot check it
     return -0.5                                    # unparsed
 
@@ -115,7 +134,14 @@ def direction_term(man: str | None, d: str | None, k: dict) -> float:
 def hazard_term(objs: set, k: dict) -> float:
     """Naming a reason should predict a reaction. named & reacted +1;
     named & nothing happened -1 (the off-path cone); silent & reacted -0.5;
-    silent & nothing happened +0.5."""
+    silent & nothing happened +0.5.
+
+    WEIGHT 0 from run 5 on (D-042), and kept only as the `hazard_ungrounded`
+    metric. `reacted` is true in 762 of 1046 val windows, and within a GRPO group
+    the window is fixed, so this pays +1.5 for naming any object in 73% of groups
+    and -1.5 in 27%: a net +0.69 bounty on mentioning something. That is D-038's
+    narration failure re-entering through the ground-truth side. Tightening the
+    threshold does not fix it - `reacted` is already the strict definition."""
     named = bool(objs & set(REASONS))
     if named:
         return 1.0 if k["reacted"] else -1.0
@@ -199,9 +225,13 @@ def self_consistency_term(man: str | None, direction: str | None, student_xyz) -
     trajectory instead of the driver's. Teacher-free and GT-free: the only term
     that can build the CoC -> trajectory chain D-040 found missing (the stage-1
     student's plan is f(images); forcing "turn left" vs "turn right" moves the
-    decoded heading by 2-6 deg). Range [-2, +2]."""
+    decoded heading by 2-6 deg). Range [-2, +2].
+
+    Scored on the `strict` scale (D-042): calling one's own plan FOLLOW because
+    it does not brake is not a description of it, and the hedge-tie argument
+    holds with the student's plan in place of the driver's."""
     ks = kinematics(student_xyz)
-    return kinematic_term(man, ks) + direction_term(man, direction, ks)
+    return kinematic_term(man, ks, strict=True) + direction_term(man, direction, ks)
 
 
 def perspan_reward(ade: float | None, student_xyz, student_text: str, terminated: bool,
@@ -213,6 +243,18 @@ def perspan_reward(ade: float | None, student_xyz, student_text: str, terminated
     r_coc   = kin/dir/hazard/teacher text rules against the driver's future
               (the `gt` mode grader) + self_consistency * sc
               -> the COC span's advantage
+
+    Run 5 (D-042) keeps the shape and changes what is paid for. Measured over the
+    75 logged steps of run 4, the CoC reward broke down as kin +0.173 (34% of the
+    positive total), teacher-match +0.146 (29%), hazard +0.127 (25%), self
+    +0.063 (12%), dir -0.017. Two of those are the narration D-038 rejected:
+    `hazard` pays for naming an object, and its anchor `reacted` is true in 73%
+    of the 1046 val windows, so within a group naming beats silence in 3 groups
+    of 4 (expected pull +0.69 per unit weight); `teacher` pays for agreeing with
+    a trace whose turn direction is opposite 17% of the time. Both go to weight
+    0, `kin` moves to the hedge-free `strict` scale, and what remains -
+    kin + dir + self-consistency - is grounded in the driver's own future and in
+    the student's own plan, nothing else.
 
     Run 3 applied one ADE-based advantage to both spans and moved the CoC not at
     all - the plan does not depend on the text, so the ADE credit reaching the
@@ -226,9 +268,9 @@ def perspan_reward(ade: float | None, student_xyz, student_text: str, terminated
     cap = float(w.ade_cap)
     r_ade = -min(float(ade), cap) / cap
     s = parse(student_text)
-    kin = kinematic_term(s["maneuver"], k)
+    kin = kinematic_term(s["maneuver"], k, strict=True)      # reward scale (D-042)
     dr = direction_term(s["maneuver"], s["direction"], k)
-    hz = hazard_term(s["objects"], k)
+    hz = hazard_term(s["objects"], k)                        # weight 0 from run 5 on
     t = parse(teacher_text) if teacher_text else {"maneuver": None}
     tm = 1.0 if (t["maneuver"] and s["maneuver"] == t["maneuver"]) else 0.0
     sc = self_consistency_term(s["maneuver"], s["direction"], student_xyz)

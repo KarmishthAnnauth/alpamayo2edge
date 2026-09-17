@@ -94,3 +94,33 @@ def test_perspan_self_consistency_reaches_both_spans():
     assert s1["self"] == 1.0 and s2["self"] == -1.0
     assert t1 - t2 == pytest.approx(0.5 * 2.0)
     assert c1 - c2 == pytest.approx(0.5 * 2.0)
+
+
+# ---- run 5: the grounded CoC reward (D-042) ----
+W5 = SimpleNamespace(ade=1.0, ade_cap=8.0, kin=1.0, dir=0.5, hazard=0.0, teacher=0.0,
+                     self_consistency=0.5, fail=-2.0, max_tokens=48)
+
+
+def test_run5_weights_drop_hazard_and_teacher_from_the_coc_reward():
+    """r_coc must be kin + 0.5*dir + 0.5*self and nothing else: naming an object
+    and agreeing with the teacher are no longer paid."""
+    gt = _path(10, 0.0)                                   # the driver stops
+    k = kinematics(gt)
+    plan = _path(10, 0.5)
+    quiet = "Stop for the pedestrian"
+    loud = "Stop for the pedestrian and the construction vehicle ahead"
+    _, c_quiet, s_q = perspan_reward(0.4, plan, quiet, True, 10, k, "Stop", W5)
+    _, c_loud, s_l = perspan_reward(0.4, plan, loud, True, 10, k, "Stop", W5)
+    assert s_l["hazard"] != 0.0 and s_q["teacher"] == 1.0   # both fields still measured
+    assert c_quiet == c_loud                                # but neither is paid for
+    expect = 1.0 * s_q["kin"] + 0.5 * s_q["dir"] + 0.5 * s_q["self"]
+    assert c_quiet == pytest.approx(expect)
+
+
+def test_run5_hedging_no_longer_ties_the_truth_in_the_reward():
+    k = kinematics(_path(10, 0.0))
+    plan = _path(10, 0.5)
+    _, c_true, _ = perspan_reward(0.4, plan, "Stop for the red light", True, 10, k, "", W5)
+    _, c_hedge, _ = perspan_reward(0.4, plan, "Adapt speed to the conditions", True, 10, k, "", W5)
+    _, c_idle, _ = perspan_reward(0.4, plan, "Follow the lane", True, 10, k, "", W5)
+    assert c_true > c_hedge > c_idle

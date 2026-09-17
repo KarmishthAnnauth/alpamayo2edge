@@ -369,10 +369,27 @@ stage1_rl:
   # kinematics of the student's own decoded plan) on both - the one term that
   # builds the coupling instead of assuming it. The CoC is sampled at T=1.0 in
   # rollouts so the sharp 4-camera student's 16 rollouts differ; val keeps 0.6.
+  # RUN 5 (2026-09-17, D-042). Run 4 (job 325) was stopped at step 75/200: flat,
+  # for a reason that is not the reward's shape. Measured there, ONE LoRA delta
+  # norm is identical to run 3's at the same step (0.148 vs 0.150 at step 50) but
+  # the resulting KL is 5-10x below the 1-camera runs that moved metrics (run 1
+  # 0.0050, run 2 0.0025, runs 3/4 0.00044/0.00047 at steps 51-75). The 4-camera
+  # init absorbs the same parameter displacement with far less change in its
+  # output distribution, so at lr 1e-5 NO reward is observable. TWO changes are
+  # therefore made together - the rate is what makes the reward legible:
+  #   1. lr 1e-5 -> 5e-5 (delta scales with lr, KL with delta^2: projects to
+  #      ~0.04 at step 200, just past run 2's proven 0.025 endpoint).
+  #   2. the CoC reward drops to its grounded subset: hazard 0.5 -> 0 and
+  #      teacher 0.25 -> 0 (see gt_reward.hazard_term / D-042 - together they
+  #      were 54% of the positive reward and both pay for narration), and `kin`
+  #      moves to the hedge-free `strict` scale.
+  # Also eval_windows 150 -> 400: two evaluations of the IDENTICAL checkpoint
+  # (run 3 step 0 vs run 4 step 0) differed by 0.08 gt_score and 0.35 m ADE, so
+  # 150-window selection was a lottery. 400 cuts that to ~0.05.
   init_ckpt: /data/vla/alpamayo2edge/runs/stage1/run-253/best   # 4-camera-native SFT (r96+MLP,
                                              # merged); fresh r48 attention adapters on top are
                                              # the policy, the merged weights the reference
-  run_name: rl-run-4-perspan
+  run_name: rl-run-5-grounded
   cameras: [camera_cross_left_120fov, camera_front_wide_120fov, camera_cross_right_120fov,
             camera_front_tele_30fov]         # RL-only override of data.cameras (1 cam for SFT)
   route_hint: true                           # <|route_start|>Turn left ahead<|route_end|> etc.,
@@ -387,7 +404,8 @@ stage1_rl:
   score_chunk: 4                             # rows per scoring forward (grad accumulation); 4 cams
                                              # make a row ~3x longer than 1 cam (run 2 used 8 at
                                              # 42 GB on the Blackwell)
-  lr: 1.0e-5
+  lr: 5.0e-5                                 # 5x run 4 (D-042): at 1e-5 the 4-camera init moves
+                                             # 0.0005 nats in 50 steps and nothing is measurable
   grad_clip: 1.0
   kl_beta: 0.03
   ce_aux: 0.1
@@ -397,8 +415,11 @@ stage1_rl:
                                              # bins and every val decode stay at `temperature`
   max_new_tokens: 64
   eval_every: 25
-  eval_windows: 150                          # each val window decodes a trajectory on 4-camera
-                                             # contexts (~3x run 2's cost per window)
+  eval_windows: 400                          # each val window decodes a trajectory on 4-camera
+                                             # contexts (~3x run 2's cost per window). 150 gave a
+                                             # +/-0.08 gt_score noise floor, measured by evaluating
+                                             # one checkpoint twice; 400 gives ~0.05 for ~1 h more
+                                             # over the run. Final calls still get 500 offline
   select_on: gt_score                        # run 4: the CoC is what this run is for (run 3
                                              # selected on neg_ade and its val curve was flat
                                              # noise, +/-0.3 m on 150 windows). ADE is logged
@@ -423,13 +444,19 @@ stage1_rl:
     # CoC-span reward (perspan) / shaping terms (traj). Run 4 uses the `gt`
     # grader's weights: in perspan mode these ARE the CoC's objective, and at
     # run 3's 0.25 they would be swamped by the self-consistency term.
-    kin: 1.0                                 # stated maneuver vs the driver's speed/path (+1/-1)
+    kin: 1.0                                 # stated maneuver vs the driver's speed/path, on the
+                                             # hedge-free `strict` scale (D-042): FOLLOW/KEEP no
+                                             # longer collect +0.5 for an uneventful window (74% of
+                                             # them) and ADAPT_SPEED drops to +0.5 so it cannot tie
+                                             # a correct specific claim (it did in 63% of windows)
     dir: 0.5                                 # stated direction vs the direction taken
-    hazard: 0.5                              # named reason vs whether the driver reacted (the
-                                             # strict `reacted`: stop / hard brake / > 1.5 m
-                                             # lateral); run 3 had it at 0 as "too crude"
-    teacher: 0.25                            # maneuver agreement with the cached trace: a weak
-                                             # prior, not the objective (D-038)
+    hazard: 0.0                              # OFF (D-042). `reacted` is true in 73% of val
+                                             # windows, so within a group this is a +0.69 bounty
+                                             # on naming any object - D-038's narration failure
+                                             # from the GT side. Kept as the metric only
+    teacher: 0.0                             # OFF (D-042). Was 29% of run 4's positive CoC
+                                             # reward, for agreeing with a trace whose turn
+                                             # direction is opposite 17% of the time (D-038)
     # run-1 grader fields, still read when mode: teacher
     maneuver: 1.0
     direction: 0.5
