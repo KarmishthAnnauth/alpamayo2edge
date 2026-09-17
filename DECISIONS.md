@@ -1597,3 +1597,50 @@ Smoke: `sbatch scripts/03a_smoke_stage1.sh --gate 2` (checks the GT prefix lande
 route slot is present, row 0's frames are zero with its CoC targets masked); the training
 job is queued `--dependency=afterok` on it. `03_train_stage1.sh`'s memory floor is back at
 65 GiB for 4 cameras.
+
+## D-044 [MEASURED 2026-09-18] Run 7 as launched learns to copy the GT prefix, not to plan: the free decode is a random walk
+
+Job 332 (run 7, commit `0a72570`), read at epoch 1 step 780:
+
+- **Teacher-forced GT loss at its floor by step 120.** `gt_soft` 3.4-3.5 nats against the
+  target's own entropy of 3.21; the one-hot `gt` at ~3.0 (e^-3 ~ 5% on the exact bin).
+  Run 4's one-hot term never left ~6.
+- **Free decode is noise.** Epoch-0 gate minADE_6 4.44 m (run 4: 2.75, run 6: 3.76).
+  `05d_coc_intervention.py --hint match` on `run-332/best` (epoch 0, 40 val windows, 2
+  samples, on the Ada): single-sample ADE 9.7-11.0 m for every forced CoC, within-window
+  heading sd 53 deg (run-253: 20 deg), heading gap turn_left - turn_right +8.2 deg with a
+  standard error of 14.9, end-speed gap accelerate - stop +0.54 +/- 0.46 m/s, "stop" ending
+  at 9.8 m/s. `runs/intervention-run332-ep0.json`, `logs/coc-intervention-run332-ep0.out`.
+- **CoC side unaffected.** Val CoC NLL 0.604 (run 6: 0.568) with 30% of CoC targets
+  dropped and 19% of windows filtered (3,573 / 18,954; FOLLOW 1508, KEEP 632, STOP 571,
+  TURN 302 - the cache-wide shares of D-043 reproduce on the train split).
+
+Reading: a near-perfect one-step-ahead model whose rollouts diverge is exposure bias in its
+textbook form. A 10 Hz curvature/accel trace is smooth, so with the CLEAN GT stream as the
+teacher-forced prefix, "next bin = previous bin +/- a few" satisfies the sigma-6 target and
+nothing in the loss requires the scene, the CoC or the route. At decode time each sampled
+deviation becomes the next step's prefix and the errors compound over 64 waypoints. Run 4
+(GT target on a TEACHER prefix, 2.23 m) escaped this by accident: copying a prefix that is
+not the target cannot fit the loss, so that model had to read the scene. The decode settings
+are the teacher's own (T 0.6, top-p 0.98), so temperature is not the explanation.
+
+Two consequences for D-043's design, neither of which touches its premise:
+
+1. The coupling test was not a test of coupling at this checkpoint - the plan is noise for
+   every CoC, so the gaps are unmeasurable. Image dropout is unjudged, not refuted.
+2. GT-prefix teacher forcing needs the prefix to be untrustworthy. **Run 7b:**
+   `stage1.prefix_noise_bins: 16` - per window sigma ~ U(0, 16), per prefix bin an
+   independent N(0, sigma) offset, rounded and clipped to the region (`dataset.jitter_prefix`,
+   train only; the loss target stays the clean cached bin). The model sees clean, slightly
+   wrong and badly wrong prefixes and must predict the clean next bin from scene + CoC +
+   history. Cheap scheduled sampling: no decode per batch. Everything else held.
+
+Not adopted: bringing the teacher curvature KL back as a shape regulariser (run 4's
+known-good combination) - with a GT prefix its cached top-k is off-policy, and it re-imports
+the teacher's trajectory into a run whose point is the driver's; and true scheduled sampling
+with student-sampled prefixes - a 128-token decode per batch, ~2x the step time, kept in
+reserve if noise alone does not close the loss-vs-decode gap.
+
+Judge 7b first on the gap itself: `gt_soft` should sit visibly ABOVE 3.21 under a noised
+prefix, and the epoch-0 gate should land at or below run 4's 2.75 m. Then D-043's three
+criteria in order.

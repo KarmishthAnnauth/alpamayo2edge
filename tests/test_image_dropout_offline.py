@@ -61,3 +61,17 @@ def test_text_ce_on_an_all_masked_batch_is_zero_not_an_error():
     v = losses.text_kl_or_ce(torch.randn(2, 3, 7), torch.zeros(2, 3, dtype=torch.long),
                              torch.zeros(2, 3, dtype=torch.bool), vocab_ok=True)
     assert float(v) == 0.0
+
+
+def test_jitter_prefix_stays_in_region_and_is_zero_at_sigma_zero():
+    from distill.data.dataset import N_FUTURE_BINS, jitter_prefix
+    bins = [0, 1, 1500, 2998, 2999] * 20
+    assert jitter_prefix(bins, 0.0) == bins
+    torch.manual_seed(0)
+    seen_change = False
+    for _ in range(20):
+        out = jitter_prefix(bins, 16.0)
+        assert len(out) == len(bins)
+        assert all(0 <= b < N_FUTURE_BINS for b in out)
+        seen_change |= out != bins
+    assert seen_change

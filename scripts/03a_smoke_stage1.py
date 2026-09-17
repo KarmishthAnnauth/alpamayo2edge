@@ -83,6 +83,8 @@ def main() -> int:
     # The train split's own settings, minus the grounding filter (a two-minute
     # scan the smoke does not need). Image dropout is forced on row 0 rather
     # than drawn, so the dropped path is exercised every time (D-043).
+    # prefix_noise_bins deliberately 0 here so the GT-prefix identity check below
+    # is exact; the jitter itself is exercised (and its size printed) afterwards.
     ds = Stage1Dataset(cfg, student.context_builder(), clip_ids=load_split(cfg, "train"),
                        image_dropout=float(cfg.stage1.get("image_dropout", 0.0)))
     mb = int(a.micro_batch or cfg.stage1.micro_batch)
@@ -121,6 +123,15 @@ def main() -> int:
             raise RuntimeError("traj_prefix is 'gt' but the teacher-forced trajectory "
                                "positions do not hold the GT bins")
         print("  teacher-forced trajectory prefix == GT bins: ok")
+        pn = float(cfg.stage1.get("prefix_noise_bins", 0.0))
+        if pn > 0:
+            from distill.data.dataset import jitter_prefix
+            clean = [int(b) for b in items[0]["gt_traj_token_ids"]]
+            devs = [float(torch.tensor([abs(a - b) for a, b in
+                                        zip(jitter_prefix(clean, pn), clean)],
+                                       dtype=torch.float).mean()) for _ in range(8)]
+            print(f"  prefix jitter (train only, max sigma {pn:.0f} bins): mean |offset| "
+                  f"over 8 draws {min(devs):.1f}..{max(devs):.1f} bins")
     if bool(batch["img_drop"][0]):
         n_img = batch["image_grid_thw"].prod(-1)
         n0 = int(n_img[: int(items[0]["student"]["image_grid_thw"].shape[0])].sum())

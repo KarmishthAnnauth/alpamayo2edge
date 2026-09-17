@@ -78,7 +78,8 @@ class Stage1Dataset(Dataset):
 
     def __init__(self, cfg, context_builder, clip_ids: list[str] | None = None,
                  for_generation: bool = False, cot_generation: bool = False,
-                 image_dropout: float = 0.0, filter_contradictions: bool = False):
+                 image_dropout: float = 0.0, filter_contradictions: bool = False,
+                 prefix_noise_bins: float = 0.0):
         from .preprocess import load_window, window_t0_us
 
         self.cfg = cfg
@@ -110,10 +111,29 @@ class Stage1Dataset(Dataset):
         #                  trajectory dependence stage 1 never had (D-040).
         #   filter_contradictions  drop windows whose teacher CoC flatly
         #                  contradicts the driver's future (data/grounding.py).
+        #   prefix_noise_bins  jitter the teacher-forced TRAJECTORY PREFIX (the
+        #                  bins in `input_ids`, never the loss target, which the
+        #                  trainer reads from the cache). Run 7 as launched put the
+        #                  clean GT stream in the prefix and the teacher-forced
+        #                  loss sat 0.2 nats above its floor by step 120 while the
+        #                  free decode was a random walk (10 m ADE, heading sd
+        #                  53 deg, run-332 epoch 0): a 10 Hz curvature/accel trace
+        #                  is smooth, so "next = previous" satisfies the loss and
+        #                  nothing anchors the plan on the scene. Per window a
+        #                  sigma is drawn from U(0, prefix_noise_bins) and every
+        #                  prefix bin gets an independent N(0, sigma) offset,
+        #                  rounded and clipped to the region, so the model sees
+        #                  clean, slightly wrong and badly wrong prefixes and must
+        #                  predict the CLEAN next bin from scene + CoC + history.
+        #                  Exposure-bias mitigation in the spirit of scheduled
+        #                  sampling, without a decode per batch.
         if not 0.0 <= float(image_dropout) <= 1.0:
             raise ValueError(f"image_dropout must be in [0, 1], got {image_dropout}")
         self.image_dropout = float(image_dropout)
         self.filter_contradictions = bool(filter_contradictions)
+        if float(prefix_noise_bins) < 0.0:
+            raise ValueError(f"prefix_noise_bins must be >= 0, got {prefix_noise_bins}")
+        self.prefix_noise_bins = float(prefix_noise_bins)
         # Eval mode: the CoC is still teacher-forced but the 128 trajectory
         # positions are NOT — the context stops at `<|traj_future_start|>` so the
         # student decodes them itself. Building the teacher-forced context and
@@ -153,6 +173,8 @@ class Stage1Dataset(Dataset):
         # teacher-forced prefix is `stage1.traj_prefix` (see __init__).
         key = "gt_traj_token_ids" if self.traj_prefix == "gt" else "traj_token_ids"
         traj_bins = [int(b) for b in d[key]]
+        if self.prefix_noise_bins > 0.0 and not self.for_generation:
+            traj_bins = jitter_prefix(traj_bins, self.prefix_noise_bins)
         from . import grounding
         nav = grounding.route_hint(d["gt_future_xyz"]) if self.route_hint else None
         ctx = self.ctx.build(window,
@@ -192,6 +214,26 @@ class Stage1Dataset(Dataset):
                 "to backfill (it writes inputs even where targets already exist).",
                 cached)
         return self._load_window(self.cfg, clip_id, self._t0(self.cfg, w_idx))
+
+
+#: Region-relative future bins live in [0, N_FUTURE_BINS) (D-014: 3000 bins).
+N_FUTURE_BINS = 3000
+
+
+def jitter_prefix(bins: list[int], max_sigma: float, n_bins: int = N_FUTURE_BINS) -> list[int]:
+    """Noise a teacher-forced trajectory prefix (see Stage1Dataset.__init__).
+
+    sigma ~ U(0, max_sigma) per call, offsets ~ N(0, sigma) per bin, rounded,
+    clipped to [0, n_bins). Uses torch's RNG so DataLoader workers draw
+    independently. The LOSS TARGET is untouched: the trainer scores against the
+    cache's `gt_traj_token_ids`, not against what sits in `input_ids`.
+    """
+    sigma = float(torch.rand(())) * float(max_sigma)
+    if sigma <= 0.0:
+        return list(bins)
+    off = torch.round(torch.randn(len(bins)) * sigma).to(torch.long)
+    out = (torch.as_tensor(bins, dtype=torch.long) + off).clamp_(0, n_bins - 1)
+    return [int(b) for b in out]
 
 
 def collate_student(items: list[dict], pad_id: int) -> dict:

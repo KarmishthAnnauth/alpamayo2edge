@@ -226,6 +226,21 @@ stage1:
   # trajectory would train "say one thing, do another". Soft cases (ADAPT_SPEED
   # on held speed, unparsed traces, silence on a turn) stay. Gate/val: unfiltered.
   filter_contradictions: true
+  # RUN 7b (D-044): jitter the teacher-forced GT prefix. Run 7 as launched (job
+  # 332) put the CLEAN GT stream in the prefix and by step 120 the teacher-forced
+  # gt_soft sat at 3.4-3.5 nats against a 3.21 floor, while the free decode was a
+  # random walk: epoch-0 gate 4.44 m (run 4: 2.75), intervention probe 10 m
+  # single-sample ADE with a 53-degree within-window heading spread, and "stop"
+  # ending at 9.8 m/s. A 10 Hz curvature/accel trace is smooth, so "next bin =
+  # previous bin" satisfies the loss and nothing anchors the plan on the scene;
+  # at decode time each sampled error feeds the next step. Run 4 escaped this by
+  # accident: its GT target sat on a TEACHER prefix, which copying cannot fit.
+  # Per window sigma ~ U(0, this) bins; per prefix bin an independent N(0, sigma)
+  # offset, rounded, clipped. The loss target stays the clean cached GT bin. 16
+  # bins ~ 2.7x the target's own sigma (6): the model must tolerate prefixes that
+  # are wrong by more than it is ever asked to be. Train only; the gate decodes
+  # from its own samples as before. 0 restores run 7's launched behaviour.
+  prefix_noise_bins: 16.0
   loss_weights:
     traj_kl: 0.0                             # RUN 7: OFF (was 1.0). The teacher's curvature
                                              # top-k is conditioned on ITS prefix, and the
