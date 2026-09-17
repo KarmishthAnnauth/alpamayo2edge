@@ -77,11 +77,43 @@ class Stage1Dataset(Dataset):
     """
 
     def __init__(self, cfg, context_builder, clip_ids: list[str] | None = None,
-                 for_generation: bool = False, cot_generation: bool = False):
+                 for_generation: bool = False, cot_generation: bool = False,
+                 image_dropout: float = 0.0, filter_contradictions: bool = False):
         from .preprocess import load_window, window_t0_us
 
         self.cfg = cfg
         self.ctx = context_builder
+        # CONTEXT FORMAT (D-043) - read from `stage1` so every consumer of this
+        # dataset (trainer, gate, val NLL, smoke, inspection scripts, stage 2)
+        # builds the sequence the model was trained on:
+        #   traj_prefix  "gt" puts the GT trajectory bins in the teacher-forced
+        #                sequence (they are also the `gt_ce` target, so the
+        #                student learns p(GT bin t | GT bins < t)); "teacher"
+        #                is runs 1-6, the teacher's own sampled tokens.
+        #   route_hint   fill the `<|route_start|>` slot with the direction the
+        #                driver took (turn left / turn right / straight, from
+        #                `gt_future_xyz`). The teacher was labelled route-blind
+        #                (D-038); at deployment this comes from navigation.
+        st = getattr(cfg, "stage1", None)
+        self.traj_prefix = str(st.get("traj_prefix", "teacher") if st is not None else "teacher")
+        if self.traj_prefix not in ("teacher", "gt"):
+            raise ValueError(f"stage1.traj_prefix must be 'teacher' or 'gt', got {self.traj_prefix!r}")
+        self.route_hint = bool(st.get("route_hint", False)) if st is not None else False
+        # TRAINING-ONLY knobs, explicit so the gate and val paths cannot inherit
+        # them by accident:
+        #   image_dropout  probability that a window is served with its frames
+        #                  zeroed. The collator then clears its CoC/struct loss
+        #                  masks (a CoC must not be learned from a blank image)
+        #                  and keeps the trajectory mask, so on those samples the
+        #                  trajectory has to be read from ego history + route +
+        #                  the CoC text. That is what builds the CoC ->
+        #                  trajectory dependence stage 1 never had (D-040).
+        #   filter_contradictions  drop windows whose teacher CoC flatly
+        #                  contradicts the driver's future (data/grounding.py).
+        if not 0.0 <= float(image_dropout) <= 1.0:
+            raise ValueError(f"image_dropout must be in [0, 1], got {image_dropout}")
+        self.image_dropout = float(image_dropout)
+        self.filter_contradictions = bool(filter_contradictions)
         # Eval mode: the CoC is still teacher-forced but the 128 trajectory
         # positions are NOT — the context stops at `<|traj_future_start|>` so the
         # student decodes them itself. Building the teacher-forced context and
@@ -98,6 +130,13 @@ class Stage1Dataset(Dataset):
         self.shards = discover_shards(self.cache_root, clip_ids)
         if not self.shards:
             raise RuntimeError("No cached shards found - run scripts/02_label.py first")
+        self.grounding_stats = None
+        if self.filter_contradictions:
+            from . import grounding
+            self.shards, self.grounding_stats = grounding.grounded_shards(self.shards)
+            grounding.log_stats(self.grounding_stats)
+            if not self.shards:
+                raise RuntimeError("grounding filter dropped every window")
         self._warned_uncached = False
 
     def __len__(self) -> int:
@@ -110,13 +149,23 @@ class Stage1Dataset(Dataset):
         d["clip_id"] = clip_id
         window = self._window(clip_id, w_idx)
         # Region-relative future bins are what the cache stores (D-014), and what
-        # the student's appended future rows are indexed by.
-        traj_bins = [int(b) for b in d["traj_token_ids"]]
+        # the student's appended future rows are indexed by. Which stream is the
+        # teacher-forced prefix is `stage1.traj_prefix` (see __init__).
+        key = "gt_traj_token_ids" if self.traj_prefix == "gt" else "traj_token_ids"
+        traj_bins = [int(b) for b in d[key]]
+        from . import grounding
+        nav = grounding.route_hint(d["gt_future_xyz"]) if self.route_hint else None
         ctx = self.ctx.build(window,
                              coc_text=None if self.cot_generation else str(d["coc_text"]),
                              traj_bins=None if self.for_generation else traj_bins,
+                             nav_text=nav,
                              for_generation=self.for_generation)
         d["student"] = ctx
+        d["route_hint"] = nav or ""
+        # Drawn here, in the worker: each DataLoader worker's torch RNG is seeded
+        # per epoch, so the draw is independent across samples and epochs.
+        d["img_drop"] = bool(self.image_dropout > 0.0
+                             and float(torch.rand(())) < self.image_dropout)
         # The ego history is the frame `detokenize_traj` integrates waypoints
         # from, so the gate needs it alongside the tokens. `[:, -1]` drops the
         # n_traj axis exactly as the teacher's own detokenization does.
@@ -153,6 +202,14 @@ def collate_student(items: list[dict], pad_id: int) -> dict:
     silently corrupt every position (D-027).
     """
     ctxs = [it["student"] for it in items]
+    # Image dropout (D-043). A dropped sample keeps its sequence and its
+    # trajectory targets but loses its frames (zeroed pixel values - a constant
+    # image, not an absent one, so positions and the mrope layout are unchanged)
+    # and its CoC/struct loss masks: the CoC is teacher-forced INPUT on that
+    # sample, never a target, because a CoC learned from a blank frame is a
+    # hallucination lesson. The trajectory then has to come from ego history,
+    # the route hint and the CoC text.
+    drop = [bool(it.get("img_drop", False)) for it in items]
     lens = [c["input_ids"].shape[0] for c in ctxs]
     L = max(lens)
     B = len(ctxs)
@@ -165,16 +222,20 @@ def collate_student(items: list[dict], pad_id: int) -> dict:
         n = c["input_ids"].shape[0]
         input_ids[j, :n] = c["input_ids"]
         attention_mask[j, :n] = True
-        for span, mask in ((c["coc_span"], coc_mask),
-                           (c.get("struct_span"), struct_mask),
-                           (c["traj_span"], traj_mask)):
+        spans = [(c["traj_span"], traj_mask)]
+        if not drop[j]:
+            spans += [(c["coc_span"], coc_mask), (c.get("struct_span"), struct_mask)]
+        for span, mask in spans:
             if span is not None:
                 mask[j, span[0]:span[1]] = True
     out = dict(input_ids=input_ids, attention_mask=attention_mask,
                coc_pos=coc_mask, struct_pos=struct_mask, traj_pos=traj_mask,
-               n_prompt=torch.tensor([c["n_prompt"] for c in ctxs]))
+               n_prompt=torch.tensor([c["n_prompt"] for c in ctxs]),
+               img_drop=torch.tensor(drop, dtype=torch.bool))
     if ctxs[0]["pixel_values"] is not None:
-        out["pixel_values"] = torch.cat([c["pixel_values"] for c in ctxs], dim=0)
+        out["pixel_values"] = torch.cat(
+            [torch.zeros_like(c["pixel_values"]) if drop[j] else c["pixel_values"]
+             for j, c in enumerate(ctxs)], dim=0)
         out["image_grid_thw"] = torch.cat([c["image_grid_thw"] for c in ctxs], dim=0)
     return out
 

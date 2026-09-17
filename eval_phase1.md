@@ -112,6 +112,30 @@ Left as-is: `feat` / `layer_map.mode: cka` (D-033 option 1). Only escalate to
 
 Sbatch for run 2: `--cpus-per-task=4 --mem=48G` (run 1 used 14.5% CPU, 36 GB).
 
+### Run 7 — D-043, queued 2026-09-17 (teacher CoC + GT trajectory, coupled)
+
+Runs 2-6 are recorded in `DECISIONS.md` D-035..D-036 (curves: 232 best 2.463 m ep 3;
+253 best 2.232 m ep 3; 313 / 314 at 1 camera, `gt_ce` off, 2.9-3.7 m). Run 7 restarts
+phase 1 on a different premise - see D-043 for the four measured causes.
+
+| change | from -> to |
+|---|---|
+| trajectory prefix + target | teacher tokens -> **GT tokens** (`traj_prefix: gt`, `gt_ce` 1.0 flat, `traj_kl*` 0.0) |
+| context | + **route hint** (driver's direction) in every context |
+| coupling | **image dropout 0.3** on train: frames zeroed, CoC/struct masked, trajectory read from CoC + history + route |
+| data | train windows whose CoC flatly contradicts the GT future **dropped** (~18%) |
+| cameras | 1 -> **4** |
+| selection | `coc_nll` -> **minade**; adapters saved every epoch |
+| sampler | maneuver sampling off |
+
+Baseline for the gate stays job 199's untrained 10.92 m (the hint changes the context,
+so strictly a new untrained number is owed; the smoke's `--gate 2` is not it). Reference:
+run 4's 2.232 m (last GT-anchored run), teacher expert 0.998 m minADE_4 on the same windows.
+
+Judge on three things, in this order: `05d_coc_intervention.py --hint match` (coupling:
+heading gap and end-speed gap must open), the gate curve (below 2.23 m), and
+`05b_eval_coc.py --route-hint` teacher-free CoC metrics against run 6.
+
 ---
 
 ## 0. Method — get the baseline. The curve is meaningless without it

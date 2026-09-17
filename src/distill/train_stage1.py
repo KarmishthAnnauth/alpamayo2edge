@@ -192,8 +192,19 @@ def main(cfg_path: str, micro_batch: int | None = None,
     # the student gets the same cameras + ego motion the teacher saw (D-028).
     # Restricted to split_train: the epoch gate evaluates split_challenging, and
     # until 2026-08-24 this took every shard on disk, gate windows included.
+    # Run 7 (D-043): the train split alone gets image dropout and the grounding
+    # filter - both are training knobs, and the gate / val NLL must see the full,
+    # unaltered windows. The context FORMAT (GT prefix, route hint) is read from
+    # `stage1` inside Stage1Dataset, so every path builds the same sequence.
     train_ds = Stage1Dataset(cfg, student.context_builder(),
-                             clip_ids=load_split(cfg, "train"))
+                             clip_ids=load_split(cfg, "train"),
+                             image_dropout=float(cfg.stage1.get("image_dropout", 0.0)),
+                             filter_contradictions=bool(
+                                 cfg.stage1.get("filter_contradictions", False)))
+    log.info("context: traj_prefix=%s route_hint=%s | train: image_dropout=%.2f "
+             "filter_contradictions=%s windows=%d",
+             train_ds.traj_prefix, train_ds.route_hint, train_ds.image_dropout,
+             train_ds.filter_contradictions, len(train_ds))
     pad_id = student.tokenizer.pad_token_id
     # Slurm allocates the CPUs; hardcoding a worker count is how a shared node
     # ends up oversubscribed (slurm_tutorial/07 "three mistakes", #1). Falls back
@@ -323,8 +334,15 @@ def main(cfg_path: str, micro_batch: int | None = None,
                 # One forward, two reductions: the per-position KL does not
                 # depend on the mask, and it carries a full-vocab log_softmax
                 # (~276 MB of retained activation at micro_batch 4).
-                traj_kl_pos = losses.traj_topk_kl_per_pos(
-                    traj_logits, topk_idx, batch["topk_logp"])
+                # Run 7 zeroes both teacher-KL weights (GT tokens are the
+                # trajectory target, D-043); the term is then a no_grad
+                # diagnostic. NB with `traj_prefix: gt` the teacher's cached
+                # top-k was conditioned on ITS OWN prefix, so the number is
+                # off-policy and only loosely comparable to runs 1-6.
+                kl_on = bool(w.get(_WKEY["traj"], 0.0) or w.get(_WKEY["traj_accel"], 0.0))
+                with torch.enable_grad() if kl_on else torch.no_grad():
+                    traj_kl_pos = losses.traj_topk_kl_per_pos(
+                        traj_logits, topk_idx, batch["topk_logp"])
                 terms = {
                     "traj": losses.masked_mean(traj_kl_pos, curv_mask),
                     "traj_accel": losses.masked_mean(traj_kl_pos, acc_mask),
@@ -366,8 +384,11 @@ def main(cfg_path: str, micro_batch: int | None = None,
                 step += 1
                 if step % 20 == 0:
                     breakdown = " ".join(f"{k} {float(v):.3f}" for k, v in terms.items())
-                    log.info("epoch %d step %d/%d loss %.4f [%s]",
-                             epoch, step, total_steps, loss.item(), breakdown)
+                    # `drop` = frames zeroed in this micro-batch (image dropout);
+                    # on those rows `text`/`struct` are masked out.
+                    log.info("epoch %d step %d/%d loss %.4f [%s] drop %d/%d",
+                             epoch, step, total_steps, loss.item(), breakdown,
+                             int(batch["img_drop"].sum()), batch["img_drop"].numel())
 
         score = coarse_minade(cfg, student, split="challenging",
                               k=int(cfg.eval.minade_k),
@@ -404,6 +425,16 @@ def main(cfg_path: str, micro_batch: int | None = None,
                  "struct NLL %.3f | gt_ce_w %.3f | select_on %s=%.3f%s",
                  epoch, score, text_nll, struct_nll, gt_ce_w, sel_key, sel,
                  "  <- new best" if sel < best else "")
+        if bool(cfg.stage1.get("save_every_epoch", False)):
+            # Adapters only (~75 MB at r48), every epoch, so any epoch can be
+            # free-run scored offline (05b/05d) on top of the base checkpoint.
+            # D-036: run 6's epochs 2-4 could not be scored because only `best/`
+            # existed. Reload = untrained student + `checkpoint.load_adapters`.
+            ep_dir = run_best.parent / f"epoch-{epoch:02d}"
+            checkpoint.save_adapters(student, ep_dir, stage="stage1", epoch=epoch,
+                                     coarse_minade=float(score),
+                                     val_coc_nll=float(text_nll))
+            log.info("adapters -> %s", ep_dir)
         if sel < best:
             best, patience = sel, 0
             # Per-run dir (see _run_best_dir); `<stage>/best` is repointed to it.

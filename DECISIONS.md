@@ -1511,3 +1511,89 @@ coc_temperature 1.0, KL 0.03, CE 0.1, select_on gt_score, 200 steps). Watch
 `flat_coc` in the first 25 steps: dropping two terms removes two sources of
 within-group variance, and a quiet window where every rollout says FOLLOW is now
 a flat group.
+
+## D-043 [DECIDED 2026-09-17] Phase 1 restarted as run 7: teacher CoC + DRIVER trajectory, coupled by construction
+
+GRPO is parked (job 328, run 5 of phase 1.5, cancelled at the user's direction; phase 2
+untouched). The AR tower has to be right first, and stage 1 as run 5-6 built it could not
+be, for four reasons that compound. All measured; nothing here is a weight change.
+
+**1. GT trajectories were not in the loss.** `gt_ce: 0.0` since run 5. The only trajectory
+signal was the teacher's token distribution - 3.77 m ADE_1 on the gate windows, accel half
+near-uninformative (D-035/D-036) - and runs 5-6 sat on that ceiling at 3.2-3.7 m. Run 4
+(job 253), the one run with a GT anchor, reached 2.23 m.
+
+**2. When GT was the target, the prefix was the teacher's.** `Stage1Dataset` always put
+`traj_token_ids` in the sequence, so run 4 trained p(GT bin t | TEACHER bins < t), a
+conditional never asked for at decode time.
+
+**3. The trajectory never had to read the CoC.** One (CoC, trajectory) pair per window,
+both fixed by the same frames, so the trajectory head learned f(images) - D-040's
+measurement (forced "turn left" vs "turn right": ~2 degrees of heading). CE cannot build
+a dependence nothing in the loss requires.
+
+**4. The teacher's CoC contradicts the driver in ~18% of windows**, so pairing it with the
+GT trajectory would train "say one thing, do another". Over all 20,000 cached windows,
+strict scale of `eval/gt_reward.py`, a -1.0 on either term:
+
+| contradiction | windows | share |
+|---|---:|---:|
+| FOLLOW / KEEP while the driver braked hard from speed | 2,265 | 11.3% |
+| STOP with no stop inside 6.4 s | 596 | 3.0% |
+| turn / lane-change direction opposite to the one taken | 303 | 1.5% |
+| TURN / ACCELERATE / SLOW / YIELD contradicted by kinematics | 629 | 3.1% |
+
+On the checkable claims overall the teacher is a coin flip (~4,100 held, ~3,700 flatly
+contradicted); 55% of windows are unverifiable (FOLLOW/KEEP/NUDGE with nothing happening).
+Its form and scene content are worth copying; its decision is not a label on its own. Some
+of this is horizon (a STOP narrated on the approach), but the braking and direction cases
+are not.
+
+### Run 7 (`configs/default.yaml`, all under `stage1`; code in `data/grounding.py`,
+`data/dataset.py`, `train_stage1.py`, `losses.py`)
+
+1. **`traj_prefix: gt`** - the cached `gt_traj_token_ids` are the teacher-forced prefix at
+   the 128 positions AND the `gt_ce` target (soft, sigma 6, weight 1.0, flat - no ramp).
+   `traj_kl` / `traj_kl_accel` -> 0.0; still logged under `no_grad`, and off-policy now
+   (the teacher's top-k was conditioned on its own prefix) - a drift indicator, not a
+   metric. The flow head refines later; the tokens need to be GT-shaped and CoC-dependent,
+   not the best.
+2. **`route_hint: true`** - every context (train, gate, val NLL, 05b/05d, stage 2) fills
+   `<|route_start|>` with the driver's direction (turn left / right / straight, from
+   `gt_future_xyz`; val 6.2 / 5.8 / 88%). Direction only, no speed leak. The teacher was
+   labelled route-blind; at deployment navigation supplies this (Bench2Drive: commands).
+   It takes direction off the CoC's plate: the CoC's job is the speed decision and its
+   cause, which is exactly what image dropout forces it to carry.
+3. **`image_dropout: 0.3`** (train only) - a window is served with its frames ZEROED; the
+   collator clears its CoC/struct loss masks (a CoC is not to be learned from a blank
+   frame - the CoC stays teacher-forced input) and keeps the trajectory mask. On those
+   samples the trajectory must come from ego history + route + the CoC text. Standard
+   modality dropout; the same forward, so no compute cost. This is the coupling mechanism.
+4. **`filter_contradictions: true`** (train only) - the ~18% above are dropped from the
+   train split, by maneuver class in the log. Soft cases stay (ADAPT_SPEED on held speed,
+   unparsed traces, silence on a turn - the hint now names it). Gate and val: unfiltered.
+5. **Kept / reverted:** LoRA r48 attention-only, lr 3e-4, effective batch 32, `text_kl`
+   1.0, `struct_ce` 0.5. `data.cameras` back to the 4 the labels were made with (D-036: the
+   collapse is a perception limit; the only arm near the teacher's LANE_CHANGE rate was
+   run-253 at 4 cameras). `maneuver_sampling.enabled: false` (run-6 outcome). `select_on:
+   minade` (a trained-toward metric again; D-036 found CoC NLL a poor selector).
+   `save_every_epoch: true` - adapters at every epoch under `run-<job>/epoch-NN`, so any
+   epoch can be scored offline (run 6's epochs 2-4 could not be).
+
+### Judge it on
+
+- **Coupling:** `05d_coc_intervention.py --hint match` (new: the turn CoCs get the hint that
+  agrees with them, the speed CoCs hold the true route). Heading gap turn_left - turn_right
+  from ~2 degrees to tens; end-speed gap accelerate - stop from ~0 to several m/s.
+- **Trajectory:** gate minADE_6 below run 4's 2.23 m (the last GT-anchored run), on the
+  same 60 windows; the teacher's action expert is at 1.0 m minADE_4 there.
+- **CoC:** `05b_eval_coc.py --route-hint` teacher-free metrics (GT-consistent maneuvers,
+  GT false-clear, direction stated) not worse than run 6's; termination 1.0. Free-running
+  content is scored from the per-epoch adapters, not inferred from NLL.
+- **Then phase 1.5** restarts from the run-7 checkpoint with the grounded per-span reward
+  (D-042's design), now with a trajectory that actually depends on the words.
+
+Smoke: `sbatch scripts/03a_smoke_stage1.sh --gate 2` (checks the GT prefix landed, the
+route slot is present, row 0's frames are zero with its CoC targets masked); the training
+job is queued `--dependency=afterok` on it. `03_train_stage1.sh`'s memory floor is back at
+65 GiB for 4 cameras.

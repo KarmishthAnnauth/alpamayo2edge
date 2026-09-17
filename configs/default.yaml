@@ -47,7 +47,14 @@ data:
   # could not see either (it has no rear camera) and run 253 trained through
   # without trouble. Trajectory targets from a wider-view teacher are privileged
   # distillation, which is standard and if anything raises target quality.
-  cameras: [camera_front_wide_120fov]
+  # RUN 7: back to the 4 cameras the labels were made with. D-036: the CoC
+  # collapse (FOLLOW/KEEP over-emitted, direction silent) is a perception limit -
+  # the only arm that ever emitted LANE_CHANGE near the teacher's rate was run-253
+  # at 4 cameras, and the 11B teacher handed one camera shows the same collapse
+  # (D-037). Run 5's single-camera rationale is kept below for the record.
+  cameras: [camera_cross_left_120fov, camera_front_wide_120fov, camera_cross_right_120fov,
+            camera_front_tele_30fov]
+  # cameras: [camera_front_wide_120fov]      # runs 5-6 (single camera)
   context_frames: 4                          # frames per camera (teacher convention)
   student_resolution: [360, 640]             # Edge control resolution (H, W)
   # Write the student's own inputs (JPEG frames + ego history) during the
@@ -163,169 +170,107 @@ student:
                                              # read - the trainer hardcoded uniform)
 
 stage1:
-  epochs: 12                                 # run 4: was 8. A CEILING, not a target - on full data
-                                             # `early_stop_patience` is what actually ends the run.
-                                             # Job 232, the only full-data run at these settings,
-                                             # early-stopped at epoch 6 with its best at epoch 3,
-                                             # so 8 was already not binding. 12 exists because run
-                                             # 4 reshapes the trajectory supervision and the
-                                             # overfit onset may move later; it costs nothing if it
-                                             # does not. (An earlier version of this comment cited
-                                             # job 243 "still improving at the cap" - that was the
-                                             # ~500-clip diagnostic, 240 total steps, undertrained
-                                             # rather than unconverged. It says nothing about where
-                                             # a full-data run peaks.)
-                                             # Budget: 9477 train clips -> 593 steps/epoch at
-                                             # ~3.8 h/epoch (measured, job 232) -> 45.6 h for the
-                                             # full 12, inside the 68 h the sbatch now asks for.
-  micro_batch: 4                             # was 2 under full FT; LoRA freed ~35GB (D-024).
-  grad_accum: 8                              # effective batch held at 32. Raise micro_batch
-                                             # further once the first run reports real usage.
-  lr: 3.0e-4                                 # run 2: was 1.0e-4 (inherited from full-FT). Run 1
-                                             # plateaued at epoch 3 then overfit; LoRA wants 2-5x
-                                             # more (D-026, eval_phase1.md §3). Primary gate-facing
-                                             # lever for run 2 - keep the rest fixed to attribute it.
+  # RUN 7 (D-043, 2026-09-17): CoC from the teacher, trajectory from the DRIVER,
+  # and the two coupled. Runs 5-6 trained the trajectory tokens on the teacher's
+  # own token distribution (3.77 m ADE_1 on the gate windows, accel half near
+  # uninformative - D-035/D-036) with `gt_ce: 0.0`, and the student sat on that
+  # ceiling at 3.2-3.7 m. Run 4, the one run with a GT anchor, reached 2.23 m.
+  # And D-040 measured that the trajectory never read the CoC at all: one
+  # (CoC, trajectory) pair per window, both fixed by the same images, so the
+  # trajectory head learned f(images). Four changes, each named below:
+  #   traj_prefix: gt        GT bins are the teacher-forced prefix AND the target
+  #   loss_weights           teacher trajectory KL off, gt_ce on (flat, no ramp)
+  #   route_hint: true       the driver's direction in the <|route_start|> slot
+  #   image_dropout: 0.3     trajectory read from CoC + history on 30% of samples
+  #   filter_contradictions  windows whose CoC flatly contradicts GT are dropped
+  epochs: 12                                 # a CEILING; early_stop_patience ends the run.
+                                             # 4 cameras: ~3.8 h/epoch (job 232), full 12
+                                             # = 45.6 h, inside the 68 h sbatch wall.
+  micro_batch: 4                             # LoRA r48, 4 cameras: peak ~58 GiB (job 232).
+  grad_accum: 8                              # effective batch 32.
+  lr: 3.0e-4                                 # unchanged since run 2 (LoRA wants 2-5x full-FT).
   warmup_frac: 0.03
   weight_decay: 0.05
-  # false because the model cannot do it, not because we don't want it.
-  # Nemotron3DenseVLTextForCausalLM inherits supports_gradient_checkpointing=True
-  # from PreTrainedModel but no module implements the `gradient_checkpointing`
-  # attribute, so transformers' gradient_checkpointing_enable() raises outright
-  # (it happens to succeed AFTER LoRA injection, because the adapter modules carry
-  # the attribute - which is why the smoke test missed this and the trainer did
-  # not). Either way it is a NO-OP: _impl_reasoner_forward calls
-  # decoder_layer.reasoner_forward directly and never routes through a checkpoint
-  # function. Measured peak is 58.3 GiB at micro_batch 4, which is the
-  # UNCHECKPOINTED cost and fits the 96GB Blackwell. The framework's own mechanism
-  # is config.activation_checkpointing.mode, which Cosmos3OmniModel.__init__ forces
-  # to "none"; wiring that up is the real fix and is stage-2 work.
+  # false because the model cannot do it, not because we don't want it:
+  # Nemotron3DenseVLTextForCausalLM has no checkpoint path in reasoner_forward;
+  # the framework's mechanism (config.activation_checkpointing.mode) is forced to
+  # "none" by Cosmos3OmniModel.__init__. The uncheckpointed peak fits the 96 GB card.
   grad_checkpoint: false
-  # Run 4 splits the teacher's trajectory KL by ACTION DIM and makes the GT
-  # anchor distance-aware. Measured on the cache (400 clips, 102k trajectory
-  # positions, no GPU): teacher probability mass within +/-w bins of the GT bin,
-  # over the 3000-bin future region --
-  #
-  #                +/-2    +/-10   +/-20   +/-100
-  #   curvature    0.420   0.708   0.806   0.931
-  #   accel        0.028   0.094   0.170   0.577
-  #
-  # The teacher's path shape is worth distilling; its speed profile is close to
-  # uninformative about GT even at a +/-100-bin tolerance. That - not the
-  # trajectory KL as a whole - is what has been fighting `gt_ce`, and it is
-  # exactly half the token stream. Teacher minADE is 1.7 m, so its trajectory is
-  # a ceiling we do not want to inherit whole; its CoC is not, hence text_kl and
-  # struct_ce below are untouched.
+  # Which trajectory stream is teacher-forced into the sequence at the 128 future
+  # positions. "gt": the cached `gt_traj_token_ids` (the driver's future through
+  # the teacher's tokenizer, dim-swapped, D-031), so `gt_ce` trains
+  # p(GT bin t | GT bins < t). Run 4 trained a GT target on a TEACHER prefix - a
+  # conditional the model is never asked for at decode time. "teacher" = runs 1-6.
+  traj_prefix: gt
+  # Fill `<|route_start|>...<|route_end|>` with the direction the driver took
+  # (turn left / turn right / straight, `eval.gt_reward.route_hint`; val rates
+  # 6.2% / 5.8% / 88%). The teacher was labelled with NO route and its turn
+  # direction is opposite to the driver's 17% of the time (D-038). Direction
+  # only - it must not leak the speed profile, which is what the CoC is for. At
+  # deployment the hint comes from navigation (Bench2Drive supplies commands).
+  # Applies to EVERY context this config builds (train, gate, val NLL, 05b/05d).
+  route_hint: true
+  # Probability that a TRAIN window is served with its frames zeroed. On those
+  # samples the CoC/struct losses are masked (a CoC is not to be learned from a
+  # blank frame) and only the trajectory loss applies, so the trajectory must be
+  # read from ego history + route + the teacher-forced CoC text. That is the
+  # mechanism that makes the CoC load-bearing (D-040: forcing "turn left" vs
+  # "turn right" moved the heading by ~2 degrees). 0.3 keeps 70% of the CoC
+  # gradient; the cost is nil (same forward). Judge on 05d_coc_intervention.py.
+  image_dropout: 0.3
+  # Drop TRAIN windows whose teacher CoC is flatly contradicted by the driver's
+  # future (data/grounding.py, strict scale of eval/gt_reward.py): FOLLOW/KEEP
+  # while the driver braked hard from speed (11.3% of the cache), STOP with no
+  # stop (3.0%), opposite turn direction (1.5%), TURN/ACCELERATE/SLOW/YIELD
+  # contradicted by kinematics (3.1%) - ~18% in all. Pairing those with the GT
+  # trajectory would train "say one thing, do another". Soft cases (ADAPT_SPEED
+  # on held speed, unparsed traces, silence on a turn) stay. Gate/val: unfiltered.
+  filter_contradictions: true
   loss_weights:
-    traj_kl: 1.0                             # EVEN positions = curvature (D-031 emission
-                                             # order, re-verified against `gt_traj`'s columns
-                                             # at r = 0.999/1.000). Held at 1.0: this half of
-                                             # the teacher is good and is the low-variance
-                                             # signal that taught runs 1-3 the token geometry.
-    traj_kl_accel: 0.1                       # run 4, NEW: ODD positions = accel. 10x down, not
-                                             # 0: it still regularises against the one-sample
-                                             # variance of the GT anchor, and job 243 was never
-                                             # teacher-limited (it stopped at the epoch cap
-                                             # still improving, 2.456 -> 2.414, not at 1.7).
-    text_kl: 1.0                             # run 2: was 0.5. Run-1 CoC content was already
-                                             # on-topic (job 202) - the real problem was
-                                             # termination (see struct_ce) not content, so
-                                             # 2x not 4x. UNCHANGED in run 4: this is the
-                                             # teacher signal we are keeping. Do not raise it -
-                                             # 243 drove train `text` to 0.003 while val CoC NLL
-                                             # ROSE 0.648 -> 0.921, i.e. the CoC is already
-                                             # overfitting and more weight makes that worse.
-    feat: 0.0                                # RUN 5: OFF, and this one is forced by the camera
-                                             # change rather than chosen. Feature KD pools the
-                                             # student's prompt into `feat_pool_len` segments
-                                             # (pool_prompt_segments) and compares them to the
-                                             # teacher's cached 8 - but the cached segments span
-                                             # 16 image groups (4 cameras x 4 frames) and a
-                                             # 1-camera student's span 4, so the two no longer
-                                             # cover the same content and the match is noise.
-                                             # Nothing is lost: D-033 found feature KD inert and
-                                             # run 253 confirmed it on full data (decayed 0.179
-                                             # -> 0.029, ~0.5% of the loss). Restore to 0.5 only
-                                             # together with a re-labelling pass at 1 camera.
-    gt_ce: 0.0                               # RUN 5: OFF. Ground truth moves to phase 2 (user,
-                                             # 2026-09-12), so stage 1 is now PURE teacher
-                                             # distillation - traj_kl + text_kl + struct_ce and
-                                             # nothing else. `gt_ce_end` is deleted below, not
-                                             # just zeroed here: stage_weights ramps `gt_ce`
-                                             # TOWARD `gt_ce_end`, so leaving the end weight at
-                                             # 1.5 would ramp 0.0 -> 1.5 and reintroduce the term
-                                             # it is meant to remove.
-                                             # Applies to the SOFT target (losses.gt_traj_soft_ce);
-                                             # `gt_soft` and `gt` both keep logging under no_grad
-                                             # so run 5's curve stays readable against 253's.
-                                             # CONSEQUENCE, flagged not hidden: nothing now
-                                             # supervises the speed profile. D-035 measured the
-                                             # teacher's accel mass at 2.8% within +/-2 bins of
-                                             # the GT bin, which is why `traj_kl_accel` is down at
-                                             # 0.1 - so accel supervision in run 5 is 0.1x a
-                                             # near-uninformative target. Expect the gate
-                                             # (minADE, a GT metric) to WORSEN against 253's
-                                             # 2.232 m; that is the trade, not a regression.
-    struct_ce: 0.5                           # run 2, NEW: CE on the `<|cot_end|>` +
-                                             # `<|traj_future_start|>` subword positions. Run 1
-                                             # never supervised these, so the student could not
-                                             # terminate its CoC and fell back to the base
-                                             # model's `</think>` (job 202). eval_phase1.md §1.
-                                             # UNCHANGED in run 4 (already 0.000 by epoch 2).
-  # RUN 5: `gt_ce_end` DELETED (was 1.5, run 4's upward ramp). With `gt_ce: 0.0`
-  # above, stage_weights would otherwise ramp the GT anchor straight back in.
-  # Do not reinstate either key without the other. The old `gt_ce_min` fallback
-  # name must stay absent for the same reason.
-  gt_soft_sigma_bins: 6.0                    # run 4, NEW: sigma of the Gaussian the GT anchor
-                                             # targets, in bins, truncated at +/-3 sigma and
-                                             # renormalised at the region edges. 6 bins is well
-                                             # inside the +/-10 window where the teacher already
-                                             # concentrates 71% of its curvature mass, so it
-                                             # sharpens rather than blurs what runs 1-3 learned.
-                                             # NB the logged `gt_soft` floors at the target's own
-                                             # entropy, ~3.21 nats - NOT 0, and not comparable to
-                                             # 243's ~6.0. The `gt` term logs the old one-hot CE
-                                             # untrained, for exactly that comparison.
+    traj_kl: 0.0                             # RUN 7: OFF (was 1.0). The teacher's curvature
+                                             # top-k is conditioned on ITS prefix, and the
+                                             # trajectory target is now the driver's. Still
+                                             # logged (`traj`, `traj_accel`) under no_grad,
+                                             # off-policy - read it as a drift indicator only.
+    traj_kl_accel: 0.0                       # RUN 7: OFF (was 0.1). Same reason.
+    text_kl: 1.0                             # unchanged. Do not raise: 243 drove train text
+                                             # to 0.003 while val CoC NLL ROSE (0.648 -> 0.921).
+    feat: 0.0                                # inert (D-033) and, at 1 camera, mis-pooled;
+                                             # left off at 4 cameras too - not load-bearing.
+    gt_ce: 1.0                               # RUN 7: ON, flat (was 0.0; run 4 ramped 0.5 ->
+                                             # 1.5). Soft target (gt_traj_soft_ce, sigma
+                                             # below): CE against a Gaussian over the bins
+                                             # neighbouring the GT bin, the shape D-035 found
+                                             # a one-hot over 3000 bins cannot learn. Floors
+                                             # at ~3.21 nats, NOT 0 - do not read a plateau
+                                             # there as failure; `gt` logs the one-hot CE.
+                                             # No `gt_ce_end`: no ramp. Do not add one.
+    struct_ce: 0.5                           # unchanged: CE on `<|cot_end|><|traj_future_start|>`
+                                             # so the CoC terminates (D-034).
+  gt_soft_sigma_bins: 6.0                    # run 4: sigma of the GT anchor's Gaussian, in bins,
+                                             # truncated at +/-3 sigma, renormalised at the
+                                             # region edges.
   feat_warmup_frac: 0.1
-  select_on: coc_nll                         # RUN 5, NEW: which metric picks the best
-                                             # checkpoint and drives early stop.
-                                             # `coc_nll` | `minade` (runs 1-4 behaviour).
-                                             # minADE is a pure-GT metric and run 5 took
-                                             # `gt_ce` out of the loss, so selecting on it
-                                             # would optimise for something stage 1 no
-                                             # longer trains toward - the CoC is what this
-                                             # phase delivers. It is also the noisier of
-                                             # the two: measured 2.317 +/- 0.078 m over
-                                             # three seeds on ONE fixed checkpoint
-                                             # (runs/camera_ablation/4cam-baseline.json),
-                                             # because the gate samples k modes at
-                                             # temperature without seeding. `_coc_nll` is
-                                             # teacher-forced CE - deterministic.
-                                             # Job 253 is the cautionary case: its best
-                                             # CoC (0.509, epoch 2) was never saved because
-                                             # 2.850 m did not beat the epoch-0 minADE.
-                                             # minADE is still computed and logged every
-                                             # epoch regardless of this setting.
-  early_stop_patience: 3                     # run 2: was 2. Run-1 peak was epoch 3/6 on a
-                                             # noisy gate; a higher lr may move it. (evals
-                                             # without `select_on` improvement - coc_nll since
-                                             # run 5, NOT coarse-minADE)
-  # RUN 6, NEW: maneuver-stratified sampling (D-036, data/sampling.py). Uniform
-  # sampling hands the student the teacher's maneuver MARGINAL - FOLLOW 32.9% +
-  # KEEP 20.8% = 54% of the CoC gradient, LANE_CHANGE 2.1% - and 05b_eval_coc.py
-  # measured what that buys: LANE_CHANGE emitted at 11% of the teacher's rate, and
-  # silence on direction in ~48% of the windows where the teacher commits to one,
-  # on train AND val - no gap, so never learned rather than overfit. Each window
-  # is drawn with probability ~ (1/freq of its teacher maneuver class)^alpha, the
-  # class parsed from the cached coc_text (eval/coc_score.maneuver, 98.7%
-  # assignable; the rest draw at the uniform rate). alpha 0.5 is square-root
-  # tempering: LANE_CHANGE 2.1% -> 5.1%, FOLLOW 32.9% -> 20.3%. NOT 1.0 - full
-  # inversion repeats the 415 LANE_CHANGE windows ~16x per epoch, which is the
-  # memorisation we are already fighting. Draws per epoch = len(train split),
-  # with replacement: steps/epoch unchanged. Over-correction shows up in the eval
-  # as object PRECISION falling and the val maneuver mix overshooting the
-  # teacher's, not just recall rising - read both.
+  select_on: minade                          # RUN 7: back to minADE (run 5-6 used coc_nll).
+                                             # GT tokens are trained toward again, so the
+                                             # gate is a trained-toward metric; and D-036
+                                             # found val CoC NLL a poor early-stop signal
+                                             # (moves on phrasing, turned at epoch 1 while
+                                             # free-running content was still improving).
+                                             # minADE noise: +/-0.078 m over 3 seeds on one
+                                             # checkpoint - hence patience 3 and adapters
+                                             # saved every epoch for offline scoring.
+  early_stop_patience: 3
+  save_every_epoch: true                     # RUN 7, NEW: adapters (~75 MB) at every epoch
+                                             # under runs/stage1/run-<job>/epoch-NN, so any
+                                             # epoch can be free-run scored (05b) and
+                                             # intervention-tested (05d) after the fact.
+  # Maneuver-stratified sampling (D-036, data/sampling.py). OFF since the run-6
+  # outcome: the reweighted marginal was learned at epoch 0 and the collapse
+  # returned at epoch 1; the collapse is a perception limit, not a frequency.
+  # Kept for a later ablation.
   maneuver_sampling:
-    enabled: true
+    enabled: false
     alpha: 0.5
 
 # PHASE 1.5 (D-037): GRPO on the AR tower's chain-of-causation. Separate from

@@ -29,14 +29,12 @@ each is checked here rather than asserted:
 """
 from __future__ import annotations
 import argparse
-import functools
 import logging
 import sys
 from pathlib import Path
 
 sys.path.insert(0, "src")
 import torch                                                        # noqa: E402
-from torch.utils.data import DataLoader, Subset                     # noqa: E402
 
 from distill.config import load_config                              # noqa: E402
 from distill import losses                                          # noqa: E402
@@ -82,16 +80,48 @@ def main() -> int:
     n_student_layers = student.n_layers
 
     print("== data ==")
-    ds = Stage1Dataset(cfg, student.context_builder(), clip_ids=load_split(cfg, "train"))
+    # The train split's own settings, minus the grounding filter (a two-minute
+    # scan the smoke does not need). Image dropout is forced on row 0 rather
+    # than drawn, so the dropped path is exercised every time (D-043).
+    ds = Stage1Dataset(cfg, student.context_builder(), clip_ids=load_split(cfg, "train"),
+                       image_dropout=float(cfg.stage1.get("image_dropout", 0.0)))
     mb = int(a.micro_batch or cfg.stage1.micro_batch)
-    dl = DataLoader(Subset(ds, range(min(mb * 2, len(ds)))), batch_size=mb,
-                    shuffle=False, num_workers=0,
-                    collate_fn=functools.partial(
-                        collate_stage1, pad_id=student.tokenizer.pad_token_id))
-    batch = move_batch(next(iter(dl)))
-    print(f"  shards {len(ds)}  micro_batch {mb}")
+    items = [ds[i] for i in range(min(mb, len(ds)))]
+    if float(cfg.stage1.get("image_dropout", 0.0)) > 0:
+        items[0]["img_drop"] = True
+        if len(items) > 1:
+            items[1]["img_drop"] = False
+    batch = move_batch(collate_stage1(items, pad_id=student.tokenizer.pad_token_id))
+    print(f"  shards {len(ds)}  micro_batch {mb}  traj_prefix {ds.traj_prefix}  "
+          f"route_hint {ds.route_hint}  img_drop {batch['img_drop'].tolist()}")
     print(f"  input_ids {tuple(batch['input_ids'].shape)}  "
           f"n_prompt {batch['n_prompt'].tolist()}")
+    # The context carries what the config says it carries.
+    if ds.route_hint:
+        rs = student.special_ids["<|route_start|>"]
+        n_route = int((batch["input_ids"] == rs).sum(1).min())
+        print(f"  route hints: {[it['route_hint'] for it in items]}")
+        if n_route != 1:
+            raise RuntimeError("stage1.route_hint is on but a context has no "
+                               "<|route_start|> token")
+    if ds.traj_prefix == "gt":
+        gt_ids = batch["gt_traj_tok"] + student.future_base
+        forced = batch["input_ids"][batch["traj_pos"]].view(gt_ids.shape[0], -1)
+        if not torch.equal(forced, gt_ids):
+            raise RuntimeError("traj_prefix is 'gt' but the teacher-forced trajectory "
+                               "positions do not hold the GT bins")
+        print("  teacher-forced trajectory prefix == GT bins: ok")
+    if bool(batch["img_drop"][0]):
+        n_img = batch["image_grid_thw"].prod(-1)
+        n0 = int(n_img[: int(items[0]["student"]["image_grid_thw"].shape[0])].sum())
+        if float(batch["pixel_values"][:n0].abs().max()) != 0.0:
+            raise RuntimeError("row 0 is marked img_drop but its pixel values are not zero")
+        if bool(batch["coc_pos"][0].any()) or bool(batch["struct_pos"][0].any()):
+            raise RuntimeError("row 0 is marked img_drop but still carries CoC/struct targets")
+        if not bool(batch["traj_pos"][0].any()):
+            raise RuntimeError("row 0 is marked img_drop and lost its trajectory targets")
+        print(f"  image dropout on row 0: {n0} zeroed patches, CoC/struct masked, "
+              "trajectory kept: ok")
     if "pixel_values" in batch:
         print(f"  pixel_values {tuple(batch['pixel_values'].shape)}  "
               f"image_grid_thw {tuple(batch['image_grid_thw'].shape)}")
@@ -128,7 +158,7 @@ def main() -> int:
               f"coc {int(coc_ok.sum())} student tokens vs "
               f"{int(batch['coc_mask'].sum())} teacher tokens (cross-family, D-011)  "
               f"struct {int(struct_ok.sum())} (cot_end + traj_future_start subwords)")
-        if int(struct_ok.sum()) == 0:
+        if int(struct_ok.sum()) == 0 and not bool(batch["img_drop"].all()):
             raise RuntimeError(
                 "no structural target positions — struct_span never landed; the "
                 "CoC terminator would be unsupervised, which is the run-1 bug")
@@ -147,8 +177,10 @@ def main() -> int:
         topk_idx = batch["topk_idx"] + student.future_base
         gt_bins = batch["gt_traj_tok"] + student.future_base
         w = losses.stage_weights(cfg.stage1, step=0, total_steps=1000)
-        traj_kl_pos = losses.traj_topk_kl_per_pos(traj_logits, topk_idx,
-                                                  batch["topk_logp"])
+        kl_on = bool(w.get("traj_kl", 0.0) or w.get("traj_kl_accel", 0.0))
+        with torch.enable_grad() if kl_on else torch.no_grad():   # as the trainer does
+            traj_kl_pos = losses.traj_topk_kl_per_pos(traj_logits, topk_idx,
+                                                      batch["topk_logp"])
         terms = {
             "traj_kl": losses.masked_mean(traj_kl_pos, curv_mask),
             "traj_kl_accel": losses.masked_mean(traj_kl_pos, acc_mask),

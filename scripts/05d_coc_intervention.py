@@ -68,6 +68,14 @@ def main() -> int:
     ap.add_argument("--n", type=int, default=40)
     ap.add_argument("--samples", type=int, default=2)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--hint", choices=["auto", "none", "match", "true"], default="auto",
+                    help="route hint in the context (D-043). none: no slot. true: the "
+                         "direction the driver took, for every forced CoC. match: the "
+                         "turn CoCs get the hint that AGREES with them (turn_left -> "
+                         "'Turn left ahead'), every other CoC gets the true direction - "
+                         "so the heading test measures CoC+route together and the speed "
+                         "test holds the route fixed. auto: match if stage1.route_hint "
+                         "is on in the config, else none.")
     a = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     cfg = load_config(a.config)
@@ -88,6 +96,18 @@ def main() -> int:
 
     ds = Stage1Dataset(cfg, student.context_builder(), clip_ids=load_split(cfg, a.split),
                        cot_generation=True)
+    hint_mode = a.hint
+    if hint_mode == "auto":
+        hint_mode = "match" if ds.route_hint else "none"
+    log.info("route hint mode: %s", hint_mode)
+    TURN_HINT = {"turn_left": "Turn left ahead", "turn_right": "Turn right ahead"}
+
+    def hint_for(name: str, k: dict) -> str | None:
+        if hint_mode == "none":
+            return None
+        if hint_mode == "match" and name in TURN_HINT:
+            return TURN_HINT[name]
+        return gt_reward.route_hint(k)
     pad_id = student.tokenizer.pad_token_id
     n = min(a.n, len(ds))
     rows = []
@@ -103,7 +123,8 @@ def main() -> int:
         rec = {"i": i, "clip": item["clip_id"], "gt": {"head_end": k["h_end"], "speed": k["v0"],
                                                        "lateral": k["lateral"]}, "coc": {}}
         for name, text in cocs.items():
-            ctx = ds.ctx.build(window, coc_text=text, for_generation=True)
+            ctx = ds.ctx.build(window, coc_text=text, for_generation=True,
+                               nav_text=hint_for(name, k))
             batch = move_batch(collate_student([{"student": ctx}], pad_id))
             st = []
             for _ in range(a.samples):
@@ -117,8 +138,8 @@ def main() -> int:
             log.info("  %d/%d", i + 1, n)
 
     names = list(FORCED) + ["teacher"]
-    log.info("\n%s  cameras=%d  windows=%d  samples/CoC=%d", Path(a.ckpt).parent.name,
-             len(cfg.data.raw["cameras"]), n, a.samples)
+    log.info("\n%s  cameras=%d  windows=%d  samples/CoC=%d  hint=%s", Path(a.ckpt).parent.name,
+             len(cfg.data.raw["cameras"]), n, a.samples, hint_mode)
     log.info("  %-12s %10s %10s %10s %8s", "forced CoC", "head_end", "v_mean", "ylat_end", "ADE")
     for nm in names:
         h = np.mean([r["coc"][nm]["head_end"] for r in rows]); v = np.mean([r["coc"][nm]["speed"] for r in rows])

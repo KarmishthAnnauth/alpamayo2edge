@@ -97,6 +97,11 @@ def text_kl_or_ce(student_logits: torch.Tensor, target_ids: torch.Tensor,
     On vocab mismatch, target_ids must already be re-tokenized into the
     student vocab by the labeler (Phase 0.3 fallback)."""
     del vocab_ok  # both branches reduce to CE once re-tokenization is upstream
+    if student_logits.shape[1] == 0 or not bool(mask.any()):
+        # Every sample in the micro-batch had this span masked out (image
+        # dropout, D-043): nothing to score, and cross_entropy over a zero-length
+        # target axis is an error rather than a zero.
+        return student_logits.new_zeros(())
     ce = F.cross_entropy(student_logits.transpose(1, 2), target_ids, reduction="none")
     return (ce * mask).sum() / mask.sum().clamp_min(1)
 
