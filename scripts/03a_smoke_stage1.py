@@ -98,12 +98,22 @@ def main() -> int:
           f"n_prompt {batch['n_prompt'].tolist()}")
     # The context carries what the config says it carries.
     if ds.route_hint:
-        rs = student.special_ids["<|route_start|>"]
-        n_route = int((batch["input_ids"] == rs).sum(1).min())
+        # Text segments go through the tokenizer as plain text (prompt.py:
+        # `assemble` -> `encode`), so `<|route_start|>` is a SUBWORD sequence in
+        # the context, not the appended special id (those serve the `slots`
+        # segment only). Look for the sequence, and show what sits inside it.
+        marker = ds.ctx._encode_text("<|route_start|>")
+        m = len(marker)
         print(f"  route hints: {[it['route_hint'] for it in items]}")
-        if n_route != 1:
-            raise RuntimeError("stage1.route_hint is on but a context has no "
-                               "<|route_start|> token")
+        for j in range(batch["input_ids"].shape[0]):
+            row = batch["input_ids"][j].tolist()
+            hits = [i for i in range(len(row) - m + 1) if row[i:i + m] == marker]
+            if len(hits) != 1:
+                raise RuntimeError(f"stage1.route_hint is on but row {j} has {len(hits)} "
+                                   "<|route_start|> markers (expected 1)")
+            if j == 0:
+                print("  route span, row 0: "
+                      + repr(student.tokenizer.decode(row[hits[0]:hits[0] + m + 12])))
     if ds.traj_prefix == "gt":
         gt_ids = batch["gt_traj_tok"] + student.future_base
         forced = batch["input_ids"][batch["traj_pos"]].view(gt_ids.shape[0], -1)
