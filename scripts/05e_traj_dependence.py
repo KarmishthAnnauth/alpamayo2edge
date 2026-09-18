@@ -13,8 +13,10 @@ Conditions (teacher-forced, clean GT prefix unless stated):
     no_img          frames zeroed (exactly what image dropout serves in training)
     swap_coc        CoC replaced by a WRONG maneuver (stop <-> accelerate)
     no_img+swap     both
-    jitter16        prefix jittered at sigma 16 (the training maximum)
+    jitter16        prefix jittered at sigma 16 (run 7b's training maximum)
     jitter64        prefix jittered at sigma 64
+    no_hist         the 48 ego-history slots hold the placeholder id (no ego motion)
+    no_hist+no_img  history blanked AND frames zeroed: prefix + CoC + route only
 
 If `swap_coc` costs nothing at the first positions, the CoC is not read even
 where the prefix cannot yet reveal the plan. If `no_img` costs little, the
@@ -119,6 +121,13 @@ def main() -> int:
         acc["no_img+swap"].append(score(item, sw, True))
         acc["jitter16"].append(score(item, build(coc, jitter(gt_bins, 16.0, g)), False))
         acc["jitter64"].append(score(item, build(coc, jitter(gt_bins, 64.0, g)), False))
+        # Ego history: the same 48 slots, holding the placeholder the teacher
+        # emits BEFORE replace_pad_token fills them (D-029) - no motion at all.
+        hs, he = full["history_span"]
+        nh = {**full, "input_ids": full["input_ids"].clone()}
+        nh["input_ids"][hs:he] = student.special_ids["<|traj_history|>"]
+        acc["no_hist"].append(score(item, nh, False))
+        acc["no_hist+no_img"].append(score(item, nh, True))
         if (i + 1) % 10 == 0:
             log.info("  %d/%d", i + 1, n)
 
