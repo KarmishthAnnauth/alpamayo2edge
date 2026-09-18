@@ -114,25 +114,63 @@ def load_into(student, path: str | Path) -> dict:
 ADAPTERS_NAME = "adapters.pt"
 
 
+def _stage1_rows(student) -> tuple[dict[str, torch.Tensor], dict]:
+    """The NON-LoRA tensors stage 1 trains, as views (D-046).
+
+    `param_groups_stage1` trains three things besides the adapters, all through
+    row masks: the appended embedding + lm_head rows (the trajectory vocabulary
+    lives there - 553M parameters with grads on 4009 rows), and our embodiment's
+    row of `action2llm` / `llm2action`. An adapter file without them is not a
+    reloadable model; jobs 332/334/336 wrote exactly that for every epoch that
+    did not improve the gate. ~33 MB at 4009 rows x 2048 x 2 tables.
+    """
+    rows: dict[str, torch.Tensor] = {}
+    meta: dict = {}
+    rng = tuple(getattr(student, "new_token_range", ()) or ())
+    if rng:
+        old_n = int(rng[0])
+        meta["old_n"] = old_n
+        rows["embed_tokens"] = student.lm.get_input_embeddings().weight[old_n:]
+        rows["lm_head"] = student.lm.lm_head.weight[old_n:]
+    d = getattr(student, "action_domain_id", None)
+    net = getattr(student, "net", None)
+    if d is not None and net is not None:
+        meta["action_domain_id"] = int(d)
+        for name in ("action2llm", "llm2action"):
+            proj = getattr(net, name, None)
+            if proj is None:
+                continue
+            rows[f"{name}.fc"] = proj.fc.weight[int(d)]
+            rows[f"{name}.bias"] = proj.bias.weight[int(d)]
+    return rows, meta
+
+
 def save_adapters(student, path: str | Path, **meta) -> Path:
-    """Adapter-only checkpoint: the `lora_*` tensors of the decoder stack plus
-    metadata. ~75 MB for r48 attention-only, against ~8.6 GB for a merged save -
-    which is what makes a checkpoint at EVERY eval affordable (D-038: the
-    step-75 RL weights were lost because only `best/` was kept, selected on a
-    noisy 99-window check). Reload = the run's `init_ckpt` merged weights +
-    `load_adapters`."""
+    """Adapter checkpoint: the `lora_*` tensors of the decoder stack PLUS the
+    row-masked tensors stage 1 trains (`_stage1_rows`), plus metadata. ~110 MB
+    for r48 attention-only with the 4009 appended rows, against ~8.6 GB for a
+    merged save - which is what makes a checkpoint at EVERY epoch affordable
+    (D-038: the step-75 RL weights were lost because only `best/` was kept).
+    Reload = the run's init checkpoint (merged, or the untrained student for
+    stage 1) + `load_adapters`."""
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
     root = student._decoder_layers()
     sd = {n: p.detach().to("cpu", copy=True) for n, p in root.named_parameters() if "lora_" in n}
-    torch.save({"adapters": sd, "meta": {"lora": dict(student.lora_stats), **meta}},
+    rows, rows_meta = _stage1_rows(student)
+    torch.save({"adapters": sd,
+                "rows": {k: v.detach().to("cpu", copy=True) for k, v in rows.items()},
+                "rows_meta": rows_meta,
+                "meta": {"lora": dict(student.lora_stats), **meta}},
                path / ADAPTERS_NAME)
     return path
 
 
 def load_adapters(student, path: str | Path) -> dict:
-    """Load an adapter-only checkpoint into a student whose adapters are already
-    injected (`param_groups_stage1()`) on top of the same `init_ckpt`."""
+    """Load an adapter checkpoint into a student whose adapters are already
+    injected (`param_groups_stage1()`) on top of the same init checkpoint.
+    Restores the stage-1 rows when the file carries them (files written before
+    D-046 do not; those are LoRA-only and the log says so)."""
     blob = torch.load(Path(path) / ADAPTERS_NAME, map_location="cpu", weights_only=False)
     root = student._decoder_layers()
     missing, unexpected = root.load_state_dict(blob["adapters"], strict=False)
@@ -142,4 +180,23 @@ def load_adapters(student, path: str | Path) -> dict:
     n_lora = sum(1 for n, _ in root.named_parameters() if "lora_" in n)
     if n_lora != len(blob["adapters"]):
         raise RuntimeError(f"model has {n_lora} adapter tensors, file has {len(blob['adapters'])}")
+    saved = blob.get("rows") or {}
+    if saved:
+        live, live_meta = _stage1_rows(student)
+        if blob.get("rows_meta") != live_meta:
+            raise RuntimeError(f"stage-1 row geometry mismatch: file {blob.get('rows_meta')} "
+                               f"vs live {live_meta}")
+        with torch.no_grad():
+            for k, v in saved.items():
+                if k not in live:
+                    raise RuntimeError(f"row tensor {k!r} has no live counterpart")
+                if tuple(live[k].shape) != tuple(v.shape):
+                    raise RuntimeError(f"row tensor {k!r}: file {tuple(v.shape)} vs live "
+                                       f"{tuple(live[k].shape)}")
+                live[k].copy_(v.to(live[k].dtype))
+        log.info("loaded %d adapter tensors + %d stage-1 row tensors <- %s",
+                 len(blob["adapters"]), len(saved), path)
+    else:
+        log.warning("adapter file %s carries NO stage-1 rows (written before D-046): the "
+                    "appended vocabulary rows are whatever the init checkpoint holds", path)
     return blob["meta"]
