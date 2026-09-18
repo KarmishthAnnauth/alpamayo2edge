@@ -1959,3 +1959,35 @@ the card. Changes from run 7c (`configs/default.yaml`, `stage1`):
 
 `tests/test_phase1_config_offline.py` pins the recipe (and phase 1.5's two hedge charges).
 Not launched: RL run 6c (job 343) holds the Blackwell.
+
+## D-052 [MEASURED 2026-09-19] With every hedge charged, grounded RL from run 7c's epoch 3 gains direction and nothing else: the honest ceiling of this init
+
+RL run 6c (job 343: NUDGE -0.25, hold-speed -0.5, lr 3e-5, from `run-336/best` = 7c epoch
+3), 400-window checks:
+
+| step | score | consistent | false-clear | direction | NUDGE | SLOW | STOP | KEEP |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 0 | 0.49 | 0.76 | 0.27 | 0.11 | 50 | 7 | 46 | 109 |
+| 25 | **0.52** | 0.76 | 0.24 | 0.25 | 32 | 9 | 51 | 107 |
+| 50 | 0.49 | 0.75 | 0.26 | 0.51 | 20 | 24 | 49 | 115 |
+| 75 | 0.49 | 0.76 | 0.27 | 0.64 | 4 | 15 | 63 | 123 |
+| 100 | 0.41 | 0.74 | 0.33 | 0.75 | 3 | 13 | 65 | 123 |
+
+Both hedges are gone (NUDGE 50 -> 3, SLOW flat). Direction climbs steadily to 0.75, a real
+gain from the route hint. The speed side does not move: false-clear ends WORSE than the
+init (0.33 vs 0.27), the score falls after step 25, and per-step 62-88% of groups are flat
+(on a quiet window no claim scores above 0, so only braking and turn windows carry
+gradient; the direction term dominates what is left and KEEP creeps up on braking windows).
+
+Across runs 6 / 6b / 6c the picture is consistent: the only large movements on the driver's
+speed rows came from hedges (SLOW in run 6, NUDGE in 6b); charged, the policy cannot say
+"stop" more often because it does not see the cause more often - the perceptual miss of
+D-047 ("keep distance" where the lead car is stopped). GRPO reinforces what the policy
+already sometimes says; it does not teach it to see.
+
+Decision: stop 6c at the user's word (its best, step 25, is ~the init on the driver rows
+plus direction). Next lever is the SFT redo (run 8, D-051): a better init - 7c's epoch 1
+had false-clear 0.164 and direction 0.417 against epoch 3's 0.279 / 0.100 - then RL 6c's
+recipe from it. If run 8's best still misses stopped lead vehicles, the perceptual side
+needs SFT-time signal (e.g. a lead-vehicle-motion cue in the prompt, or unfreezing the
+vision projector), not more RL.
