@@ -1991,3 +1991,9 @@ had false-clear 0.164 and direction 0.417 against epoch 3's 0.279 / 0.100 - then
 recipe from it. If run 8's best still misses stopped lead vehicles, the perceptual side
 needs SFT-time signal (e.g. a lead-vehicle-motion cue in the prompt, or unfreezing the
 vision projector), not more RL.
+
+**D-052 addendum - 6c step 25 on the 500-window table:** stopped -> says stop 0.652 (teacher
+0.652), braked hard -> slow 0.145 (0.157), GT false-clear 0.193 (0.157), direction 0.300
+(0.267), over-claim on hold-speed windows 5% (9%), object recall / precision 0.796 / 0.846,
+maneuver acc vs teacher 0.649. Honest, clean, and exactly the teacher: the grounded RL with
+both hedges charged neither hurts nor lifts the speed rows from this init.
