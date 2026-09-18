@@ -17,6 +17,11 @@ Conditions (teacher-forced, clean GT prefix unless stated):
     jitter64        prefix jittered at sigma 64
     no_hist         the 48 ego-history slots hold the placeholder id (no ego motion)
     no_hist+no_img  history blanked AND frames zeroed: prefix + CoC + route only
+    mask            prefix fully MASKED (context.PREFIX_MASK) - the no-prefix regime
+                    run 7c trains on 25% of windows; scene + CoC + route + history
+    mask+swap       masked prefix AND a wrong CoC - does the CoC matter when
+                    there is no prefix to lean on?
+    mask+no_img     masked prefix AND frames zeroed
 
 If `swap_coc` costs nothing at the first positions, the CoC is not read even
 where the prefix cannot yet reveal the plan. If `no_img` costs little, the
@@ -41,6 +46,7 @@ from distill.data import grounding                                  # noqa: E402
 from distill.data.dataset import Stage1Dataset, collate_stage1, move_batch  # noqa: E402
 from distill.data.splits import load_split                          # noqa: E402
 from distill.eval.coc_score import parse                            # noqa: E402
+from distill.student.context import PREFIX_MASK                     # noqa: E402
 from distill.student.edge_wrapper import EdgeStudent                # noqa: E402
 
 log = logging.getLogger("traj_dependence")
@@ -128,16 +134,20 @@ def main() -> int:
         nh["input_ids"][hs:he] = student.special_ids["<|traj_history|>"]
         acc["no_hist"].append(score(item, nh, False))
         acc["no_hist+no_img"].append(score(item, nh, True))
+        masked = [PREFIX_MASK] * len(gt_bins)
+        acc["mask"].append(score(item, build(coc, masked), False))
+        acc["mask+swap"].append(score(item, build(swap_coc(coc), masked), False))
+        acc["mask+no_img"].append(score(item, build(coc, masked), True))
         if (i + 1) % 10 == 0:
             log.info("  %d/%d", i + 1, n)
 
     log.info("\n%s  windows=%d  soft GT CE (nats; floor ~%.2f)", Path(a.ckpt).parent.name, n,
              float(np.log(sigma_t * np.sqrt(2 * np.pi * np.e))))
-    log.info("  %-12s %7s %9s %9s %8s %8s", "condition", "all", f"pos<{FIRST}", f"pos>={FIRST}",
+    log.info("  %-14s %7s %9s %9s %8s %8s", "condition", "all", f"pos<{FIRST}", f"pos>={FIRST}",
              "curv", "accel")
     for k, rows in acc.items():
         m = np.stack(rows)                     # (n, 128)
-        log.info("  %-12s %7.3f %9.3f %9.3f %8.3f %8.3f", k, m.mean(), m[:, :FIRST].mean(),
+        log.info("  %-14s %7.3f %9.3f %9.3f %8.3f %8.3f", k, m.mean(), m[:, :FIRST].mean(),
                  m[:, FIRST:].mean(), m[:, 0::2].mean(), m[:, 1::2].mean())
     return 0
 
