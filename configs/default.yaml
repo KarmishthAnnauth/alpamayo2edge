@@ -415,6 +415,11 @@ stage1_rl:
   reward:
     mode: gt                                 # RL run 6: CoC-only rollouts, driver-grounded text reward (was perspan)
     strict: true                             # RL run 6, NEW: hedge-free kinematic scale in `gt` mode too (D-042)
+    unverifiable: 0.0                        # RL run 6c candidate: -0.25. Flat charge for NUDGE under `strict`
+                                           # (gt_reward.UNVERIFIABLE_STRICT). Run 6b's val NUDGE count went
+                                           # 50 -> 71 -> 85 -> 108 of 400 by step 75 once SLOW was charged:
+                                           # the last claim that never scores below 0 becomes the hedge.
+                                           # 0.0 = run 6b's behaviour.
                                              # | gt (text rules) | teacher (run 1's grader)
     self_consistency: 0.5                    # perspan only: x (kinematic + direction term of the
                                              # CoC against the student's OWN decoded plan), in
