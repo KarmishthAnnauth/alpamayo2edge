@@ -1689,3 +1689,9 @@ Judge 7c on 05e before anything else: `no_img` and `swap_coc` must cost somethin
 the full-prefix condition, or the token path cannot be coupled this way and the coupling
 belongs in the flow head (phase 2, which attends the CoC KV with no trajectory prefix -
 the teacher's own structure). Then 05d, then the gate.
+
+**D-045 update, epoch 1 of run 7b (job 334):** gate 2.460 m (run 4 at epoch 1: 3.00; run 1's
+best: 2.35), val CoC NLL 0.554. Same 05e probe on `run-334/best` (now epoch 1): full 3.689,
+frames zeroed 3.690 (+0.001), CoC swapped 3.693 (+0.004), jitter 16 4.290, jitter 64 5.930.
+The gate improves from prefix + history modelling alone; another epoch changed what the
+model reads by nothing. The dependence is set by the loss, not by training time.
