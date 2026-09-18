@@ -1800,3 +1800,33 @@ driver-grounded number epoch 1 is at or above the teacher and above run 4's best
 below run 4 on teacher-match maneuver accuracy (0.579 vs 0.618), which is what training
 away from the teacher's contradicted claims should look like. The "stopped" row is n=23
 and did not move; it is the one number still under the teacher's 0.652. Job 336 continues.
+
+**D-047 update, run 7c epoch 3** (gate 2.418 m - new best, so `run-336/best` is now epoch 3
+and the epoch-1 merged weights are OVERWRITTEN; val CoC NLL 0.532; 500 val windows):
+
+| | ep 0 | ep 1 | **ep 3** | teacher |
+|---|---:|---:|---:|---:|
+| stopped -> says stop/slow/yield (n=23) | 0.565 | 0.565 | 0.522 | 0.652 |
+| braked hard -> says slow/stop (n=83) | 0.133 | 0.205 | 0.096 | 0.157 |
+| GT false-clear (n=140) | 0.307 | 0.164 | 0.279 | 0.157 |
+| direction stated ok on turns (n=60) | 0.133 | 0.417 | 0.100 | 0.267 |
+| GT-consistent (checkable) | 0.722 | 0.732 | 0.751 | 0.691 |
+| 05b maneuver acc vs teacher | 0.574 | 0.579 | 0.622 | - |
+| 05b false-clear (teacher hazards) | 0.140 | 0.060 | 0.107 | - |
+
+Teacher-match keeps rising (0.622 now equals run 4's best) while every driver-grounded
+number falls back below epoch 1 - direction from 0.417 to 0.100, under the teacher's
+0.267. That is what fitting the teacher's text more closely looks like: the teacher was
+route-blind and under-labels turns, so the closer the student gets to its phrasing, the
+less it states the direction the hint gives it. Epoch 1 was the point where the student
+still used the hint. Val CoC NLL has been flat at 0.532-0.535 for three epochs; more SFT
+epochs move the student toward the teacher, not toward the driver.
+
+Consequences: (1) the epoch-1 checkpoint - the best on the user's criterion - no longer
+exists as a model; `checkpoint.save` writes `best/` in place and this job's per-epoch
+adapter files predate the D-046 row fix. Future runs keep every epoch (a0ead4c). (2) RL
+run 6 (job 337, queued `afterany:336`) will start from epoch 3. That is acceptable: its
+reward pays for exactly what epoch 3 lost (direction against the turn taken, no false
+clear on braking windows) and epoch 3 carries the better scene reading (maneuver acc
+0.622, object recall 0.772). (3) Continuing the SFT past epoch 3 delays the RL by ~2 h
+per epoch and, on this evidence, degrades the driver-grounded CoC further.
