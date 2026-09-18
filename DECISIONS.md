@@ -1780,3 +1780,23 @@ Two conclusions:
 
 Decision: no relaunch on this evidence. Judge 7c's later epochs on this table; then phase
 1.5 from the best of them with the grounded reward, `hazard`/`teacher` terms at 0 (D-042).
+
+**D-047 update, run 7c epoch 1** (job 336; gate 2.799 m, val CoC NLL 0.535; 500 val windows):
+
+| | 7c ep 0 | **7c ep 1** | run-4 best | teacher |
+|---|---:|---:|---:|---:|
+| stopped -> says stop/slow/yield (n=23) | 0.565 | 0.565 | 0.652 | 0.652 |
+| braked hard -> says slow/stop (n=83) | 0.133 | **0.205** | 0.181 | 0.157 |
+| GT false-clear (n=140) | 0.307 | **0.164** | 0.257 | 0.157 |
+| direction stated ok on turns (n=60) | 0.133 | **0.417** | 0.200 | 0.267 |
+| GT-consistent (checkable) | 0.722 | **0.732** | 0.699 | 0.691 |
+| 05b false-clear (teacher hazards) | 0.140 | **0.060** | 0.122 | - |
+| 05b maneuver acc vs teacher | 0.574 | 0.579 | 0.618 | - |
+| STOP / TURN / KEEP emitted (teacher 61/21/94) | 39/7/163 | 60/22/103 | - | - |
+
+The KEEP/FOLLOW collapse of epoch 0 is gone (KEEP 163 -> 103, STOP 39 -> 60, TURN 7 -> 22);
+LANE_CHANGE (1 vs 16) and ACCELERATE (5 vs 17) are still under-emitted. On every
+driver-grounded number epoch 1 is at or above the teacher and above run 4's best; it is
+below run 4 on teacher-match maneuver accuracy (0.579 vs 0.618), which is what training
+away from the teacher's contradicted claims should look like. The "stopped" row is n=23
+and did not move; it is the one number still under the teacher's 0.652. Job 336 continues.
