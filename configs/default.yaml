@@ -183,9 +183,11 @@ stage1:
   #   route_hint: true       the driver's direction in the <|route_start|> slot
   #   image_dropout: 0.3     trajectory read from CoC + history on 30% of samples
   #   filter_contradictions  windows whose CoC flatly contradicts GT are dropped
-  epochs: 12                                 # a CEILING; early_stop_patience ends the run.
-                                             # 4 cameras: ~3.8 h/epoch (job 232), full 12
-                                             # = 45.6 h, inside the 68 h sbatch wall.
+  epochs: 6                                  # RUN 8: a CEILING; early_stop_patience ends the run.
+                                             # The CoC peaks at epoch 1-2 in every run (D-036, D-047:
+                                             # 7c's best driver-grounded epoch was 1, NLL flat from 1);
+                                             # later epochs fit the teacher's route-blind phrasing
+                                             # and lose the route. ~2 h/epoch on the filtered split.
   micro_batch: 4                             # LoRA r48, 4 cameras: peak ~58 GiB (job 232).
   grad_accum: 8                              # effective batch 32.
   lr: 3.0e-4                                 # unchanged since run 2 (LoRA wants 2-5x full-FT).
@@ -217,7 +219,10 @@ stage1:
   # mechanism that makes the CoC load-bearing (D-040: forcing "turn left" vs
   # "turn right" moved the heading by ~2 degrees). 0.3 keeps 70% of the CoC
   # gradient; the cost is nil (same forward). Judge on 05d_coc_intervention.py.
-  image_dropout: 0.3
+  # RUN 8: OFF (was 0.3). It removed 30% of the CoC targets to teach the token
+  # head to read the CoC, and D-045/D-046 showed that head reads its prefix
+  # regardless. The CoC is the deliverable (D-047); it gets every target.
+  image_dropout: 0.0
   # Drop TRAIN windows whose teacher CoC is flatly contradicted by the driver's
   # future (data/grounding.py, strict scale of eval/gt_reward.py): FOLLOW/KEEP
   # while the driver braked hard from speed (11.3% of the cache), STOP with no
@@ -280,16 +285,18 @@ stage1:
                                              # truncated at +/-3 sigma, renormalised at the
                                              # region edges.
   feat_warmup_frac: 0.1
-  select_on: minade                          # RUN 7: back to minADE (run 5-6 used coc_nll).
-                                             # GT tokens are trained toward again, so the
-                                             # gate is a trained-toward metric; and D-036
-                                             # found val CoC NLL a poor early-stop signal
-                                             # (moves on phrasing, turned at epoch 1 while
-                                             # free-running content was still improving).
-                                             # minADE noise: +/-0.078 m over 3 seeds on one
-                                             # checkpoint - hence patience 3 and adapters
-                                             # saved every epoch for offline scoring.
-  early_stop_patience: 3
+  select_on: coc_gt                          # RUN 8 (D-047/D-050): select the epoch on the DRIVER-
+                                             # grounded free-running CoC score - GT-consistent
+                                             # minus GT false-clear over `coc_gt_windows` val
+                                             # windows (train_stage1._coc_gt, the same scorer
+                                             # phase 1.5 selects on). minADE picked 7c's epoch 3,
+                                             # the worst epoch on that table; the best (epoch 1)
+                                             # was overwritten. `minade` | `coc_nll` still work.
+  coc_gt_windows: 200                        # RUN 8, NEW: val windows free-run per epoch for
+                                             # the score above (~5 min/epoch). 0 disables it
+                                             # (and `select_on: coc_gt` then errors out).
+  coc_gt_max_new_tokens: 64
+  early_stop_patience: 2                    # RUN 8: was 3. With a 6-epoch cap and the peak at 1-2.
   save_every_epoch: true                     # RUN 7, NEW: adapters (~75 MB) at every epoch
                                              # under runs/stage1/run-<job>/epoch-NN, so any
                                              # epoch can be free-run scored (05b) and

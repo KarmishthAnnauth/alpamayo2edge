@@ -109,3 +109,8 @@ teacher and student rectified-flow conventions (D-016) handled inside `flow_forw
 **Conventions:** append new decisions to DECISIONS.md as D-033+ with [VERIFIED]/[DECIDED]/[OPEN]
 tags. Terminology precision matters: "flow matching" ≠ "diffusion" — the distinction propagates
 into supervision-signal design.
+
+**2026-09-19 — phase 1 is one command.** Read `PHASE1_RUNBOOK.md`, then
+`bash scripts/run_phase1.sh`. The recipe, the selector (driver-grounded CoC score),
+the evaluation (05b + 05f 500-window table) and the pitfalls are all there;
+D-043..D-050 hold the evidence.

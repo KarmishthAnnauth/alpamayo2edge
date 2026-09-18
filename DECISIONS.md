@@ -1936,3 +1936,26 @@ went to NUDGE (34 of 140, twice the teacher). Two levers for **run 6c**: `reward
 notch (2e-5 -> 3e-5) now that both hedges are charged and the KL at 2e-5 stayed an order of
 magnitude below run 6's. Judge 6c on the same table; the win condition is run 6 step 25's
 driver rows with 6b step 50's over-claim, NUDGE and precision.
+
+## D-051 [DECIDED 2026-09-19] Phase 1 is one command: run 8's recipe, selected on the driver-grounded CoC score, every epoch kept
+
+At the user's request ("rewrite them so next time I start a fresh session and ask to run
+phase 1, it does all of this"). `PHASE1_RUNBOOK.md` is the authority; `scripts/run_phase1.sh`
+submits the smoke and the SFT run chained behind it and refuses if one of our jobs holds
+the card. Changes from run 7c (`configs/default.yaml`, `stage1`):
+
+- `select_on: coc_gt`, `coc_gt_windows: 200` - each epoch free-runs 200 val windows and
+  grades them against the driver with `train_grpo_coc._val_eval` (the phase-1.5 selector);
+  `gt_score` = GT-consistent minus GT false-clear. Logged as `val CoC vs DRIVER`; also saved
+  in the checkpoint meta. Why: minADE picked 7c's epoch 3, the worst epoch on the driver
+  table, and NLL was flat across the epochs that differed most (D-047).
+- `image_dropout: 0.0` (was 0.3) - it only served the token head (D-045/D-046) and cost 30%
+  of the CoC targets.
+- `epochs: 6`, `early_stop_patience: 2` (were 12 / 3) - the CoC peaks at epoch 1-2 and
+  later epochs drift to the teacher's route-blind phrasing.
+- `save_every_epoch` now writes reloadable files (a0ead4c) so no epoch is lost again.
+- Unchanged: GT prefix with masking/jitter as the side-output token path, route hint,
+  contradiction filter, 4 cameras, r48 attention-only LoRA, lr 3e-4.
+
+`tests/test_phase1_config_offline.py` pins the recipe (and phase 1.5's two hedge charges).
+Not launched: RL run 6c (job 343) holds the Blackwell.

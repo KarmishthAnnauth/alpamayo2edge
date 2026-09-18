@@ -101,6 +101,26 @@ def _coc_nll(cfg, student, split: str = "val", max_windows: int = 64) -> tuple[f
     return (text_tot / max(n, 1), struct_tot / max(n, 1))
 
 
+@torch.no_grad()
+def _coc_gt(cfg, student, n_windows: int) -> dict:
+    """Free-running, DRIVER-grounded CoC score on val (D-047/D-050): the student
+    writes its own chain-of-causation for `n_windows` val windows and each trace
+    is graded against the cached `gt_future_xyz` with `eval.gt_reward.gt_metrics`
+    - the same scorer phase 1.5 selects on. Returns the `_val_eval` dict;
+    `gt_score` = GT-consistent minus GT false-clear.
+
+    Why this and not `coc_nll` / minADE: the CoC's job is to match what the
+    driver did. Run 7c's epoch 1 was the best epoch on that table and epoch 3
+    the worst, while minADE picked epoch 3 and NLL could not tell them apart
+    (D-047). ~5 min per 200 windows on the Blackwell.
+    """
+    from .train_grpo_coc import _val_eval
+    ds = Stage1Dataset(cfg, student.context_builder(), clip_ids=load_split(cfg, "val"),
+                       cot_generation=True)          # route hint comes from stage1.route_hint
+    return _val_eval(cfg, student, ds, n=int(n_windows), pad_id=student.tokenizer.pad_token_id,
+                     max_new=int(cfg.stage1.get("coc_gt_max_new_tokens", 64)), route=False)
+
+
 def _cached_feature_dim(shard_path, layer: int) -> int:
     """D_t, read off a cached shard's own feature array."""
     import numpy as np
@@ -418,8 +438,25 @@ def main(cfg_path: str, micro_batch: int | None = None,
         # that did land carried a worse CoC (0.595).
         # minADE is still computed and logged every epoch either way - switching
         # `select_on` back to `minade` restores run-1..4 behaviour exactly.
+        # Driver-grounded free-running CoC score (see _coc_gt). Always computed
+        # when `coc_gt_windows` > 0 so every run's log carries it; it is also the
+        # default selector since run 8.
+        n_gt = int(cfg.stage1.get("coc_gt_windows", 0))
+        gt = _coc_gt(cfg, student, n_gt) if n_gt > 0 else None
+        if gt is not None:
+            log.info("epoch %d val CoC vs DRIVER (n=%d): gt_score %.3f | consistent %.3f "
+                     "false_clear %.3f direction_ok %s maneuver_acc %s termination %s | mix %s",
+                     epoch, gt["n"], gt["gt_score"], gt["gt_consistent"], gt["gt_false_clear"],
+                     None if gt["direction_ok"] is None else f"{gt['direction_ok']:.3f}",
+                     None if gt["maneuver_acc"] is None else f"{gt['maneuver_acc']:.3f}",
+                     None if gt["termination"] is None else f"{gt['termination']:.3f}",
+                     gt["mix"])
         sel_key = str(cfg.stage1.get("select_on", "minade"))
-        sel_metrics = {"minade": score, "coc_nll": text_nll}
+        # Every selector is "lower is better"; gt_score is negated for that.
+        sel_metrics = {"minade": score, "coc_nll": text_nll,
+                       "coc_gt": (-gt["gt_score"]) if gt is not None else None}
+        if sel_metrics.get(sel_key) is None:
+            raise ValueError(f"stage1.select_on={sel_key!r} needs stage1.coc_gt_windows > 0")
         if sel_key not in sel_metrics:
             raise ValueError(f"stage1.select_on must be one of {sorted(sel_metrics)}, "
                              f"got {sel_key!r}")
@@ -436,7 +473,8 @@ def main(cfg_path: str, micro_batch: int | None = None,
             ep_dir = run_best.parent / f"epoch-{epoch:02d}"
             checkpoint.save_adapters(student, ep_dir, stage="stage1", epoch=epoch,
                                      coarse_minade=float(score),
-                                     val_coc_nll=float(text_nll))
+                                     val_coc_nll=float(text_nll),
+                                     coc_gt_score=(float(gt["gt_score"]) if gt is not None else None))
             log.info("adapters -> %s", ep_dir)
         if sel < best:
             best, patience = sel, 0
@@ -448,7 +486,11 @@ def main(cfg_path: str, micro_batch: int | None = None,
             # both read that key. `val_coc_nll`/`select_on` are additive.
             checkpoint.save(student, run_best, stage="stage1", epoch=epoch,
                             coarse_minade=float(score), val_coc_nll=float(text_nll),
-                            select_on=sel_key)
+                            select_on=sel_key,
+                            **({"coc_gt_score": float(gt["gt_score"]),
+                                "coc_gt_false_clear": float(gt["gt_false_clear"]),
+                                "coc_gt_consistent": float(gt["gt_consistent"])}
+                               if gt is not None else {}))
             torch.save(projections.state_dict(), run_best / "projections.pt")
             torch.save(lmap, run_best / "layer_map.pt")
             _promote_best(run_best)

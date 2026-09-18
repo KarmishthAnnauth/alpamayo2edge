@@ -57,7 +57,12 @@ HF auth with accepted licenses for the gated teacher/student checkpoints + datas
 (Alpamayo-1.5-10B, Cosmos3-Edge, PhysicalAI-AV).
 `scripts/00_verify.py` runs the Phase-0 probes config-only (no weight download).
 
-## Order of operations
+## Order of operations (2026-09-19: see `PHASE1_RUNBOOK.md` for phase 1)
+```
+bash scripts/run_phase1.sh           # phase 1 SFT: smoke + train, selects on the driver-grounded CoC score
+sbatch scripts/03c_grpo_coc.sh       # phase 1.5: CoC-only GRPO from runs/stage1/best (D-049/D-050)
+```
+Historical sequence:
 ```
 python scripts/00_verify.py          # Phase 0: verify assumptions, write specs
 python scripts/01_curate.py --n 500  # first increment
