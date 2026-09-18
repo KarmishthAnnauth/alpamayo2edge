@@ -154,7 +154,9 @@ def gt_reward(student_text: str, terminated: bool, n_tokens: int, k: dict,
     if not terminated or n_tokens > int(w.max_tokens):
         return float(w.fail), {"fail": True}
     s = parse(student_text)
-    kin = kinematic_term(s["maneuver"], k)
+    # `reward.strict` (D-042's hedge-free scale; run 5 wired it for the perspan
+    # path only, this mode kept paying FOLLOW/KEEP +0.5 on quiet windows).
+    kin = kinematic_term(s["maneuver"], k, strict=bool(getattr(w, "strict", False)))
     dr = direction_term(s["maneuver"], s["direction"], k)
     hz = hazard_term(s["objects"], k)
     t = parse(teacher_text) if teacher_text else {"maneuver": None}
@@ -208,7 +210,9 @@ def traj_reward(ade: float | None, student_text: str, terminated: bool, n_coc_to
     cap = float(w.ade_cap)
     r_ade = -min(float(ade), cap) / cap
     s = parse(student_text)
-    kin = kinematic_term(s["maneuver"], k)
+    # `reward.strict` (D-042's hedge-free scale; run 5 wired it for the perspan
+    # path only, this mode kept paying FOLLOW/KEEP +0.5 on quiet windows).
+    kin = kinematic_term(s["maneuver"], k, strict=bool(getattr(w, "strict", False)))
     dr = direction_term(s["maneuver"], s["direction"], k)
     t = parse(teacher_text) if teacher_text else {"maneuver": None}
     tm = 1.0 if (t["maneuver"] and s["maneuver"] == t["maneuver"]) else 0.0
