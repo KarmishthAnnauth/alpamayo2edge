@@ -373,7 +373,7 @@ stage1_rl:
   init_ckpt: /data/vla/alpamayo2edge/runs/stage1/run-336/best
                                              # merged); fresh r48 attention adapters on top are
                                              # the policy, the merged weights the reference
-  run_name: rl-run-7-coc-grounded-v2     # RL run 7 (D-049): run 6's recipe with the hold-speed
+  run_name: rl-run-6b-coc-grounded       # RL run 6b (D-049): run 6's recipe with the hold-speed
                                            # over-claim penalty and lr 2e-5. Run 6 = job 337.
   cameras: [camera_cross_left_120fov, camera_front_wide_120fov, camera_cross_right_120fov,
             camera_front_tele_30fov]         # RL-only override of data.cameras (1 cam for SFT)
