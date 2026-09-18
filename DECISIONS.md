@@ -1732,3 +1732,51 @@ the `lora_` tensors. Stage 1 also trains the appended embedding / lm_head rows (
 there - so the per-epoch `epoch-NN` dirs of jobs 332/334/336 are NOT reloadable models.
 `best/` (merged, saved on a gate improvement) is. Fixed for future runs (see the commit);
 job 336 is already running the old code and cannot pick it up.
+
+## D-047 [MEASURED 2026-09-18] Phase 1's deliverable is a CoC that matches the DRIVER; imitation caps at the teacher's own grounding, and the teacher says "stop" for 65% of stops and "slow" for 16% of hard brakes
+
+Reframed by the user (2026-09-18): the final trajectory comes from the phase-2 flow head, so
+phase 1 owes a CoC that reasons from the video like the teacher AND agrees with the driver's
+future - hazard in the frames, "stop" in the text, a stop in GT. That is CoC-to-GT
+consistency; trajectory-token-to-CoC dependence (D-040/D-045/D-046) is not required for
+it, and the grounded per-span text reward of D-042 never needed it either (it grades the
+words against kinematics directly). Prefix masking stays as a side output; image dropout
+(30% of CoC targets) works against the goal and goes to 0 in the next run, if there is one.
+
+**New scorer** `scripts/05f_coc_gt_score.py`: grades a `05b --dump` file against
+`gt_future_xyz` with `gt_reward.gt_metrics`, student and teacher on the same windows, plus
+the user's criterion split by severity. `05b` dumps now carry the window index.
+
+500 val windows, teacher scored on the same windows:
+
+| driver did | n | 7c epoch 0 | run-4 best (ep 3) | teacher |
+|---|---:|---:|---:|---:|
+| stopped -> CoC says stop/slow/yield | 23 | 0.565 | 0.652 | 0.652 |
+| braked hard, no stop -> says slow/stop | 83 | 0.133 | 0.181 | 0.157 |
+| slowed mildly -> says slow/stop | 34 | 0.000 | 0.000 | 0.029 |
+| GT false-clear (braked from speed, said clear/keep) | 140 | 0.307 | 0.257 | 0.157 |
+| direction stated ok on turns | 60 | 0.133 | 0.200 | 0.267 |
+| maneuver acc vs teacher (05b) | 500 | 0.574 | 0.618 | - |
+
+Two conclusions:
+
+1. **The teacher is the ceiling of SFT on this criterion, and it is low.** Run 4's best
+   already equals the teacher on stops (0.652) and beats it on hard brakes. The teacher
+   writes "keep distance to the lead vehicle" for most hard-braking windows (D-038's
+   conservative-narrator finding, seen from the other side). The contradiction filter
+   removes those pairs from training but adds nothing that says "slow down" where the
+   teacher did not, and SFT cannot invent the cause clause without hallucinating. Above
+   the teacher's rate the signal has to be the driver's future: the grounded reward
+   (phase 1.5, D-042 design, no token-path coupling needed).
+2. **7c at epoch 0 is below run 4's epoch 3, and the misses are perceptual.** On train
+   stop windows the student writes "keep distance to the lead vehicle" where the teacher
+   wrote "stop ... since it is stopped ahead" (train: 0.154 vs 0.846, n=13) - whether the
+   lead car is moving is a four-frame motion cue the student is not yet reading. Its mix
+   is collapsed toward KEEP/FOLLOW (163/178 vs teacher 94/145), STOP 39 vs 61, LANE_CHANGE
+   0 vs 16. Epoch-0 numbers of earlier runs rose by epoch 1-3 (run 6: 0.465 -> 0.605), so
+   this is not a verdict on 7c; job 336 runs on and each gate-improving epoch is scored the
+   same way. What is a verdict: no SFT run will pass the user's criterion by more than the
+   teacher does.
+
+Decision: no relaunch on this evidence. Judge 7c's later epochs on this table; then phase
+1.5 from the best of them with the grounded reward, `hazard`/`teacher` terms at 0 (D-042).

@@ -57,6 +57,12 @@ def main() -> int:
     agg = {"student": [], "teacher": []}
     braked = {"student": Counter(), "teacher": Counter()}
     n_braked = 0
+    # Severity split of the braking windows: a full stop, a hard brake (>2.5 m/s
+    # lost over the horizon, no stop), or a mild slowdown (1.5-2.5 m/s). "Keep
+    # distance" behind a lead car that eases off is a fair description of the
+    # mild case; it is not of a stop.
+    sev_n = Counter()
+    sev_slow = {"student": Counter(), "teacher": Counter()}
     for i, r in enumerate(rows):
         if "window" in r:
             shard = Path(cfg.paths.cache_root) / r["clip"] / f"{int(r['window']):02d}.npz"
@@ -71,8 +77,12 @@ def main() -> int:
             agg[who].append(gt_reward.gt_metrics(r[who], k))
         if k["braked_from_speed"]:
             n_braked += 1
+            sev = ("stop" if k["vmin"] < 0.5 else "hard" if k["dv"] < -2.5 else "mild")
+            sev_n[sev] += 1
             for who in ("student", "teacher"):
-                braked[who][parse(r[who]).get("maneuver") or "NONE"] += 1
+                man = parse(r[who]).get("maneuver") or "NONE"
+                braked[who][man] += 1
+                sev_slow[who][sev] += man in SLOWING
 
     print(f"{Path(a.dump).name}: {len(rows)} windows, split {a.split}")
     print(f"  {'metric':<28} {'student':>14} {'teacher':>14}")
@@ -93,6 +103,12 @@ def main() -> int:
     t_slow = sum(braked["teacher"][m] for m in SLOWING)
     print(f"  braked -> says slow/stop:   student {s_slow / max(n_braked, 1):.3f}   "
           f"teacher {t_slow / max(n_braked, 1):.3f}")
+    for sev, label in (("stop", "driver STOPPED"), ("hard", "driver braked HARD"),
+                       ("mild", "driver slowed mildly")):
+        n = sev_n[sev]
+        if n:
+            print(f"     {label:<22} n={n:<4d} says slow/stop: student "
+                  f"{sev_slow['student'][sev] / n:.3f}   teacher {sev_slow['teacher'][sev] / n:.3f}")
     return 0
 
 

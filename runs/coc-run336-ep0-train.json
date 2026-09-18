@@ -1,0 +1,51 @@
+{
+  "checkpoint": "/data/vla/alpamayo2edge/runs/stage1/run-336/best",
+  "epoch": 0,
+  "split": "train",
+  "cameras": [
+    "camera_cross_left_120fov",
+    "camera_front_wide_120fov",
+    "camera_cross_right_120fov",
+    "camera_front_tele_30fov"
+  ],
+  "temperature": 0.6,
+  "top_p": 0.98,
+  "n_generated": 500,
+  "n_scored": 497,
+  "n_teacher_empty": 3,
+  "termination_rate": 0.998,
+  "parse_rate": 0.9818913480885312,
+  "maneuver_acc": 0.6155419222903885,
+  "direction_acc": 0.2345679012345679,
+  "object_recall": 0.702683615819209,
+  "object_precision": 0.8559843400447428,
+  "token_f1": 0.6760159070588627,
+  "n_hazard_windows": 327,
+  "false_clear_rate": 0.1529051987767584,
+  "student_maneuvers": {
+    "FOLLOW": 191,
+    "KEEP": 168,
+    "ADAPT_SPEED": 44,
+    "NUDGE": 37,
+    "STOP": 27,
+    "SLOW": 11,
+    "YIELD": 8,
+    "TURN": 5,
+    "ACCELERATE": 4,
+    "LANE_CHANGE": 1,
+    "null": 1
+  },
+  "teacher_maneuvers": {
+    "FOLLOW": 162,
+    "KEEP": 121,
+    "STOP": 57,
+    "ADAPT_SPEED": 47,
+    "NUDGE": 41,
+    "ACCELERATE": 18,
+    "TURN": 17,
+    "YIELD": 12,
+    "null": 8,
+    "SLOW": 7,
+    "LANE_CHANGE": 7
+  }
+}
