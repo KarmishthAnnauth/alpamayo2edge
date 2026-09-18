@@ -1905,3 +1905,34 @@ lr 5e-5 -> 2e-5 (per-step KL 0.04-0.28 was 10-50x the runs that held their gains
 gains came in 25 steps, so a slower policy loses little). Judge on the 500-window table with
 the over-claim row; a checkpoint is only "better" if it beats step 25 on the driver rows
 WITHOUT raising the hold-speed over-claim rate above the teacher's 9%.
+
+## D-050 [MEASURED 2026-09-18] RL run 6b (hold-speed penalty, lr 2e-5): honest but slow, and the hedge moved to NUDGE
+
+Job 340, from `run-336/best`, `strict` with SLOW/YIELD/ACCELERATE -0.5 on hold-speed windows,
+lr 2e-5. 400-window checks: score 0.45 (0) -> 0.50 (25) -> **0.54 (50, best)** -> 0.51 (75);
+per-step KL 0.004 -> 0.04. SLOW stayed at 5-14 of 400 (run 6: 33 -> 187): the penalty
+works. NUDGE went 50 -> 71 -> 85 -> 108: once every checkable claim can lose, the one claim
+that never scores below 0 becomes the answer on hard windows.
+
+Step-50 adapters on the 500-window table:
+
+| | SFT ep 3 | run 6 step 25 | **6b step 50** | teacher |
+|---|---:|---:|---:|---:|
+| stopped -> says stop/slow/yield (n=23) | 0.522 | 0.696 | 0.609 | 0.652 |
+| braked hard -> says slow/stop (n=83) | 0.096 | 0.337 | 0.193 | 0.157 |
+| any braking -> says slow/stop (n=140) | 0.143 | 0.343 | 0.214 | 0.207 |
+| GT false-clear (n=140) | 0.279 | 0.171 | 0.271 | 0.157 |
+| direction stated ok on turns (n=60) | 0.100 | 0.650 | 0.417 | 0.267 |
+| speed claim on hold-speed windows (n=176) | 5% | 14% | **7%** | 9% |
+| NUDGE on braking windows (n=140) | - | 27 | **34** | 17 |
+| object recall / precision | 0.772 / 0.851 | 0.816 / 0.747 | 0.817 / **0.811** | - |
+| maneuver acc vs teacher | 0.622 | 0.533 | 0.607 | - |
+
+6b's step 50 is clean - over-claiming below the teacher's, precision intact, still close to
+the teacher's phrasing - and it is only at the teacher's level on the driver rows, well
+short of run 6's step 25. The gain that should have gone to STOP/SLOW on braking windows
+went to NUDGE (34 of 140, twice the teacher). Two levers for **run 6c**: `reward.unverifiable:
+-0.25` (NUDGE charged under strict; committed as a key, currently 0), and lr back up a
+notch (2e-5 -> 3e-5) now that both hedges are charged and the KL at 2e-5 stayed an order of
+magnitude below run 6's. Judge 6c on the same table; the win condition is run 6 step 25's
+driver rows with 6b step 50's over-claim, NUDGE and precision.
