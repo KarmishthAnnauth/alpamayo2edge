@@ -108,6 +108,18 @@ def _grid_from_encoding(enc):
     return pixel_values, torch.cat([t_dim, ss], dim=1)
 
 
+#: A trajectory-prefix value the dataset uses to mean "hidden" (D-045). It maps
+#: to the `<|traj_history|>` placeholder id, which never otherwise appears in a
+#: training sequence: the history slots are always filled with real bins.
+PREFIX_MASK = -1
+
+
+def prefix_bin_id(b: int, future_base: int, mask_id: int) -> int:
+    """Region-relative future bin -> vocabulary id; `PREFIX_MASK` -> the mask id."""
+    b = int(b)
+    return mask_id if b < 0 else future_base + b
+
+
 @dataclasses.dataclass
 class ContextBuilder:
     """Assembles one window's context. Cheap to copy into a worker."""
@@ -184,7 +196,8 @@ class ContextBuilder:
         common = dict(
             encode=self._encode_text,
             special_id=self.special_ids.__getitem__,
-            bin_id=lambda b: self.future_base + int(b),
+            bin_id=lambda b: prefix_bin_id(b, self.future_base,
+                                           self.special_ids["<|traj_history|>"]),
             hist_bin_id=lambda b: self.hist_base + int(b),
             image_tokens=lambda i: per_image[i] if per_image else 0,
             image_token_id=self.image_token_id,

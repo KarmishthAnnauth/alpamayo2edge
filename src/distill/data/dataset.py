@@ -19,6 +19,7 @@ import torch
 from torch.utils.data import Dataset
 
 from . import frames
+from ..student.context import PREFIX_MASK
 
 log = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ class Stage1Dataset(Dataset):
     def __init__(self, cfg, context_builder, clip_ids: list[str] | None = None,
                  for_generation: bool = False, cot_generation: bool = False,
                  image_dropout: float = 0.0, filter_contradictions: bool = False,
-                 prefix_noise_bins: float = 0.0):
+                 prefix_noise_bins: float = 0.0, prefix_mask_prob: float = 0.0):
         from .preprocess import load_window, window_t0_us
 
         self.cfg = cfg
@@ -131,9 +132,20 @@ class Stage1Dataset(Dataset):
             raise ValueError(f"image_dropout must be in [0, 1], got {image_dropout}")
         self.image_dropout = float(image_dropout)
         self.filter_contradictions = bool(filter_contradictions)
+        #   prefix_mask_prob  probability that a window's WHOLE trajectory prefix
+        #                  is replaced by the mask id (`context.PREFIX_MASK`), so
+        #                  every one of its 128 bins must be predicted from the
+        #                  scene, the CoC, the route and the ego history alone.
+        #                  D-045: at sigma-16 jitter the epoch-0 model still took
+        #                  0.000 nats from the frames and 0.002 from the CoC - the
+        #                  prefix was the only source it read. Jitter makes the
+        #                  prefix unreliable; masking makes it absent.
         if float(prefix_noise_bins) < 0.0:
             raise ValueError(f"prefix_noise_bins must be >= 0, got {prefix_noise_bins}")
         self.prefix_noise_bins = float(prefix_noise_bins)
+        if not 0.0 <= float(prefix_mask_prob) <= 1.0:
+            raise ValueError(f"prefix_mask_prob must be in [0, 1], got {prefix_mask_prob}")
+        self.prefix_mask_prob = float(prefix_mask_prob)
         # Eval mode: the CoC is still teacher-forced but the 128 trajectory
         # positions are NOT — the context stops at `<|traj_future_start|>` so the
         # student decodes them itself. Building the teacher-forced context and
@@ -173,8 +185,11 @@ class Stage1Dataset(Dataset):
         # teacher-forced prefix is `stage1.traj_prefix` (see __init__).
         key = "gt_traj_token_ids" if self.traj_prefix == "gt" else "traj_token_ids"
         traj_bins = [int(b) for b in d[key]]
-        if self.prefix_noise_bins > 0.0 and not self.for_generation:
-            traj_bins = jitter_prefix(traj_bins, self.prefix_noise_bins)
+        if not self.for_generation:
+            if self.prefix_mask_prob > 0.0 and float(torch.rand(())) < self.prefix_mask_prob:
+                traj_bins = [PREFIX_MASK] * len(traj_bins)
+            elif self.prefix_noise_bins > 0.0:
+                traj_bins = jitter_prefix(traj_bins, self.prefix_noise_bins)
         from . import grounding
         nav = grounding.route_hint(d["gt_future_xyz"]) if self.route_hint else None
         ctx = self.ctx.build(window,

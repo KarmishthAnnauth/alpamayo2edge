@@ -75,3 +75,10 @@ def test_jitter_prefix_stays_in_region_and_is_zero_at_sigma_zero():
         assert all(0 <= b < N_FUTURE_BINS for b in out)
         seen_change |= out != bins
     assert seen_change
+
+
+def test_prefix_mask_maps_to_the_placeholder_id_and_bins_to_the_region():
+    from distill.student.context import PREFIX_MASK, prefix_bin_id
+    assert prefix_bin_id(PREFIX_MASK, 131072, 134079) == 134079
+    assert prefix_bin_id(0, 131072, 134079) == 131072
+    assert prefix_bin_id(2999, 131072, 134079) == 131072 + 2999

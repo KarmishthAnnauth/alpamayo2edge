@@ -201,11 +201,13 @@ def main(cfg_path: str, micro_batch: int | None = None,
                              image_dropout=float(cfg.stage1.get("image_dropout", 0.0)),
                              filter_contradictions=bool(
                                  cfg.stage1.get("filter_contradictions", False)),
-                             prefix_noise_bins=float(cfg.stage1.get("prefix_noise_bins", 0.0)))
+                             prefix_noise_bins=float(cfg.stage1.get("prefix_noise_bins", 0.0)),
+                             prefix_mask_prob=float(cfg.stage1.get("prefix_mask_prob", 0.0)))
     log.info("context: traj_prefix=%s route_hint=%s | train: image_dropout=%.2f "
-             "filter_contradictions=%s prefix_noise_bins=%.1f windows=%d",
+             "filter_contradictions=%s prefix_noise_bins=%.1f prefix_mask_prob=%.2f windows=%d",
              train_ds.traj_prefix, train_ds.route_hint, train_ds.image_dropout,
-             train_ds.filter_contradictions, train_ds.prefix_noise_bins, len(train_ds))
+             train_ds.filter_contradictions, train_ds.prefix_noise_bins,
+             train_ds.prefix_mask_prob, len(train_ds))
     pad_id = student.tokenizer.pad_token_id
     # Slurm allocates the CPUs; hardcoding a worker count is how a shared node
     # ends up oversubscribed (slurm_tutorial/07 "three mistakes", #1). Falls back

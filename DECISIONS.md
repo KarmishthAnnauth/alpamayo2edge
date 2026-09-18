@@ -1644,3 +1644,48 @@ reserve if noise alone does not close the loss-vs-decode gap.
 Judge 7b first on the gap itself: `gt_soft` should sit visibly ABOVE 3.21 under a noised
 prefix, and the epoch-0 gate should land at or below run 4's 2.75 m. Then D-043's three
 criteria in order.
+
+## D-045 [MEASURED 2026-09-18] Under teacher forcing the trajectory reads ONLY its prefix: frames cost 0.000 nats, the CoC 0.002
+
+Run 7b (job 334, `prefix_noise_bins: 16`) fixed the random walk - epoch-0 gate 3.09 m
+(run 7: 4.44, run 4: 2.75), val CoC NLL 0.545 - and did not produce coupling. The 05d probe
+on `run-334/best` (epoch 0): heading gap turn_left - turn_right +5.5 +/- 9.9 deg, end-speed
+gap accelerate - stop 0.00 +/- 0.43 m/s, "stop" ending at 8.3 m/s like every other CoC;
+within-window heading sd 31 deg (run 7: 53, run-253: 20), single-sample ADE 6-8 m.
+
+So `scripts/05e_traj_dependence.py` (new): the same checkpoint, 40 val windows,
+teacher-forced with the clean GT prefix, soft GT CE per source degraded:
+
+| condition | all | pos < 8 | pos >= 8 | curv | accel |
+|---|---:|---:|---:|---:|---:|
+| full | 3.848 | 4.515 | 3.803 | 3.554 | 4.142 |
+| frames zeroed | 3.848 | 4.522 | 3.803 | 3.556 | 4.140 |
+| CoC swapped to a wrong maneuver | 3.850 | 4.548 | 3.803 | 3.554 | 4.145 |
+| both | 3.850 | 4.557 | 3.803 | 3.557 | 4.144 |
+| prefix jittered, sigma 16 | 4.372 | 4.883 | 4.338 | 4.014 | 4.730 |
+| prefix jittered, sigma 64 | 6.071 | 6.212 | 6.062 | 5.902 | 6.240 |
+
+The frames contribute nothing. The CoC contributes 0.002 nats - 0.03 at the first eight
+positions, where the prefix cannot yet reveal the plan, and 0.000 after. Everything the
+model uses is the trajectory prefix (0.5 nats at sigma 16, 2.2 at sigma 64) plus, by
+elimination, the ego history for the first bins. This is why image dropout could not bite:
+it removes an input the model never read. And sigma 16 was a nuisance the model absorbed,
+not a reason to look elsewhere.
+
+The structural point: with teacher forcing, everything a CoC could say about the plan is
+also written in the prefix by the second waypoint, at far lower entropy. The teacher has
+the same token path and the same 3.77 m ADE; its expert MASKS the trajectory tokens out of
+its attention (D-036) - the vendor's coupling lives where no prefix exists.
+
+**Run 7c** removes the shortcut rather than perturbing it: `prefix_noise_bins: 64` (the
+level that measurably hurts) and `prefix_mask_prob: 0.25` - a quarter of train windows
+carry the `<|traj_history|>` placeholder id at all 128 prefix positions
+(`context.PREFIX_MASK`; that id never otherwise appears in a training sequence), so every
+bin is predicted from scene + CoC + route + history with no prefix at all. Mixed with the
+jittered and near-clean windows the model learns both regimes; at decode it has its own
+prefix. Everything else held from 7b.
+
+Judge 7c on 05e before anything else: `no_img` and `swap_coc` must cost something on
+the full-prefix condition, or the token path cannot be coupled this way and the coupling
+belongs in the flow head (phase 2, which attends the CoC KV with no trajectory prefix -
+the teacher's own structure). Then 05d, then the gate.

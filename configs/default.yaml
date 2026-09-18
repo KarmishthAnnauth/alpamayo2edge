@@ -240,7 +240,21 @@ stage1:
   # bins ~ 2.7x the target's own sigma (6): the model must tolerate prefixes that
   # are wrong by more than it is ever asked to be. Train only; the gate decodes
   # from its own samples as before. 0 restores run 7's launched behaviour.
-  prefix_noise_bins: 16.0
+  # RUN 7c (D-045): 16 -> 64, plus whole-prefix masking below. Measured on 7b's
+  # epoch-0 checkpoint (05e_traj_dependence.py, 40 val windows, teacher-forced
+  # soft CE): zeroing the frames cost 0.000 nats, swapping the CoC to a wrong
+  # maneuver 0.002 (0.03 at the first 8 positions), jitter at 16 cost 0.52 and at
+  # 64 cost 2.2. The prefix (and history) was the ONLY source the model read, so
+  # image dropout had nothing to remove and sigma 16 was a nuisance the model
+  # absorbed. 64 is the level the probe showed actually hurts.
+  prefix_noise_bins: 64.0
+  # Probability that a train window's WHOLE prefix is the `<|traj_history|>`
+  # placeholder id (context.PREFIX_MASK): every bin predicted from scene + CoC +
+  # route + history, no prefix at all. Mixed with the jittered and (at sigma ~ 0)
+  # near-clean windows above, so the model learns both to plan without a prefix
+  # and to stay smooth with one; at decode it always has its own prefix. The
+  # 05e probe is the check: `no_img` and `swap_coc` must cost something.
+  prefix_mask_prob: 0.25
   loss_weights:
     traj_kl: 0.0                             # RUN 7: OFF (was 1.0). The teacher's curvature
                                              # top-k is conditioned on ITS prefix, and the

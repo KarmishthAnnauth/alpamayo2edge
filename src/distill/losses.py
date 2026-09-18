@@ -148,7 +148,7 @@ def gt_traj_ce(student_logits: torch.Tensor, gt_token_ids: torch.Tensor,
 
 def gt_traj_soft_ce(student_logits: torch.Tensor, gt_token_ids: torch.Tensor,
                     mask: torch.Tensor, sigma_bins: float,
-                    lo: int, hi: int) -> torch.Tensor:
+                    lo: int, hi: int, per_pos: bool = False) -> torch.Tensor:
     """Distance-aware GT trajectory anchor: CE against a Gaussian over the bins
     NEIGHBOURING the GT bin, rather than a one-hot on the GT bin itself.
 
@@ -186,6 +186,8 @@ def gt_traj_soft_ce(student_logits: torch.Tensor, gt_token_ids: torch.Tensor,
     logp = F.log_softmax(student_logits, dim=-1)                 # full-vocab denominator
     logp_w = torch.gather(logp, -1, bins.clamp(lo, hi - 1))      # (B, T, W)
     ce = -(q * logp_w).sum(-1)                                   # (B, T)
+    if per_pos:
+        return ce * mask          # (B, T), unreduced - for the dependence probes
     return (ce * mask).sum() / mask.sum().clamp_min(1)
 
 
