@@ -145,8 +145,9 @@ def main() -> int:
             rows.append(r)
             s_man[r["student_maneuver"]] += 1
             t_man[r["teacher_maneuver"]] += 1
-        dump.append({"clip": item["clip_id"], "student": student_coc,
-                     "teacher": teacher_coc, "terminated": terminated, "score": r})
+        dump.append({"clip": item["clip_id"], "window": int(ds.shards[i].stem),
+                     "student": student_coc, "teacher": teacher_coc,
+                     "terminated": terminated, "score": r})
         if (i + 1) % 25 == 0:
             log.info("  %d/%d", i + 1, n)
 
