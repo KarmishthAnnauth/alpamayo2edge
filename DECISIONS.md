@@ -1865,3 +1865,43 @@ on unverifiable claims (NUDGE and unparsed) - not on FOLLOW/KEEP, whose 0 is del
 Per-step KL 0.04-0.09 at lr 5e-5 (D-042 predicted ~0.04); fast, and so far in the right
 direction. Selection is on `gt_score` over 400 windows every 25 steps; adapters are kept
 at every eval.
+
+## D-049 [MEASURED 2026-09-18] RL run 6 peaked at step 25-75 and then gamed the strict scale with "slow down": speed claims on hold-speed windows cost nothing
+
+Job 337's 400-window selection score: 0.50 (step 0) -> 0.58 (25) -> 0.55 (50) -> **0.65 (75,
+saved as `best/`)** -> 0.56 (100) -> 0.49 (125) -> 0.54 (150), per-step KL 0.04 -> 0.28. From
+step 75 the rollout mix is SLOW/ACCELERATE-dominated and direction hits 1.00 (the route hint
+echoed on every turn window). The 500-window table for step 75 against step 25 and the teacher:
+
+| | SFT ep 3 | RL 25 | RL 75 | teacher |
+|---|---:|---:|---:|---:|
+| stopped -> says stop/slow/yield (n=23) | 0.522 | 0.696 | 0.826 | 0.652 |
+| ... of which STOP itself (n=140 braking windows) | 16 | 30 | **7** | 20 |
+| braked hard -> says slow/stop (n=83) | 0.096 | 0.337 | 0.711 | 0.157 |
+| GT false-clear (n=140) | 0.279 | 0.171 | 0.114 | 0.157 |
+| direction stated ok on turns (n=60) | 0.100 | 0.650 | 0.800 | 0.267 |
+| **speed claim on a HOLD-speed window (n=176)** | **5%** | **14%** | **49%** | **9%** |
+| SLOW emitted (of 500; teacher 15) | - | 37 | **187** | 15 |
+| object recall / precision | 0.772 / 0.851 | 0.816 / 0.747 | 0.814 / 0.698 | - |
+| maneuver acc vs teacher | 0.622 | 0.533 | 0.355 | - |
+
+Step 75's headline rows are the hedge: it says "slow down" on 187 of 500 windows, including
+49% of the windows where the driver held speed (teacher 9%, SFT 5%), and it has nearly
+stopped saying STOP (7 of 140 braking windows). The hole: under the strict scale SLOW/YIELD/
+ACCELERATE score +1 when right, -1 when the opposite happened, and 0 on the 55% of windows
+where the driver holds speed - so "slow down" has positive expected reward on every window.
+Object precision fell 0.851 -> 0.698 across the run (hazards named to justify the claim).
+
+**Step 25 is the honest checkpoint**: above the teacher on every driver-grounded row with
+over-claiming at 14% and STOP still said (30 of 140). Its adapters are kept
+(`rl-run-6-coc-grounded/step-0025`, on top of `run-336/best`); `best/` (merged) is step 75.
+
+**Fix (`gt_reward.kinematic_term`, strict scale only):** SLOW / YIELD / ACCELERATE on a
+hold-speed window -> -0.5 (was 0). The driver verifiably did not act on the claim; the
+measurement scale (`gt_metrics`, comparability) is untouched. Test added.
+
+**RL run 7 (staged, not launched):** same recipe from `run-336/best` with the closed hole and
+lr 5e-5 -> 2e-5 (per-step KL 0.04-0.28 was 10-50x the runs that held their gains; the step-25
+gains came in 25 steps, so a slower policy loses little). Judge on the 500-window table with
+the over-claim row; a checkpoint is only "better" if it beats step 25 on the driver rows
+WITHOUT raising the hold-speed over-claim rate above the teacher's 9%.

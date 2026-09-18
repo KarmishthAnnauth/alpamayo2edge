@@ -195,3 +195,12 @@ def test_gt_reward_strict_flag_removes_the_follow_hedge():
     r_lax, _ = gt_reward(text, True, 10, k, "", SimpleNamespace(**base))
     r_strict, _ = gt_reward(text, True, 10, k, "", SimpleNamespace(**base, strict=True))
     assert r_lax == 0.5 and r_strict == 0.0
+
+
+def test_strict_scale_charges_speed_claims_the_driver_did_not_act_on():
+    k = kinematics(future(10, 10))                      # holds speed
+    for man in ("SLOW", "YIELD", "ACCELERATE"):
+        assert kinematic_term(man, k) == 0.0             # measurement scale: unchanged
+        assert kinematic_term(man, k, strict=True) == -0.5
+    assert kinematic_term("STOP", k, strict=True) == -1.0
+    assert kinematic_term("SLOW", kinematics(future(12, 8)), strict=True) == 1.0   # braking: still +1

@@ -100,11 +100,20 @@ def kinematic_term(man: str | None, k: dict, strict: bool = False) -> float:
     holds/straight window the best any maneuver scores is 0.
     """
     s = k["speed"]
+    # D-049: under `strict`, a speed claim on a window where the driver HELD
+    # speed is not "unverifiable" - the driver verifiably did not act on it.
+    # RL run 6 found the hole: SLOW scored +1 on braking windows, -1 only on
+    # speeding ones and 0 on the 55% of windows where nothing happens, so
+    # "slow down" had positive expected reward everywhere and the policy said
+    # it on 187 of 500 val windows by step 75 (teacher: 15). -0.5, not -1: a
+    # cautionary claim that was not needed is worse than silence but not as
+    # bad as "clear" on a braking window.
+    hold = -0.5 if strict else 0.0
     if man == "STOP":        return 1.0 if s == "stops" else -1.0
-    if man == "SLOW":        return 1.0 if s in ("brakes", "stops") else (-1.0 if s == "speeds" else 0.0)
-    if man == "YIELD":       return 1.0 if s in ("brakes", "stops") else (-1.0 if s == "speeds" else 0.0)
+    if man == "SLOW":        return 1.0 if s in ("brakes", "stops") else (-1.0 if s == "speeds" else hold)
+    if man == "YIELD":       return 1.0 if s in ("brakes", "stops") else (-1.0 if s == "speeds" else hold)
     if man == "ADAPT_SPEED": return (0.5 if strict else 1.0) if s != "holds" else -0.5
-    if man == "ACCELERATE":  return 1.0 if s == "speeds" else (-1.0 if s in ("brakes", "stops") else 0.0)
+    if man == "ACCELERATE":  return 1.0 if s == "speeds" else (-1.0 if s in ("brakes", "stops") else hold)
     if man == "TURN":        return 1.0 if k["lateral"].startswith("turn") else -1.0
     if man == "LANE_CHANGE": return 1.0 if abs(k["ylat"]) > LANE_M else -0.5   # a volunteered claim
     if man in ("FOLLOW", "KEEP"):
