@@ -204,3 +204,12 @@ def test_strict_scale_charges_speed_claims_the_driver_did_not_act_on():
         assert kinematic_term(man, k, strict=True) == -0.5
     assert kinematic_term("STOP", k, strict=True) == -1.0
     assert kinematic_term("SLOW", kinematics(future(12, 8)), strict=True) == 1.0   # braking: still +1
+
+
+def test_unverifiable_charge_applies_to_nudge_under_strict_only():
+    k = kinematics(future(10, 10))
+    assert kinematic_term("NUDGE", k) == 0.0
+    assert kinematic_term("NUDGE", k, strict=True) == 0.0                    # default unchanged
+    assert kinematic_term("NUDGE", k, strict=True, unverifiable=-0.25) == -0.25
+    assert kinematic_term(None, k, strict=True, unverifiable=-0.25) == -0.5   # unparsed stays worse
+    assert kinematic_term("NUDGE", k, unverifiable=-0.25) == 0.0             # measurement scale ignores it

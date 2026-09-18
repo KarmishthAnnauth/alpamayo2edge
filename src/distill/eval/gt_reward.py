@@ -77,7 +77,19 @@ def route_hint(k: dict) -> str:
             "straight": "Continue straight"}[k["lateral"]]
 
 
-def kinematic_term(man: str | None, k: dict, strict: bool = False) -> float:
+#: D-049 follow-up: what an UNVERIFIABLE claim (NUDGE, unparsed) scores under the
+#: strict scale. 0.0 is run 6/6b's setting; run 6b's rollouts drifted to NUDGE
+#: (val 50 -> 85 of 400 by step 50, rollouts 76-95 of 128 at step 73-74) because
+#: it is the only claim that never scores below 0 - a costless hedge on hard
+#: windows. A 6.4 s path cannot verify a sub-lane nudge, so it cannot be graded;
+#: a small flat charge keeps it below a correct claim (+1) and below silence on a
+#: quiet window (0) without making it as bad as a wrong claim (-1). Set through
+#: `reward.unverifiable`; the measurement scale never applies it.
+UNVERIFIABLE_STRICT = 0.0
+
+
+def kinematic_term(man: str | None, k: dict, strict: bool = False,
+                   unverifiable: float | None = None) -> float:
     """+1 consistent, -1 contradicted, 0 uncheckable. FOLLOW/KEEP are checked
     against the one thing they promise: that nothing required braking.
 
@@ -118,8 +130,9 @@ def kinematic_term(man: str | None, k: dict, strict: bool = False) -> float:
     if man == "LANE_CHANGE": return 1.0 if abs(k["ylat"]) > LANE_M else -0.5   # a volunteered claim
     if man in ("FOLLOW", "KEEP"):
         return -1.0 if k["braked_from_speed"] else (0.0 if strict else 0.5)
-    if man == "NUDGE":       return 0.0            # sub-lane; a 6.4 s offset cannot check it
-    return -0.5                                    # unparsed
+    unv = (UNVERIFIABLE_STRICT if unverifiable is None else float(unverifiable)) if strict else 0.0
+    if man == "NUDGE":       return unv            # sub-lane; a 6.4 s offset cannot check it
+    return min(-0.5, unv) if strict else -0.5      # unparsed: never better than a nudge
 
 
 def direction_term(man: str | None, d: str | None, k: dict) -> float:
@@ -165,7 +178,8 @@ def gt_reward(student_text: str, terminated: bool, n_tokens: int, k: dict,
     s = parse(student_text)
     # `reward.strict` (D-042's hedge-free scale; run 5 wired it for the perspan
     # path only, this mode kept paying FOLLOW/KEEP +0.5 on quiet windows).
-    kin = kinematic_term(s["maneuver"], k, strict=bool(getattr(w, "strict", False)))
+    kin = kinematic_term(s["maneuver"], k, strict=bool(getattr(w, "strict", False)),
+                         unverifiable=getattr(w, "unverifiable", None))
     dr = direction_term(s["maneuver"], s["direction"], k)
     hz = hazard_term(s["objects"], k)
     t = parse(teacher_text) if teacher_text else {"maneuver": None}
@@ -221,7 +235,8 @@ def traj_reward(ade: float | None, student_text: str, terminated: bool, n_coc_to
     s = parse(student_text)
     # `reward.strict` (D-042's hedge-free scale; run 5 wired it for the perspan
     # path only, this mode kept paying FOLLOW/KEEP +0.5 on quiet windows).
-    kin = kinematic_term(s["maneuver"], k, strict=bool(getattr(w, "strict", False)))
+    kin = kinematic_term(s["maneuver"], k, strict=bool(getattr(w, "strict", False)),
+                         unverifiable=getattr(w, "unverifiable", None))
     dr = direction_term(s["maneuver"], s["direction"], k)
     t = parse(teacher_text) if teacher_text else {"maneuver": None}
     tm = 1.0 if (t["maneuver"] and s["maneuver"] == t["maneuver"]) else 0.0
