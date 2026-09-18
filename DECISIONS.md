@@ -1830,3 +1830,38 @@ reward pays for exactly what epoch 3 lost (direction against the turn taken, no 
 clear on braking windows) and epoch 3 carries the better scene reading (maneuver acc
 0.622, object recall 0.772). (3) Continuing the SFT past epoch 3 delays the RL by ~2 h
 per epoch and, on this evidence, degrades the driver-grounded CoC further.
+
+## D-048 [MEASURED 2026-09-18] RL run 6 (CoC-only, driver-grounded, strict): at step 25 the student is above the teacher on every driver-grounded criterion
+
+Job 337 (`rl-run-6-coc-grounded`, commit `182f17e`), init = run 7c epoch 3 (`run-336/best`),
+`reward.mode: gt`, `strict: true`, kin 1.0 / dir 0.5 / hazard 0 / teacher 0, lr 5e-5, G=16,
+coc_temperature 1.0. The SFT job 336 was cancelled after epoch 3 at the user's direction so
+this could start; the user intends to redo the SFT afterwards with driver-grounded selection
+and complete per-epoch checkpoints (a0ead4c) to recover the ideal init.
+
+Step-25 adapters, 500 val windows (`05b --route-hint --adapters` + `05f`), against the
+teacher on the same windows and the SFT checkpoints:
+
+| | SFT ep 1 | SFT ep 3 (init) | **RL step 25** | teacher |
+|---|---:|---:|---:|---:|
+| stopped -> says stop/slow/yield (n=23) | 0.565 | 0.522 | **0.696** | 0.652 |
+| braked hard -> says slow/stop (n=83) | 0.205 | 0.096 | **0.337** | 0.157 |
+| any braking -> says slow/stop (n=140) | 0.221 | 0.143 | **0.343** | 0.207 |
+| GT false-clear (n=140) | 0.164 | 0.279 | 0.171 | 0.157 |
+| direction stated ok on turns (n=60) | 0.417 | 0.100 | **0.650** | 0.267 |
+| GT-consistent (checkable) | 0.732 | 0.751 | 0.733 (n=397) | 0.691 |
+| 05b false-clear (teacher hazards) | 0.060 | 0.107 | **0.042** | - |
+| object recall / precision | 0.786 / 0.812 | 0.772 / 0.851 | 0.816 / 0.747 | - |
+| maneuver acc vs teacher | 0.579 | 0.622 | see log | - |
+| STOP / SLOW / NUDGE / KEEP emitted (teacher 61/15/57/94) | 60/-/-/103 | - | 89/37/83/57 | - |
+
+The first checkpoint of the project above the teacher on "driver stopped -> CoC says stop",
+and double the teacher on hard braking. 25 steps. Two watch items for the rest of the run:
+NUDGE rising (57 -> 73 on the 400-window check, 83 here) - it is uncheckable and scores 0
+under the strict scale, a free hedge on hard windows; and object precision 0.851 -> 0.747
+with recall up - the student names more, some of it spurious. Neither is paid for by the
+reward, so both can drift. If NUDGE keeps climbing at step 50, add a small negative weight
+on unverifiable claims (NUDGE and unparsed) - not on FOLLOW/KEEP, whose 0 is deliberate.
+Per-step KL 0.04-0.09 at lr 5e-5 (D-042 predicted ~0.04); fast, and so far in the right
+direction. Selection is on `gt_score` over 400 windows every 25 steps; adapters are kept
+at every eval.
