@@ -56,6 +56,11 @@ export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
 # --- pin the Blackwell, deviating from the cheatsheet, on purpose ----------
+# The awk below must READ ALL of nvidia-smi's output: an `exit` on the first match
+# closes the pipe while nvidia-smi may still be writing the second card's line,
+# nvidia-smi dies of SIGPIPE, and under `pipefail` + `set -e` that ends the job
+# with exit 141 before anything is logged (job 342, 2026-09-18 - a race, so it
+# usually works). Same fix in 03_train_stage1.sh / 03a_smoke_stage1.sh.
 # slurm_tutorial/CHEATSHEET.md says CUDA_VISIBLE_DEVICES=0 inside a 1-GPU job is
 # an index into your allocation and must not be "fixed". That holds when the
 # mapping is correct. On 2026-08-28 it is not: gres.conf declares exactly one GPU
@@ -70,7 +75,7 @@ export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
 # it; no other Slurm job can hold that card. REMOVE THIS once slurmd's device
 # mapping is fixed (reported to the admin) - it is a workaround, not a design.
 BW_UUID="$(nvidia-smi --query-gpu=uuid,name --format=csv,noheader \
-           | awk -F', ' '/RTX PRO 6000/{print $1; exit}')"
+           | awk -F', ' '/RTX PRO 6000/ && !d {print $1; d=1}')"
 if [ -z "$BW_UUID" ]; then
     echo "no RTX PRO 6000 visible - is this a lab account?" >&2
     exit 1

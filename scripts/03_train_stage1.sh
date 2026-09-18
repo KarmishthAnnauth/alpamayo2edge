@@ -67,7 +67,7 @@ export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
 # it; no other Slurm job can hold that card. REMOVE THIS once slurmd's device
 # mapping is fixed (reported to the admin) - it is a workaround, not a design.
 BW_UUID="$(nvidia-smi --query-gpu=uuid,name --format=csv,noheader \
-           | awk -F', ' '/RTX PRO 6000/{print $1; exit}')"
+           | awk -F', ' '/RTX PRO 6000/ && !d {print $1; d=1}')"
 if [ -z "$BW_UUID" ]; then
     echo "no RTX PRO 6000 visible - is this a lab account?" >&2
     exit 1

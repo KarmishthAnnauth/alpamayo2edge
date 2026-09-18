@@ -58,7 +58,7 @@ export OMP_NUM_THREADS=${OMP_NUM_THREADS:-8}
 export MKL_NUM_THREADS=${MKL_NUM_THREADS:-8}
 
 ADA_UUID="$(nvidia-smi --query-gpu=uuid,name --format=csv,noheader \
-            | awk -F', ' '/RTX 6000 Ada/{print $1; exit}')"
+            | awk -F', ' '/RTX 6000 Ada/ && !d {print $1; d=1}')"
 if [ -z "$ADA_UUID" ]; then
     echo "no RTX 6000 Ada visible" >&2
     exit 1

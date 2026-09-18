@@ -41,7 +41,7 @@ export MKL_NUM_THREADS=$SLURM_CPUS_PER_TASK
 # Same UUID pin as 03_train_stage1.sh, and for the same reason - see the long
 # comment there. Remove from BOTH scripts once slurmd's mapping is fixed.
 BW_UUID="$(nvidia-smi --query-gpu=uuid,name --format=csv,noheader \
-           | awk -F', ' '/RTX PRO 6000/{print $1; exit}')"
+           | awk -F', ' '/RTX PRO 6000/ && !d {print $1; d=1}')"
 if [ -z "$BW_UUID" ]; then
     echo "no RTX PRO 6000 visible - is this a lab account?" >&2
     exit 1
