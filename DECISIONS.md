@@ -1695,3 +1695,40 @@ best: 2.35), val CoC NLL 0.554. Same 05e probe on `run-334/best` (now epoch 1): 
 frames zeroed 3.690 (+0.001), CoC swapped 3.693 (+0.004), jitter 16 4.290, jitter 64 5.930.
 The gate improves from prefix + history modelling alone; another epoch changed what the
 model reads by nothing. The dependence is set by the loss, not by training time.
+
+## D-046 [MEASURED 2026-09-18] Run 7c at epoch 0: the prefix shortcut is weakened, the CoC is read a little, the frames still not - and the no-prefix regime is barely learned after one pass
+
+Job 336 (`prefix_noise_bins: 64`, `prefix_mask_prob: 0.25`), epoch 0: gate 3.379 m (7b 3.09,
+run 7 4.44), val CoC NLL 0.603. Probes on `run-336/best` (40 val windows, on the Ada):
+
+**05e, clean prefix** (nats above `full` = 4.240; 7b in brackets): frames zeroed +0.008
+(+0.000), CoC swapped +0.033 (+0.002), both +0.058, history blanked +0.019 (+0.25 at the
+first 8 positions), jitter 16 +0.24 (+0.52), jitter 64 +0.84 (+2.22). Prefix dependence
+roughly halved; CoC dependence up ~15x but still small; frames unused.
+
+**05e, prefix MASKED** (the regime 7c trains on 25% of windows): loss 6.123 against a uniform
+8.0 - weakly learned. CoC swapped +0.12, all on curvature (+0.27) and none on accel (-0.03);
+frames zeroed +0.009. So without a prefix the model takes DIRECTION from route + CoC and has
+not learned "stop -> decelerate", nor to look at the frames.
+
+**05d, free decode, `--hint match`**: end-speed gap accelerate - stop **+1.52 +/- 0.54 m/s**
+("stop" is the slowest CoC at 7.85 m/s vs 8.6-9.1), the first checkpoint of runs 7/7b/7c
+where the plan responds to the words on speed; heading gap +5.8 +/- 6.5 deg (not
+significant, and the route hint agreed with the forced turn, so the hint barely steers the
+free decode either); within-window heading sd 15.5 deg - the tightest decode of any run
+(run-253 20, 7b 31, run 7 53); single-sample ADE 5.1-6.2 m (run-253 3.8-4.9).
+
+Reading: independent per-bin jitter is easy to see through (average a few neighbours and the
+trend is back), so the jittered 75% still teaches prefix-reading; only the masked 25%
+teaches planning from scene + CoC, and one pass over ~3.8k such windows is not enough to
+learn the accel side. Decision: let 336 run and re-probe later epochs before changing the
+regime again. If the masked-regime numbers do not move by epoch 2, the next step is
+correlated (random-walk) prefix noise or a higher mask rate - and if frames stay unused
+even then, the coupling belongs in the flow head.
+
+**Defect found while planning the epoch-1 probes:** `checkpoint.save_adapters` writes only
+the `lora_` tensors. Stage 1 also trains the appended embedding / lm_head rows (group1,
+553M with row-masked grads) and the action-domain rows - the trajectory vocabulary lives
+there - so the per-epoch `epoch-NN` dirs of jobs 332/334/336 are NOT reloadable models.
+`best/` (merged, saved on a gate improvement) is. Fixed for future runs (see the commit);
+job 336 is already running the old code and cannot pick it up.
