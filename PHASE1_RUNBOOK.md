@@ -65,6 +65,12 @@ over-claim row (speed claim on a hold-speed window) which must stay near the
 teacher's 9%. SFT cannot beat the teacher's own grounding (0.65 on stops, 0.16 on
 hard brakes; D-047) - that is what phase 1.5 is for.
 
+**Noise floor (D-052 addendum 2):** the student's CoC is sampled (T 0.6), and two draws of
+the same checkpoint differed by 0.06 on false-clear and 0.09 on the 23-window stop row.
+Run `05b` twice (different dumps) and average before calling a difference under ~0.1 real;
+or compare checkpoints on the trainer's own 400-window `vs DRIVER` line, which is one draw
+each but the same protocol across epochs.
+
 ## Then phase 1.5
 
 `stage1_rl.init_ckpt` -> the new `best`; `sbatch scripts/03c_grpo_coc.sh`

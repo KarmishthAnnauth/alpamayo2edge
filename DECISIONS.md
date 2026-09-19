@@ -1997,3 +1997,22 @@ vision projector), not more RL.
 (0.267), over-claim on hold-speed windows 5% (9%), object recall / precision 0.796 / 0.846,
 maneuver acc vs teacher 0.649. Honest, clean, and exactly the teacher: the grounded RL with
 both hedges charged neither hurts nor lifts the speed rows from this init.
+
+**D-052 addendum 2 - "equal to the teacher", verified, and the noise floor of the table.**
+Paired on the same 500 val windows (6c step 25, draw 1): discordant pairs student-only /
+teacher-only right = 3/3 on stops (n=23), 5/6 on hard brakes (n=83), 9/10 on any braking
+(n=140), 9/14 on not-false-clear, 10/8 on direction, 9/2 on hold-speed restraint; exact
+tests p = 1.0 / 1.0 / 1.0 / 0.40 / 0.81 / 0.07; bootstrap 95% CIs on the difference all
+straddle 0 except restraint (+0.01..+0.08). Same maneuver as the teacher on 63% of windows;
+on the 140 braking windows both fail on the same 102. The student reproduces the teacher's
+decisions window by window, misses included.
+
+A second independent decode of the SAME checkpoint (T 0.6, top-p 0.98, `05b` draw 2):
+identical text on 65% of windows, same maneuver on 84%; stopped -> stop 0.565 (draw 1
+0.652), hard brake 0.133 (0.145), GT false-clear 0.257 (0.193), direction 0.350 (0.300). So a
+single 500-window draw carries ~+/-0.05-0.1 on the 140-window rows and ~+/-0.1-0.2 on the
+23-window stop row - about the size of most between-checkpoint differences reported in
+D-047..D-052. Differences under ~0.1 on those rows from single draws (7c ep 1 vs ep 3 on
+false-clear 0.164 vs 0.279 is above it; run 6 step 25 vs 6b step 50 on stops is not)
+should be read as noise until re-drawn. Rule from here: final calls on >= 2 draws
+(average, and report the spread), or on the in-loop 400-window score across checkpoints.
