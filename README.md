@@ -32,6 +32,34 @@ Companion to `alpamayo2super-to-cosmos3edge-distillation-plan.md` (v2).
   prior, so adaptation is low-rank on pretrained weights and full-rank only on
   genuinely new parameters. Task gain and retention are reported as a pair.
 
+## What we tried (details in `DECISIONS.md`)
+SFT and RL runs are numbered separately.
+
+**Phase 1: SFT of the reasoning (CoC) + trajectory tokens**
+
+| Run | Change | Outcome |
+|---|---|---|
+| 1 | Baseline distillation | Gate minADE 10.9 -> 2.35 m; feature KD not load-bearing (D-033) |
+| 2-3 | Reweight teacher trajectory KL vs GT | No gain: the wrong knob (D-035) |
+| 4 | Teacher KL on curvature only, not accel | Best gate, 2.23 m (D-035) |
+| 5 | Single front camera, no GT, select on CoC | minADE is not a stage-1 metric; CoC overfits and collapses to one maneuver (D-036) |
+| 6 | Smaller LoRA, maneuver-balanced sampling | Aimed at the collapse (D-036) |
+| 7 / 7b / 7c | Teacher CoC + driver trajectory; prefix jitter; prefix masking | Copied the trajectory prefix and ignored frames/CoC; 7c partly fixed it (D-043..D-047) |
+| 8 | 7c recipe, selected on a driver-grounded CoC score, lr 1e-4 | Current SFT init (D-051, D-056, D-057) |
+
+Takeaway: SFT can't do better than the teacher's CoC, and the teacher's CoC is route-blind
+and often contradicts what the driver actually did (D-038, D-047).
+
+**Phase 1.5: GRPO on the CoC**
+
+| RL run | Reward | Outcome |
+|---|---|---|
+| 1 | Match the teacher's CoC | Learns the teacher's flaws (D-038) |
+| 2-3 | Grade the CoC through its trajectory (NVIDIA's recipe) | ADE moves, CoC doesn't: the trajectory ignores the CoC (D-040) |
+| 4-5 | Separate rewards for CoC and trajectory | 4-camera init barely moves; stopped (D-041, D-042) |
+| 6 / 6b / 6c | CoC only, scored against the driver's real future | Beat the teacher at step 25, then gamed the reward ("slow down"); penalties made it honest (D-048..D-055) |
+| 7 / 7b | 6c recipe from SFT run 8 | Step 25 beats the teacher on braking (best checkpoint), but a rerun got half the gain; need >= 2 seeds (D-058, D-059) |
+
 ## Status: teacher side integrated; student side pending the LoRA rework
 Read `TRAINING_STRATEGY.md` before touching the student — the training regime
 changed on 2026-08-19 from full fine-tuning to LoRA (D-024/D-025) and the code
