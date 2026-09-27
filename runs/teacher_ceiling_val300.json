@@ -1,0 +1,30 @@
+{
+  "split": "val",
+  "n_windows": 300,
+  "skipped_uncached": 0,
+  "codec_floor_ade": {
+    "mean": 0.06467437744140625,
+    "p90": 0.1537986695766449,
+    "n": 300
+  },
+  "teacher_token_path_ade1": {
+    "mean": 3.6607658863067627,
+    "p90": 9.511237144470215,
+    "n": 300
+  },
+  "teacher_expert_minade4": {
+    "mean": 1.0380610227584839,
+    "p90": 2.111661434173584,
+    "n": 300
+  },
+  "hybrid_teacher_curv_gt_accel_ade1": {
+    "mean": 0.8525657057762146,
+    "p90": 1.699632167816162,
+    "n": 300
+  },
+  "hybrid_gt_curv_teacher_accel_ade1": {
+    "mean": 3.2894458770751953,
+    "p90": 8.575349807739258,
+    "n": 300
+  }
+}

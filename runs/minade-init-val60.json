@@ -1,0 +1,18 @@
+{
+  "ckpt": "/data/vla/alpamayo2edge/runs/stage1/run-336/best",
+  "adapters": null,
+  "runs": [
+    {
+      "split": "val",
+      "k": 4,
+      "n": 60,
+      "minade": 2.8339145183563232
+    },
+    {
+      "split": "val",
+      "k": 6,
+      "n": 60,
+      "minade": 2.4753220081329346
+    }
+  ]
+}

@@ -1,0 +1,201 @@
+Job 332 on ProArt, started 2026-09-17T21:18:56+02:00
+Submitted from: /home/vla/projects/alpamayo2edge
+GPU:            NVIDIA RTX PRO 6000 Blackwell Workstation Edition,NVIDIA RTX 6000 Ada Generation
+Commit:         0a72570
+Scratch:        /bulk/scratch/vla/332
+----------------------------------------------------------------
+   CUDA_VISIBLE_DEVICES = GPU-1e9d88da-6c84-dbf7-f179-fdca7207dae0
+   CPUs allocated       = 8
+   device 0             = NVIDIA RTX PRO 6000 Blackwell Workstation Edition  95.0 GiB total, 94.4 GiB free
+wandb sidecar: run stage1-job332 (pid 2235408)
+----------------------------------------------------------------
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/vla/.netrc.
+wandb: Currently logged in as: karmishthannauth27 (karmishthannauth27-technical-university-of-munich) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run stage1-job332
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /home/vla/projects/alpamayo2edge/wandb/run-20260917_211858-stage1-job332
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run stage1-job332
+wandb: ⭐️ View project at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: 🚀 View run at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job332
+INFO:megatron.core.msc_utils:The multistorageclient package is available.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/distributed/fsdp/src/megatron_fsdp/utils.py:108: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+INFO:megatron.core.distributed.fsdp.src.megatron_fsdp.megatron_fsdp:Detected Megatron Core, using Megatron-FSDP with Megatron.
+INFO:megatron.core.distributed.fsdp.src.megatron_fsdp.param_and_grad_buffer:Detected Megatron Core, using Megatron-FSDP with Megatron.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/__init__.py:24: UserWarning: Transformer Engine and Apex are not installed. Falling back to Torch optimizers.
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/optimizer.py:28: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/clip_grads.py:29: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier, multi_tensor_l2norm, and multi_tensor_scale
+  warnings.warn(
+[09-17 21:19:01|INFO|cosmos_framework/model/generator/omni_mot_model.py:124:__init__] OmniMoTModel: config {'tokenizer': {'bucket_name': 'bucket', 'object_store_credential_path_pretrained': 'credentials/gcp_training.secret', 'vae_path': 'pretrained/tokenizers/video/wan2pt2/Wan2.2_VAE.pth', 'chunk_duration': 93, 'keep_decoder_cache': False, 'use_streaming_encode': False, 'encode_chunk_frames': {'256': 68, '480': 24, '720': 8, '768': 8}, 'encode_exact_durations': [17, 61, 73], 'spatial_compression_factor': 16, 'temporal_compression_factor': 4, 'temporal_window': None, 'encode_bucket_multiple': None, 'causal': True, '_target_': 'cosmos_framework.model.generator.tokenizers.wan2pt2_vae_4x16x16.Wan2pt2VAEInterface'}, 'load_vision_tokenizer': True, 'lidar_tokenizer': None, 'lidar_state_ch': None, 'lidar_fps': None, 'net': None, 'ema': {'enabled': False, 'rate': 0.1, 'iteration_shift': 0, '_type': 'cosmos_framework.configs.base.defaults.ema.EMAConfig'}, 'parallelism': {'data_parallel_shard_degree': -1, 'data_parallel_replicate_degree': 1, 'context_parallel_shard_degree': 1, 'cfg_parallel_shard_degree': 1, 'enable_inference_mode': True, 'fsdp_master_dtype': 'float32', 'fsdp_reduce_dtype': None, '_type': 'cosmos_framework.configs.base.defaults.parallelism.ParallelismConfig'}, 'attention_io_layout': 'sequence_sharded', 'compile': {'enabled': False, 'compiled_region': 'language', 'compile_dynamic': True, 'use_cuda_graphs': False, 'ar_post_saturation_mode': 'default', 'max_autotune_pointwise': False, 'coordinate_descent_tuning': False, '_type': 'cosmos_framework.configs.base.defaults.compile.CompileConfig'}, 'quantization': {'method': None, 'fp8_granularity': 'per_row', 'modelopt_fp8_checkpoint_path': None, 'mixed_precision_first_steps': 0, 'mixed_precision_last_steps': 0, 'mixed_precision_reasoner_policy': 'high_precision', 'mixed_precision_w8a16_cache': 'none', 'include_regex': [], 'exclude_regex': [], 'modelopt_fp8_target_fqns': [], '_type': 'cosmos_framework.configs.base.defaults.quantization.QuantizationConfig'}, 'activation_checkpointing': {'mode': 'none', 'preserve_rng_state': True, 'determinism_check': 'default', 'save_ops_regex': ['fmha'], '_type': 'cosmos_framework.configs.base.defaults.activation_checkpointing.ActivationCheckpointingConfig'}, 'precision': 'bfloat16', 'lora_enabled': False, 'lora_rank': 16, 'lora_alpha': 32, 'lora_target_modules': 'q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen', 'rectified_flow_training_config': {'shift': {'256': 3, '480': 5, '720': 10}, 'shift_image': None, 'use_dynamic_shift': False, 'train_time_image_distribution': 'logitnormal', 'train_time_video_distribution': 'waver', 'train_time_action_distribution': 'logitnormal', 'train_time_sound_distribution': 'logitnormal', 'train_time_weight': 'uniform', 'loss_scale': 10.0, 'image_loss_scale': None, 'sound_loss_scale': 2.0, 'lidar_loss_scale': None, 'use_discrete_rf': False, 'action_loss_weight': 10.0, 'independent_action_schedule': False, 'shift_action': None, 'independent_sound_schedule': False, 'shift_sound': None, 'normalize_loss_by_active': False, 'sample_level_loss_averaging': False, 'high_sigma_ratio': 0.05, 'high_sigma_timesteps_max': 1000, 'high_sigma_timesteps_min': 995, 'use_high_sigma_strategy': False, 'use_high_sigma_strategy_action': False, 'use_high_sigma_strategy_sound': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowTrainingConfig'}, 'rectified_flow_inference_config': {'scheduler_type': 'unipc', 'num_train_timesteps': 1000, 'shift': 1, 'use_dynamic_shifting': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowInferenceConfig'}, 'fixed_step_sampler_config': None, 'vlm_config': {'model_name': 'nvidia/Cosmos3-Edge-Reasoner', 'safetensors_path': '', 'pretrained_weights': {'enabled': False, 'backbone_path': 's3://bucket/cosmos3/pretrained/huggingface/nvidia/Cosmos3-Edge-Reasoner-590c1c0/', 'credentials_path': 'credentials/gcp_checkpoint.secret', 'enable_gcs_patch_in_boto3': True, 'checkpoint_format': None, '_type': 'cosmos_framework.configs.base.defaults.reasoner.PretrainedWeightsConfig'}, 'model_instance': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLTextForCausalLM', 'config': {'_target_': 'cosmos_framework.configs.base.defaults.reasoner.create_vlm_config', 'base_config': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLMoTConfig.from_json_file', 'json_file': 'cosmos_framework/model/generator/reasoner/nemotron_3_dense_vl/configs/Nemotron-2B-Dense-VL.json'}, 'include_visual': None, 'qk_norm_for_text': False, 'use_und_k_norm_for_gen': True}}, 'tokenizer': {'repository': None, 'revision': None, 'subdir': '', '_target_': 'cosmos_framework.data.generator.processors.build_processor_lazy', 'tokenizer_type': '/bulk/users/vla/alpamayo2edge/cosmos3-edge'}, 'layer_module': None, 'qk_norm': False, 'tie_word_embeddings': False, 'use_system_prompt': False, '_type': 'cosmos_framework.configs.base.defaults.reasoner.VLMConfig'}, 'diffusion_expert_config': {'timestep_range': 1.0, 'load_weights_from_pretrained': False, 'enable_vision_modality_embeddings': False, 'enable_media_modality_embedding': False, 'enable_sound_modality_embedding': True, 'patch_spatial': 2, 'max_vae_latent_side_after_patchify': 20, 'enable_fps_modulation': True, 'base_fps': 24, 'sound_base_temporal_compression_factor': None, 'vision_temporal_position_mode': 'latent_index', 'unified_3d_mrope_reset_spatial_ids': True, 'unified_3d_mrope_temporal_modality_margin': 15000, '_type': 'cosmos_framework.configs.base.defaults.model_config.DiffusionExpertConfig'}, 'input_video_key': 'video', 'input_image_key': 'images', 'input_caption_key': 'ai_caption', 'state_ch': 48, 'state_t': 300, 'latent_downsample_factor': 16, 'resolution': '480', 'max_num_tokens_after_packing': 74000, 'joint_attn_implementation': 'two_way', 'flex_attention': {'enabled': False, 'backend': 'auto', 'mask': {'attention_scope': 'all_views'}}, 'natten_parameter_list': None, 'video_temporal_causal': False, 'causal_training_strategy': 'none', 'lbl': {'method': 'local', 'coeff_und': None, 'coeff_gen': None, '_type': 'cosmos_framework.configs.base.defaults.model_config.LBLConfig'}, 'vision_gen': True, 'action_gen': True, 'max_action_dim': 64, 'num_embodiment_domains': 32, 'sound_gen': False, 'sound_tokenizer': None, 'sound_dim': None, 'sound_latent_fps': 25, 'enable_input_bias': True, 'log_enc_time_every_n': 100, 'exclude_reasoner_weights_from_checkpoint': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.OmniMoTModelConfig'}
+[09-17 21:19:01|WARNING|cosmos_framework/model/generator/omni_mot_model.py:150:set_precision] OmniMoTModel: precision torch.bfloat16
+This processor does not use the `size` parameter. It will be ignored.
+[09-17 21:19:01|INFO|cosmos_framework/data/generator/processors/base.py:131:__init__] Successfully loaded processor from local cache
+[09-17 21:19:02|INFO|cosmos_framework/utils/checkpoint_db.py:338:download] Downloading checkpoint Wan2.2/vae(5db47eb4a9a14792be1e3213fe4d0810)
+[09-17 21:19:02|INFO|cosmos_framework/utils/checkpoint_db.py:171:_hf_download] uv run --isolated --project /home/vla/projects/cosmos-framework/cosmos_framework/utils/hf_cli --locked --no-default-groups hf download --format=json Wan-AI/Wan2.2-TI2V-5B --repo-type model --revision 921dbaf3f1674a56f47e83fb80a34bac8a8f203e Wan2.2_VAE.pth
+Installed 16 packages in 2ms
+[09-17 21:19:04|INFO|cosmos_framework/model/generator/tokenizers/wan2pt2_vae_4x16x16.py:1056:_video_vae] loading /bulk/users/vla/alpamayo2edge/hf-cache/models--Wan-AI--Wan2.2-TI2V-5B/snapshots/921dbaf3f1674a56f47e83fb80a34bac8a8f203e/Wan2.2_VAE.pth
+[09-17 21:19:04|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_tokenizers: 2.27 s
+[09-17 21:19:04|INFO|cosmos_framework/utils/generator/parallelism.py:110:_validate] dp_shard auto-inferred to world_size = 1
+[09-17 21:19:04|INFO|cosmos_framework/utils/generator/parallelism.py:124:_validate] dp_replicate is set to -1, will be automatically determined based on world_size 1 // dp_shard 1.
+[09-17 21:19:04|INFO|cosmos_framework/utils/generator/parallelism.py:129:_validate] dp_replicate is set to 1.
+`torch_dtype` is deprecated! Use `dtype` instead!
+[09-17 21:19:04|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on meta to cuda and broadcast model states: 0.04 s
+[09-17 21:19:04|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on Creating PyTorch model and ema if enabled: 0.11 s
+[09-17 21:19:04|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_model: 0.11 s
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/torch/distributed/checkpoint/utils.py:483: UserWarning: torch.distributed is disabled, unavailable or uninitialized, assuming the intent is to load in a single process.
+  return func(*args, **kwargs)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+[09-17 21:19:05|INFO|../cosmos-framework/cosmos_framework/model/generator/mot/unified_mot.py:2656:_ensure_vision_tower] Edge vision tower: loading from checkpoint-local bundle /bulk/users/vla/alpamayo2edge/cosmos3-edge/vision_encoder
+INFO:distill.data.grounding:grounding filter (D-043): kept 15381 / 18954 windows, dropped 3573 (18.9%)
+INFO:distill.data.grounding:   dropped FOLLOW         1508
+INFO:distill.data.grounding:   dropped KEEP            632
+INFO:distill.data.grounding:   dropped STOP            571
+INFO:distill.data.grounding:   dropped TURN            302
+INFO:distill.data.grounding:   dropped ACCELERATE      162
+INFO:distill.data.grounding:   dropped YIELD           126
+INFO:distill.data.grounding:   dropped SLOW            104
+INFO:distill.data.grounding:   dropped LANE_CHANGE      81
+INFO:distill.data.grounding:   dropped NUDGE            79
+INFO:distill.data.grounding:   dropped UNPARSED          8
+INFO:__main__:context: traj_prefix=gt route_hint=True | train: image_dropout=0.30 filter_contradictions=True windows=15381
+INFO:__main__:layer map (student -> teacher): {5: 3, 20: 8, 21: 12, 23: 17, 24: 21, 25: 26, 26: 30, 27: 35}
+[09-17 21:19:19|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[09-17 21:19:19|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+INFO:__main__:LoRA: {'wrapped': 112, 'by_leaf': {'q_proj': 28, 'k_proj': 28, 'v_proj': 28, 'o_proj': 28}, 'lora_params': 19267584, 'example': ['0.self_attn.q_proj', '0.self_attn.k_proj', '0.self_attn.v_proj']}
+INFO:__main__:trainable 639.7M [group0(x1.0): 19.3M, group1(x8.0): 553.3M, group2(x8.0): 67.1M]
+INFO:__main__:checkpoints -> /data/vla/alpamayo2edge/runs/stage1/run-332/best  (<stage>/best symlinks here)
+/home/vla/projects/alpamayo2edge/src/distill/train_stage1.py:386: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  breakdown = " ".join(f"{k} {float(v):.3f}" for k, v in terms.items())
+INFO:__main__:epoch 0 step 20/5772 loss 13.2861 [traj 8.236 traj_accel 7.405 text 3.225 struct 1.053 feat 0.399 gt_soft 9.535 gt 9.647] drop 1/4
+INFO:__main__:epoch 0 step 40/5772 loss 7.7882 [traj 4.394 traj_accel 4.368 text 1.912 struct 0.046 feat 0.433 gt_soft 5.853 gt 5.782] drop 3/4
+INFO:__main__:epoch 0 step 60/5772 loss 5.5198 [traj 3.115 traj_accel 4.278 text 0.431 struct 0.017 feat 0.425 gt_soft 5.080 gt 4.840] drop 1/4
+INFO:__main__:epoch 0 step 80/5772 loss 4.2611 [traj 2.407 traj_accel 5.163 text 0.520 struct 0.116 feat 0.421 gt_soft 3.684 gt 3.366] drop 1/4
+INFO:__main__:epoch 0 step 100/5772 loss 3.7321 [traj 3.195 traj_accel 7.186 text 0.071 struct 0.027 feat 0.447 gt_soft 3.648 gt 3.355] drop 1/4
+INFO:__main__:epoch 0 step 120/5772 loss 3.6851 [traj 2.266 traj_accel 6.409 text 0.103 struct 0.002 feat 0.442 gt_soft 3.581 gt 3.318] drop 0/4
+INFO:__main__:epoch 0 step 140/5772 loss 3.7144 [traj 2.379 traj_accel 10.453 text 0.225 struct 0.004 feat 0.430 gt_soft 3.487 gt 3.136] drop 0/4
+INFO:__main__:epoch 0 step 160/5772 loss 5.8033 [traj 2.383 traj_accel 9.588 text 1.961 struct 0.003 feat 0.449 gt_soft 3.840 gt 3.547] drop 1/4
+INFO:__main__:epoch 0 step 180/5772 loss 4.8280 [traj 2.492 traj_accel 7.818 text 1.309 struct 0.001 feat 0.432 gt_soft 3.518 gt 3.155] drop 0/4
+INFO:__main__:epoch 0 step 200/5772 loss 5.7570 [traj 4.191 traj_accel 6.563 text 1.543 struct 0.006 feat 0.469 gt_soft 4.211 gt 3.967] drop 2/4
+INFO:__main__:epoch 0 step 220/5772 loss 3.9228 [traj 4.469 traj_accel 8.513 text 0.142 struct 0.024 feat 0.424 gt_soft 3.769 gt 3.465] drop 0/4
+INFO:__main__:epoch 0 step 240/5772 loss 3.8185 [traj 5.448 traj_accel 7.961 text 0.391 struct 0.125 feat 0.457 gt_soft 3.365 gt 2.939] drop 3/4
+INFO:__main__:epoch 0 step 260/5772 loss 3.6083 [traj 3.220 traj_accel 5.783 text 0.163 struct 0.001 feat 0.430 gt_soft 3.445 gt 3.035] drop 1/4
+INFO:__main__:epoch 0 step 280/5772 loss 3.4431 [traj 2.299 traj_accel 8.766 text 0.071 struct 0.002 feat 0.447 gt_soft 3.371 gt 2.983] drop 1/4
+INFO:__main__:epoch 0 step 300/5772 loss 3.8567 [traj 3.711 traj_accel 10.552 text 0.176 struct 0.001 feat 0.456 gt_soft 3.681 gt 3.369] drop 1/4
+INFO:__main__:epoch 0 step 320/5772 loss 3.7752 [traj 6.853 traj_accel 9.309 text 0.187 struct 0.002 feat 0.443 gt_soft 3.587 gt 3.305] drop 0/4
+INFO:__main__:epoch 0 step 340/5772 loss 3.7848 [traj 3.087 traj_accel 10.660 text 0.342 struct 0.004 feat 0.451 gt_soft 3.441 gt 3.044] drop 1/4
+INFO:__main__:epoch 0 step 360/5772 loss 3.8907 [traj 2.382 traj_accel 10.066 text 0.321 struct 0.032 feat 0.455 gt_soft 3.553 gt 3.190] drop 1/4
+INFO:__main__:epoch 0 step 380/5772 loss 3.9725 [traj 3.967 traj_accel 9.903 text 0.550 struct 0.004 feat 0.468 gt_soft 3.421 gt 3.046] drop 1/4
+INFO:__main__:epoch 0 step 400/5772 loss 3.9854 [traj 7.748 traj_accel 8.882 text 0.268 struct 0.002 feat 0.480 gt_soft 3.716 gt 3.409] drop 1/4
+INFO:__main__:epoch 0 step 420/5772 loss 3.7834 [traj 3.581 traj_accel 8.468 text 0.358 struct 0.002 feat 0.450 gt_soft 3.424 gt 3.028] drop 1/4
+INFO:__main__:epoch 0 step 440/5772 loss 3.9929 [traj 2.947 traj_accel 9.329 text 0.666 struct 0.004 feat 0.479 gt_soft 3.325 gt 2.893] drop 2/4
+INFO:__main__:epoch 0 step 460/5772 loss 3.5226 [traj 5.235 traj_accel 11.201 text 0.217 struct 0.000 feat 0.475 gt_soft 3.305 gt 2.852] drop 2/4
+INFO:__main__:epoch 0 step 480/5772 loss 3.8230 [traj 2.681 traj_accel 11.195 text 0.406 struct 0.001 feat 0.459 gt_soft 3.416 gt 3.035] drop 0/4
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:distill.eval.coarse_minade:coarse minADE_6 on challenging: 4.438 m (p90 9.113, n=60)
+INFO:distill.student.context:image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+INFO:__main__:epoch 0 challenging coarse-minADE 4.438 m | val CoC NLL 0.604 struct NLL 0.028 | gt_ce_w 1.000 | select_on minade=4.438  <- new best
+INFO:__main__:adapters -> /data/vla/alpamayo2edge/runs/stage1/run-332/epoch-00
+INFO:distill.checkpoint:saved merged student -> /data/vla/alpamayo2edge/runs/stage1/run-332/best (992 tensors)
+INFO:__main__:epoch 1 step 500/5772 loss 3.6404 [traj 7.301 traj_accel 12.385 text 0.084 struct 0.008 feat 0.473 gt_soft 3.553 gt 3.203] drop 1/4
+INFO:__main__:epoch 1 step 520/5772 loss 3.8127 [traj 4.195 traj_accel 10.603 text 0.297 struct 0.000 feat 0.460 gt_soft 3.515 gt 3.143] drop 1/4
+INFO:__main__:epoch 1 step 540/5772 loss 3.3351 [traj 7.926 traj_accel 11.316 text 0.041 struct 0.000 feat 0.475 gt_soft 3.294 gt 2.840] drop 3/4
+INFO:__main__:epoch 1 step 560/5772 loss 4.3367 [traj 4.248 traj_accel 9.001 text 0.848 struct 0.057 feat 0.472 gt_soft 3.461 gt 3.098] drop 3/4
+INFO:__main__:epoch 1 step 580/5772 loss 3.9079 [traj 5.484 traj_accel 12.021 text 0.566 struct 0.002 feat 0.452 gt_soft 3.341 gt 2.906] drop 2/4
+INFO:__main__:epoch 1 step 600/5772 loss 4.5085 [traj 3.164 traj_accel 10.203 text 0.995 struct 0.000 feat 0.437 gt_soft 3.513 gt 3.138] drop 0/4
+INFO:__main__:epoch 1 step 620/5772 loss 3.7229 [traj 6.693 traj_accel 10.397 text 0.337 struct 0.001 feat 0.450 gt_soft 3.386 gt 2.965] drop 1/4
+INFO:__main__:epoch 1 step 640/5772 loss 3.6745 [traj 2.371 traj_accel 8.958 text 0.202 struct 0.000 feat 0.453 gt_soft 3.472 gt 3.082] drop 2/4
+INFO:__main__:epoch 1 step 660/5772 loss 3.3290 [traj 2.317 traj_accel 12.362 text 0.032 struct 0.000 feat 0.486 gt_soft 3.297 gt 2.861] drop 3/4
+INFO:__main__:epoch 1 step 680/5772 loss 3.7123 [traj 4.089 traj_accel 10.034 text 0.237 struct 0.001 feat 0.470 gt_soft 3.475 gt 3.109] drop 2/4
+INFO:__main__:epoch 1 step 700/5772 loss 3.4183 [traj 2.486 traj_accel 9.484 text 0.006 struct 0.000 feat 0.481 gt_soft 3.413 gt 3.012] drop 3/4
+INFO:__main__:epoch 1 step 720/5772 loss 3.5011 [traj 2.834 traj_accel 11.423 text 0.073 struct 0.000 feat 0.457 gt_soft 3.428 gt 3.044] drop 2/4
+INFO:__main__:epoch 1 step 740/5772 loss 3.5290 [traj 2.260 traj_accel 9.250 text 0.060 struct 0.001 feat 0.433 gt_soft 3.469 gt 3.081] drop 1/4
+INFO:__main__:epoch 1 step 760/5772 loss 3.3820 [traj 5.288 traj_accel 12.256 text 0.063 struct 0.001 feat 0.481 gt_soft 3.318 gt 2.904] drop 2/4
+INFO:__main__:epoch 1 step 780/5772 loss 3.4720 [traj 4.610 traj_accel 11.813 text 0.100 struct 0.003 feat 0.449 gt_soft 3.371 gt 2.978] drop 2/4
+INFO:__main__:epoch 1 step 800/5772 loss 3.9202 [traj 2.147 traj_accel 9.362 text 0.511 struct 0.005 feat 0.468 gt_soft 3.406 gt 3.022] drop 1/4
+INFO:__main__:epoch 1 step 820/5772 loss 4.3287 [traj 2.575 traj_accel 9.324 text 0.907 struct 0.044 feat 0.434 gt_soft 3.399 gt 3.009] drop 0/4
+[2026-09-18T00:43:35.734] error: *** JOB 332 ON ProArt CANCELLED AT 2026-09-18T00:43:35 DUE to SIGNAL Terminated ***
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/vla/.netrc.
+wandb: Currently logged in as: karmishthannauth27 (karmishthannauth27-technical-university-of-munich) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run stage1-job332
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /home/vla/projects/alpamayo2edge/wandb/run-20260918_004336-stage1-job332
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Resuming run stage1-job332
+wandb: ⭐️ View project at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: 🚀 View run at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job332
+wandb: uploading summary; updating run metadata
+wandb: uploading history steps 40-40, summary
+wandb: 
+wandb: Run history:
+wandb:              epoch ▁
+wandb:          loss/feat ▁
+wandb:         loss/gt_ce ▁
+wandb:    loss/gt_ce_soft ▁
+wandb:     loss/struct_ce ▁
+wandb:       loss/text_kl ▁
+wandb:         loss/total ▁
+wandb:       loss/traj_kl ▁
+wandb: loss/traj_kl_accel ▁
+wandb: 
+wandb: Run summary:
+wandb:                epoch 1
+wandb: gate/coarse_minADE_m 4.438
+wandb:           gate/epoch 0
+wandb:     gate/val_coc_nll 0.604
+wandb:  gate/val_struct_nll 0.028
+wandb:            loss/feat 0.434
+wandb:           loss/gt_ce 3.009
+wandb:      loss/gt_ce_soft 3.399
+wandb:       loss/struct_ce 0.044
+wandb:         loss/text_kl 0.907
+wandb:                   +4 ...
+wandb: 
+wandb: 🚀 View run stage1-job332 at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/stage1-job332
+wandb: ⭐️ View project at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: Synced 4 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20260918_004336-stage1-job332/logs
+wandb: WARNING Tried to log to step 20 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 40 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 60 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 80 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 100 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 120 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 140 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 160 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 180 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 200 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 220 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 240 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 260 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 280 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 300 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 320 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 340 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 360 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 380 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 400 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 420 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 440 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 460 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 480 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 480 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 500 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 520 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 540 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 560 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 580 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 600 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 620 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 640 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 660 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 680 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 700 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 720 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 740 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 760 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 780 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.
+wandb: WARNING Tried to log to step 800 that is less than the current step 801. Steps must be monotonically increasing, so this data will be ignored. See https://wandb.me/define-metric to log data out of order.

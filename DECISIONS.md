@@ -2016,3 +2016,401 @@ D-047..D-052. Differences under ~0.1 on those rows from single draws (7c ep 1 vs
 false-clear 0.164 vs 0.279 is above it; run 6 step 25 vs 6b step 50 on stops is not)
 should be read as noise until re-drawn. Rule from here: final calls on >= 2 draws
 (average, and report the spread), or on the in-loop 400-window score across checkpoints.
+
+## D-053 [MEASURED 2026-09-19] On the full val split and three draws, 6c step 25 is NOT "exactly the teacher": better on consistency and restraint, worse on false-clear, and every braking row unchanged
+
+D-052's addenda called 6c step 25 equal to the teacher from a single 500-window draw. Two
+things were wrong with that base. Val holds **1046** windows and every table since D-047
+used only the first 500; and one draw carries the +/-0.05-0.1 the addendum itself measured.
+Redone at 1042 scored windows x 3 draws (`scripts/05g_teacher_gap.py`, new), route hint on,
+`run-336/best` + `step-0025`, T 0.6 / top_p 0.98:
+
+| row | student (spread over 3) | teacher | difference [95% CI] | |
+|---|---:|---:|---:|---|
+| GT-consistent (checkable, n=868) | 0.759 [.756-.762] | 0.697 | **+0.062 [+0.039,+0.085]** | better |
+| over-claim on hold-speed (n=382) | 0.127 [.126-.128] | 0.178 | **-0.051 [-0.080,-0.023]** | better |
+| GT false-clear (braked, n=272) | 0.243 [.224-.257] | 0.191 | **+0.051 [+0.007,+0.094]** | WORSE |
+| any braking -> slow/stop (n=272) | 0.219 [.210-.228] | 0.217 | +0.002 [-0.036,+0.042] | same |
+| driver STOPPED (n=42) | 0.683 [.643-.714] | 0.690 | -0.008 [-0.151,+0.135] | same |
+| driver braked HARD (n=169) | 0.176 [.172-.178] | 0.166 | +0.010 [-0.039,+0.061] | same |
+| direction ok (turns, n=121) | 0.275 [.256-.289] | 0.256 | +0.019 [-0.066,+0.105] | same |
+
+CIs bootstrap **windows** (draws of one window are repeated measures, not extra windows);
+the per-draw exact McNemar agrees except on false-clear, where one draw alone gives p=0.22
+and the other two 0.04 / 0.02 - which is exactly why the addendum's single draw read "same".
+`hazard_ungrounded` is excluded: it reads only the driver's reaction, so wherever both name
+a hazard the two columns agree by construction. It is not evidence of anything.
+
+**The three non-"same" rows are one behaviour, not three.** All follow from the student
+committing to a speed claim less often than the teacher: rewarded where the driver holds
+speed (over-claim down, consistency up), punished where the driver brakes (false-clear up).
+That is what 6c's hedge charges (NUDGE -0.25, hold-speed -0.5, D-050/D-052) push, and they
+charge hedging everywhere rather than only where hedging is wrong. Predicted control: the
+init should sit on the other side of this axis (higher over-claim, lower false-clear).
+
+**Agreement is not the same as correctness, and 0.66 is near its ceiling.** Maneuver match
+with the teacher is 0.662 [.656-.666]. But the 4-camera teacher re-sampled against its OWN
+cached label agrees only 0.69-0.77 (`teacher_coc_diversity_4cam.jsonl`, n=38-40, 95% CI
+0.56-0.80): most of the residual 34% is the teacher's own sampling, not the student missing it.
+
+**It is equal by copying, not by independent grounding.** Of the 272 braking windows both
+miss 193; on **136 of those (70%) they pick the SAME maneuver**, and the student names a
+lead/ahead vehicle on 160 (83%) - D-047's perceptual miss, inherited intact. Teacher-level
+is therefore the ceiling of this path, and D-038 already showed that ceiling is low.
+
+**Where the student is genuinely better behaved than the teacher** (neither row is in the
+gate): on the driver's 121 turns it is never wrong when it commits (28% correct, 72%
+silent) against the teacher's **12% OPPOSITE**; it names a direction on a straight road on
+8% of windows against 17%; it is shorter (11.7 vs 13.0 words).
+
+**Rare classes collapse into FOLLOW/KEEP** - LANE_CHANGE 1 vs the teacher's 33, TURN 37%,
+SLOW 30%, ACCELERATE 29%, against FOLLOW 86% / STOP 77% / KEEP 75% on the frequent ones.
+**For LANE_CHANGE this is not a capability gap** (user, 2026-09-19 - a lane change needs a
+goal nobody gives the ego):
+
+- `route_hint` has three values keyed on `lateral`, which is a HEADING test. A lane change
+  is lateral offset with no heading change, so it reads "straight": **30 of those 33 windows
+  handed the student "Continue straight"**. It was instructed not to.
+- `kinematic_term` charges a volunteered LANE_CHANGE -0.5 unless `|ylat| > 2 m`, so 6c's
+  strict scale also fined it.
+- And the claim being suppressed is near-worthless: the driver actually moved >2 m on only
+  **19/33 (58%)**, and on those 19 the teacher's direction is **correct 10, OPPOSITE 9** - a
+  coin flip, consistent with D-038's 43%/21% over the full label set.
+
+Suppressing it is therefore defensible, and the 1-vs-33 gap must NOT be quoted as lost
+capability. What it does say is that the CoC cannot express a goal-dependent maneuver
+while the route slot carries heading only; a lane-level goal would have to enter through
+`route_hint`, which currently cannot represent one.
+
+**Resolved (same day, the no-route-hint draw): the class does NOT come back.** With the hint
+removed entirely, LANE_CHANGE is still 1 vs the teacher's 33. So it is not merely instructed
+away by "Continue straight" - it is gone from the policy. The conclusion is unchanged (what
+is gone is 58%-grounded with coin-flip direction, so little is lost) but the mechanism is
+SFT/RL having dropped the class, not the prompt suppressing it. Do not quote the route hint
+as the explanation.
+
+Noise floor, now on 3 draws of one checkpoint: identical text 0.691 [.679-.704], same
+maneuver 0.847 [.842-.851] - consistent with D-052 addendum 2. The rule stands, with the
+window base corrected: **judge on the full 1046-window split, >= 2 draws**, not 500 x 1.
+
+Unchanged by this: the decision to stop 6c, and D-052's reading that GRPO reinforces what
+the policy already says and cannot teach it to see. What changes is the claim that 6c cost
+nothing - on the safety-asymmetric row it cost +0.051.
+
+Pending (running 2026-09-19): the init control (`run-336/best`, 2 draws), a no-route-hint
+draw (the direction row above gives the student a GT-derived hint the teacher never had),
+and `scripts/05h_vision_brake_probe.py` - whether the FROZEN vision features linearly carry
+"brakes hard within 6.4 s" above the ego trace, which is what decides whether phase 2's
+closed-loop reward can fix braking on a frozen AR tower (D-046: "if frames stay unused even
+then, the coupling belongs in the flow head").
+
+## D-054 [MEASURED 2026-09-19] Correction to D-052: grounded RL DID move the driver's speed rows - from below the teacher up to it. The in-loop table was not watching the row that moved
+
+D-052 concluded that 6c "gains direction and nothing else ... the honest ceiling of this
+init". That was read off the in-loop 400-window table, whose columns are score / consistent
+/ false-clear / direction / mix. **The braked -> says slow/stop rows were never in it.** On
+the full val split, paired window by window (3 draws of 6c step 25 against 2 of
+`run-336/best`, 1042 windows, bootstrap over windows):
+
+| row | init (7c ep3) | 6c step 25 | 6c - init [95% CI] | teacher |
+|---|---:|---:|---:|---:|
+| any braking -> slow/stop (n=272) | 0.165 | 0.219 | **+0.054 [+0.032,+0.077]** | 0.217 |
+| driver STOPPED (n=42) | 0.607 | 0.683 | **+0.075 [+0.016,+0.151]** | 0.690 |
+| driver braked HARD (n=169) | 0.115 | 0.176 | **+0.060 [+0.031,+0.094]** | 0.166 |
+| direction ok (turns, n=121) | 0.112 | 0.275 | **+0.164 [+0.107,+0.225]** | 0.256 |
+| GT false-clear (n=272) | 0.265 | 0.243 | -0.022 [-0.048,+0.003] | 0.191 |
+| GT-consistent (n=836) | 0.760 | 0.762 | +0.002 [-0.008,+0.012] | 0.702 |
+| over-claim on hold speed (n=382) | 0.116 | 0.127 | +0.011 [-0.004,+0.025] | 0.178 |
+
+The init sits clearly BELOW the teacher on braking recall (0.165 vs 0.217); 6c lifts it to
+parity. All three braking rows move, all three CIs exclude 0. D-052's numbers were not
+wrong - its false-clear (0.27 -> 0.24) and direction (0.11 -> 0.25) reproduce exactly here.
+False-clear is simply the speed-side row that moves LEAST, and it was the only one on the
+dashboard.
+
+**This is not route-hint leakage.** `route_hint` is direction-only by construction ("it must
+not leak the speed profile, which is what the student is being graded on"), so the braking
+gain cannot come from the hint. The direction gain can and does - the no-hint draw is what
+separates that one.
+
+**Consequences.**
+- The framing "the honest ceiling of this init" rests on a claim that is now measured false.
+  NOT a claim that the run was cut short (user, 2026-09-19): job 343 ran its full 200 steps
+  and exited cleanly; D-052's table just stops reporting at step 100. What is wrong is the
+  SELECTION, not the length. Step 25 was chosen because the in-loop `gt_score` peaked there,
+  and that score is built from the consistent / false-clear columns - the two rows that move
+  LEAST on this effect. A checkpoint later than 25 may well be better on the braking rows,
+  and no one has looked.
+- D-052's inference that "GRPO reinforces what the policy already says; it does not teach it
+  to see" is NOT supported by the braking rows. It may still be true of the ceiling - 6c
+  reaches teacher parity and the shared-miss analysis of D-053 (both miss 193 of 272, same
+  maneuver on 136) says what it reaches it BY - but "cannot move the speed side" is refuted.
+- The next run should keep the braked -> slow/stop rows, split by severity, in the in-loop
+  table. A dashboard that omits the target row will report a null every time.
+- Whether the gain continues past step 25 is unmeasured: steps 50-200 exist as adapters
+  (`rl-run-6c-coc-grounded/step-0050 .. step-0200`) and have never been scored on this table.
+  D-052 read their in-loop score falling after step 25, but that score is dominated by the
+  same false-clear/consistent columns that missed this effect.
+
+Method: `/tmp/.../ab.py` pattern - per window, each checkpoint's value is the mean over its
+own draws; the bootstrap resamples WINDOWS. Promote to a script if the steps 50-200 sweep runs.
+
+## D-055 [MEASURED 2026-09-19] The CoC RL left the trajectory untouched (measured, not assumed); the teacher's trajectory error is ALMOST ENTIRELY the speed profile; and the route hint is not what is carrying 6c's direction
+
+Three loose ends from D-053/D-054, all closed on the same day.
+
+**1. Phase 1.5 did not disturb the plan.** Jobs 337/340/343 log `traj_ade: null,
+traj_decoded: 0.0` at every val check, so "CoC-only RL left the trajectory alone" was an
+assumption - and the LoRA sits on the AR attention that also emits trajectory tokens.
+Measured with `scripts/05i_student_minade.py` (new), same val prefixes both arms:
+
+| arm | n | k | minADE |
+|---|---:|---:|---:|
+| init `run-336/best` | 200 | 4 | 2.570 m |
+| 6c step 25 (adapters) | 200 | 4 | 2.473 m |
+| 6c step 25 (merged `best/`) | 200 | 4 | 2.519 m |
+| init | 60 | 4 | 2.834 m |
+| 6c step 25 | 60 | 4 | 2.522 m |
+| init | 60 | 6 | 2.475 m |
+| 6c step 25 | 60 | 6 | 2.530 m |
+
+The 6c - init delta changes SIGN across window sets and k (-0.10, -0.31, +0.06): noise, i.e.
+no effect. D-054's CoC gains came free on the trajectory side, as D-040's "two parallel
+heads" predicts. Harness check: init at k=6 on the 60-window prefix gives 2.475 m against
+the gate's recorded **2.418 m** for the same checkpoint, so `05i` is on the gate's scale.
+Adapter/merged equivalence: 2.473 vs 2.519 (~2%), consistent with the same weights and
+enough to rule out a gross D-046-style dropped-tensor defect - not a proof of exactness
+(one sampled decode each).
+
+**2. The teacher's trajectory error is the speed profile, not the path.**
+`09_teacher_ceiling.py --split val --max-windows 2000` (1046 windows; the existing
+`teacher_ceiling.json` is the 60-window gate prefix, and since `challenging` and `val` are
+the same 523 clips its numbers are that prefix of this):
+
+| line | ADE |
+|---|---:|
+| codec floor | 0.065 m |
+| teacher ACTION EXPERT minADE_4 | **0.951 m** |
+| teacher TOKEN PATH ADE_1 | 3.488 m |
+| hybrid: teacher curvature + GT accel (**shape alone**) | **0.627 m** |
+| hybrid: GT curvature + teacher accel (**speed alone**) | **3.270 m** |
+
+Shape is nearly free against a 0.065 m codec floor; essentially all of the 3.488 m is
+longitudinal. The student (6c) sits at 2.473 m minADE_4 against the action expert's 1.042 m
+on the matched 200 windows - ~2.4x, and unchanged by phase 1.5. Its sub-3.488 m score
+against the token path is NOT a win over the teacher: that line is ADE_1 from the single
+cached sample and minADE_k <= ADE_1, so it is an upper bound (09's own docstring says so).
+
+**THREE INDEPENDENT MEASUREMENTS NOW POINT AT ONE AXIS.** The CoC says slow/stop on 17.6%
+of hard-braking windows (D-053); the trajectory error is ~all longitudinal (above); and the
+frozen vision features add **+0.015 AUC** over the ego speed trace for predicting a hard
+brake (`05h_vision_brake_probe.py`, 1046 windows / 523 clips, ego 0.809 -> ego+vision 0.823,
+CIs overlapping). Text head, trajectory head and representation fail on the same thing:
+anticipating a speed change. Caveat on the probe: it is a LINEAR probe on MEAN-POOLED
+tokens, so it lower-bounds what is decodable - a lead vehicle is a small part of the frame
+and pooling dilutes it, while the flow head attends tokens individually. Re-run without
+pooling before treating "the encoder must unfreeze" as established.
+
+**3. The route hint is not carrying 6c's direction.** A full-val draw with `--route-hint`
+removed - the teacher's own inputs - scores direction **0.289** against 0.275 with the hint,
+and the braking rows are likewise unmoved (any braking 0.232 vs 0.219; hard 0.183 vs 0.176),
+as they must be since `route_hint` is direction-only by construction. So the +0.164 direction
+gain of D-054 is a real policy improvement, NOT hint-reading; the earlier suspicion that it
+was oracle-fed is wrong. The hint's only visible effect: with it the student is never
+opposite on a turn, without it 2% (n=121) - against the teacher's 12% either way.
+
+## D-056 [DECIDED 2026-09-21] Run 8 at lr 1e-4 over 12 epochs: the 3e-4 schedule was stepping over the CoC optimum, not finding it
+
+User, starting phase 1: "reduce the learning rate, we hit the best epoch way too early, we
+need to extract the maximum possible then proceed to grpo in phase 1.5".
+
+The symptom across runs 6, 7, 7c is the same and was read as a property of the data
+("the CoC peaks at epoch 1-2, later epochs drift to the teacher's phrasing", D-036/D-047):
+the driver-grounded CoC is best at the first or second eval and only falls afterwards.
+Checked against the logs rather than the config: 7c (job 336) ran a TWELVE-epoch cosine,
+not the 6 of D-051 - `total_steps 5772 = 481 x 12`, because D-051 lowered `epochs` to 6 on
+09-19, a day after 336 launched, and no run has ever used that 6. So the peak at epoch 1
+happened at 1/12 of the schedule, with the lr still near its 3e-4 maximum, and lengthening
+the horizon cannot be the fix - at 3e-4 the model reaches and passes the CoC optimum inside
+one epoch whatever the cosine horizon is. That makes it a step-size problem: "best at epoch
+1" says only that selection had two candidates on a very coarse grid, and D-047's loss of
+7c's epoch 1 was the visible cost. Treat it as resolution, not schedule length.
+
+Run 8 (job 351, smoke 350), `configs/default.yaml` `stage1`:
+
+- `lr: 1.0e-4` (was 3.0e-4, unchanged since run 2). Same optimizer, same cosine, same 3%
+  warmup.
+- `epochs: 12` (was 6 on paper, 12 in every run that actually happened). The cosine horizon
+  is unchanged from 7c; only the peak height moves. The distance at which 3e-4 peaked
+  (epoch 1) is now reached around epoch 3, with 9 evals past it instead of 2.
+  Measured on 351: 481 optimizer steps/epoch at ~245 steps/h = ~2.0 h/epoch, plus ~10 min
+  for the 400-window eval -> ~26 h for all 12, inside the 2-20:00:00 wall.
+- `early_stop_patience: 3` (was 2). Per-epoch moves are smaller now, so two flat evals is
+  within the noise of the selector rather than evidence of a plateau.
+- `coc_gt_windows: 400` (was 200). Same reason from the other side: the selector compares
+  epochs that differ by less, on a sampled (T 0.6) CoC whose draw-to-draw spread is ~0.06
+  on the sub-rows (D-052 addendum 2). 400 is what phase 1.5's val eval already uses.
+- Unchanged: everything else in the D-051 recipe (GT prefix masked/jittered, route hint,
+  contradiction filter, `image_dropout: 0.0`, `select_on: coc_gt`, `save_every_epoch`,
+  4 cameras, r48 attention-only).
+
+What would falsify the reading: a `gt_score` curve that again peaks at the first or second
+eval and decays monotonically. That would mean the drift to the teacher's phrasing starts
+at a fixed distance, not a fixed epoch count, and no lr gets past it - the SFT ceiling
+would be real and phase 1.5 is the only lever (D-047). What would confirm it: a peak at
+epoch 3+ above 7c's epoch 1 (GT false-clear 0.164 / direction 0.417 on the 500-window
+table). Either way the RL init is the best epoch of this run, judged on the 500-window
+table with two draws averaged, and phase 1.5 follows from it unchanged.
+
+## D-057 [MEASURED 2026-09-22] SFT run 8 (job 351) at lr 1e-4: the peak did NOT move later, but the decay after it did. Same optimum, gentler slide, 5 candidates instead of 2
+
+Run 351 (D-056's recipe: lr 1e-4, 12-epoch cap, patience 3, 400-window selector) early-stopped
+at epoch 4 with epoch 1 selected. The in-loop `gt_score` curve:
+
+    epoch    0      1      2      3      4
+    gt_score 0.501  0.567  0.537  0.548  0.536     <- peak at 1, then a plateau
+    false_cl 0.223  0.179  0.205  0.196  0.214
+    directn  0.547  0.377  0.170  0.453  0.415     <- n~53 turns/draw; scatter, not a trend
+    minADE   3.119  3.186  2.956  2.775  2.476
+
+**D-056's prediction was wrong.** It argued the CoC optimum sits at a fixed DISTANCE along the
+schedule, so a third of the lr should put the peak near epoch 3. The peak is at epoch 1 again,
+exactly where 3e-4 put it. The optimum tracks passes over the data, not integrated step size.
+
+**What the lower lr did buy, measured on the identical 400-window protocol (7c epoch 3 = 6c
+step 0):** at the SAME epoch number, 351 is 0.548/0.196/0.453 (gt_score/false-clear/direction)
+against 7c's 0.491/0.268/0.113. 7c had slid into the teacher's route-blind phrasing by epoch 3;
+351 is still at its plateau. So the change converted a post-peak slide into a plateau, and with
+`save_every_epoch` it leaves 5 scorable candidates where run 7c left 2 and lost the good one
+(D-046/D-047). Worth keeping; not the higher ceiling D-056 hoped for.
+
+A caution D-052 addendum 2 already implied and this run confirms: `direction_ok` is ~53 turning
+windows per 400-window draw, ~0.019 per window. Its 0.547 -> 0.377 -> 0.170 -> 0.453 swing is
+scatter. Do not read a trend off that row from single draws; only the full-val n=122 with two
+draws averaged is worth quoting, and even that spread 0.336 vs 0.238 here.
+
+**run-351/best (epoch 1) on the full-val table, two draws averaged, vs the teacher:**
+
+    row                          351 best      teacher    7c ep3 (old RL init)
+    GT-consistent (checkable)    0.743         0.691      0.755   (n 907/922 vs 929)
+    GT false-clear (braked)      0.240         0.190      0.275
+    direction stated ok          0.287         0.254      0.107
+    hazard named, no reaction    0.256         0.263      0.258
+    braked -> says slow/stop     0.194         0.216      0.176
+      driver STOPPED   n=42      0.584         0.690      0.619
+      driver braked HARD n=170   0.162         0.165      0.129
+    NUDGE share on braked        15.2%          9.9%      15.0%
+
+Still under the teacher on stops and on false-clear, as D-047 said SFT would be; at teacher
+parity on hard brakes and on hazard grounding; above it on direction, though 0.287 vs 0.254 is
+inside the draw spread and is NOT an established win. Against the init phase 1.5 has been using
+it is better on false-clear, direction and hard brakes, slightly worse on stops. "GT-consistent
+above the teacher" stays partly an artifact: the student is graded on 907-922 checkable windows
+against the teacher's 929, because hedges are not checkable and it still hedges 15% against 10%.
+
+Also: minADE fell every epoch to 2.476 m at epoch 4, the best in the project's history, three
+epochs after the CoC stopped improving. Not phase 1's criterion (the flow head owns the
+trajectory, D-040/D-045) but it says the two heads' optima are in different places.
+
+**Phase 1.5 launched from it:** `stage1_rl.init_ckpt -> run-351/best`, `run_name ->
+rl-run-7-coc-grounded` (6c's dirs untouched), 6c's recipe otherwise unchanged (NUDGE -0.25,
+hold-speed charged, lr 3e-5, strict driver-grounded reward). Job 352. Judge it on the same
+table: the driver rows must rise WITHOUT the over-claim / NUDGE / precision rows moving the
+wrong way (D-049/D-050).
+
+Not done: epoch 3 was never scored on the full-val table. Its adapters need the UNTRAINED
+student as base and no merged untrained checkpoint exists on disk, so loading them onto `best`
+would double-apply epoch 1. Epochs 1 and 3 are inside the noise of each other on the selector,
+so the selector's pick stands; if epoch 3 ever needs judging, make the untrained base first.
+
+## D-058 [MEASURED 2026-09-22] RL run 7 (job 352) step 25 PASSES the teacher on the driver's braking rows - the thing D-047 said SFT could not do. The in-loop selector said the opposite, again
+
+Grounded GRPO from run-351/best (D-057), 6c's recipe unchanged, 200 steps. The in-loop
+400-window table looked like 6c repeating itself: `gt_score` peaked at step 25 (0.535) and
+sank to 0.382 by step 200, `direction_ok` pinned at 1.000 from step 50, `maneuver_acc` fell
+0.607 -> 0.429, `obj_precision` 0.830 -> 0.672. Read on that table alone the run is a reward
+hack and I called it one mid-run.
+
+**The full-val table says otherwise, and it is the table that decides (D-054's lesson,
+repeated exactly).** Step 25 and step 100, two draws each, adapters on the init, vs the
+teacher and vs the SFT init on the same 1046 windows:
+
+    row                          init (351 ep1)  RL7 step 25   RL7 step 100   teacher
+    GT-consistent (checkable)    0.743           0.780         0.804          0.691
+      (checkable windows n)      907-922         968-981       1015-1017      929
+    GT false-clear (braked)      0.240           0.288         0.319          0.190
+    direction stated ok          0.287           0.816         0.971          0.254
+    hazard named, no reaction    0.256           0.223         0.210          0.263
+    braked -> says slow/stop     0.194           0.385         0.358          0.216
+      driver STOPPED     n=42    0.584           0.750         0.774          0.690
+      driver braked HARD n=170   0.162           0.379         0.350          0.165
+      driver slowed mildly n=61  0.016           0.148         0.091          0.033
+    NUDGE share on braked        15.2%            3.5%          0.2%           9.9%
+
+Step 25 names the driver's braking 0.385 of the time against the teacher's 0.216 and its own
+init's 0.194; on HARD braking it is 0.379 against the teacher's 0.165, a factor of 2.3. It
+also hedges LESS than the teacher (NUDGE 3.5% vs 9.9%) and makes MORE checkable claims than
+the teacher (968-981 vs 929), so the "consistent" gain is not the denominator artifact that
+D-053/D-057 had to discount. Hazard-grounding improves too (0.223 vs the teacher's 0.263).
+
+The price is real and is on the safety-asymmetric row: GT false-clear 0.288 against the
+teacher's 0.190 and the init's 0.240. The mix shows why - the policy polarised. On braking
+windows SLOW went 2.6% -> 25.6% and KEEP 19.8% -> 22.3% while FOLLOW fell 36.3% -> 23.8%:
+it commits instead of hedging, which wins the braking rows and loses on the windows it
+commits the wrong way. Step 100 pushes the same trade further (direction 0.971, false-clear
+0.319) and is worse on balance; **step 25 is the checkpoint**.
+
+**The structural finding, now twice measured (D-054, here): `gt_score` = consistent minus
+false-clear is the wrong selector for this objective.** It does not contain "braked -> says
+slow/stop", which is the criterion the user set on 2026-09-18, and it fell monotonically
+through a run whose braking rows more than doubled. Both the RL `select_on` and stage 1's
+`select_on: coc_gt` inherit it. Fixing it means putting the braking row into the score; that
+is a change to the scorer shared by both stages and is the next decision to make, not a
+mid-run edit.
+
+Not claimed: the direction row. 0.816 at step 25 comes with `direction_ok` pinned at 1.000
+in-loop from step 50, i.e. the `dir: 0.5` term is being farmed; treat direction as bought,
+not earned, until it survives a run without that term.
+
+## D-059 [MEASURED 2026-09-22] The dense sweep found nothing better - and showed that RL run 7's step-25 result is NOT reproducible from the same recipe and init. Run-to-run variance dwarfs the effect
+
+D-058 left one gap: run 7 evaluated (and therefore saved) only at multiples of 25, so the
+0-50 stretch where the braking gain appears and false-clear starts rising was unsampled.
+Run 7b (job 368) re-ran exactly that stretch - same init `run-351/best`, same recipe, same
+seed, 50 steps, `eval_every: 5` - and every checkpoint was screened on the full-val table
+(one draw each).
+
+    full val, 1 draw            step 5   step 10  step 15  step 20  step 25   | run 7 st25  teacher
+    braked -> says slow/stop    0.172    0.216    0.194    0.187    0.187     | 0.385       0.216
+      driver STOPPED   n=42     0.571    0.619    0.571    0.619    0.571     | 0.750       0.690
+      driver braked HARD n=170  0.124    0.182    0.171    0.147    0.147     | 0.379       0.165
+    GT false-clear (braked)     0.319    0.282    0.330    0.344    0.363     | 0.288       0.190
+    direction stated ok         0.492    0.697    0.869    0.943    0.984     | 0.816       0.254
+
+**No 7b checkpoint beats run 7 step 25 on anything.** The best of them (step 10) is merely
+teacher-level on the braking row (0.216 vs 0.216) where run 7 step 25 reached 0.385. False-clear
+is already above the teacher at step 5 and rises monotonically, so there is no early window
+where the gain is in and the cost is not.
+
+**The finding that matters is why.** Same init, same recipe, same seed, and 7b's step 25 scores
+0.187 on braked -> says slow/stop against run 7's 0.385 - a factor of two on the criterion, far
+outside the draw noise (run 7's two draws were 0.374/0.396). The runs are not the same run: the
+in-loop evals consume the same RNG stream as the rollouts, so inserting evals at steps 5/10/15/20
+changed every rollout after step 5. `seed: 0` does NOT pin a trajectory when `eval_every` changes.
+My "same seed, so steps reproduce run 7" claim when launching 7b was simply wrong.
+
+So the comparison is between two samples of the same recipe, and they differ by 2x on the
+target row. **Grounded GRPO on this init has run-to-run variance larger than the effect it is
+being used to produce.** Run 7 step 25 remains a real, twice-measured checkpoint - the numbers
+in D-058 stand - but it is a lucky sample, not what the recipe reliably yields. Anyone reading
+D-058 as "the recipe now beats the teacher" is overreading it; what beats the teacher is that
+one checkpoint.
+
+Consequences:
+- Use `runs/stage1_rl/rl-run-7-coc-grounded/step-0025` if we want the best CoC we have; do not
+  expect a rerun to land there.
+- Any future claim about a reward or recipe change on this task needs >= 2 seeds before it means
+  anything. Single-run comparisons (D-048..D-058, all of them) are weaker than they read.
+- The cheap-eval design error is also recorded: `eval_windows: 400` at `eval_every: 5` spent
+  ~90 min of the 2.5 h run computing a selector we distrust (D-058). The eval exists only to
+  trigger the per-step `save_adapters`; 100 windows would do.

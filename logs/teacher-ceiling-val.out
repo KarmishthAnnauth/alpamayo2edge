@@ -1,0 +1,7 @@
+windows: 60 (0 skipped, no cached input)
+codec floor            ADE_1     0.054 m (p90 0.125)
+teacher TOKEN PATH     ADE_1     3.767 m (p90 9.376)   <- stage-1 ceiling (upper bound on its minADE_6)
+teacher ACTION EXPERT  minADE_4  0.998 m (p90 1.993)   <- the published head
+  hybrid: teacher CURVATURE + GT accel    1.324 m   <- path shape alone
+  hybrid: GT curvature + teacher ACCEL    3.031 m   <- speed profile alone
+-> runs/teacher_ceiling_val.json

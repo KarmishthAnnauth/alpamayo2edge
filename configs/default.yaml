@@ -183,14 +183,23 @@ stage1:
   #   route_hint: true       the driver's direction in the <|route_start|> slot
   #   image_dropout: 0.3     trajectory read from CoC + history on 30% of samples
   #   filter_contradictions  windows whose CoC flatly contradicts GT are dropped
-  epochs: 6                                  # RUN 8: a CEILING; early_stop_patience ends the run.
-                                             # The CoC peaks at epoch 1-2 in every run (D-036, D-047:
-                                             # 7c's best driver-grounded epoch was 1, NLL flat from 1);
-                                             # later epochs fit the teacher's route-blind phrasing
-                                             # and lose the route. ~2 h/epoch on the filtered split.
+  epochs: 12                                 # RUN 8: a CEILING; early_stop_patience ends the run.
+                                             # At lr 3e-4 the CoC peaked at epoch 1-2 in every run
+                                             # (D-036, D-047: 7c's best driver-grounded epoch was 1),
+                                             # i.e. the run was over before the selector had more than
+                                             # two candidates. lr is now 1e-4 (below), so the same
+                                             # integrated step lands around epoch 3-5 and the cap has
+                                             # to move with it. ~2.2 h/epoch + ~10 min coc_gt eval =
+                                             # ~28 h for all 12, inside the 2-20:00:00 wall.
   micro_batch: 4                             # LoRA r48, 4 cameras: peak ~58 GiB (job 232).
   grad_accum: 8                              # effective batch 32.
-  lr: 3.0e-4                                 # unchanged since run 2 (LoRA wants 2-5x full-FT).
+  lr: 1.0e-4                                 # RUN 8: was 3.0e-4 (unchanged since run 2). At 3e-4 the
+                                             # driver-grounded CoC peaked at epoch 1 and then drifted
+                                             # to the teacher's phrasing (D-047), so selection only ever
+                                             # saw a coarse grid of the trajectory and the peak itself
+                                             # was stepped over. A third of the step with 2x the epochs
+                                             # keeps roughly the same total distance travelled but puts
+                                             # ~4x more checkpoints near the optimum.
   warmup_frac: 0.03
   weight_decay: 0.05
   # false because the model cannot do it, not because we don't want it:
@@ -292,11 +301,18 @@ stage1:
                                              # phase 1.5 selects on). minADE picked 7c's epoch 3,
                                              # the worst epoch on that table; the best (epoch 1)
                                              # was overwritten. `minade` | `coc_nll` still work.
-  coc_gt_windows: 200                        # RUN 8, NEW: val windows free-run per epoch for
-                                             # the score above (~5 min/epoch). 0 disables it
-                                             # (and `select_on: coc_gt` then errors out).
+  coc_gt_windows: 400                        # RUN 8, NEW: val windows free-run per epoch for
+                                             # the score above (~10 min/epoch at 400). 0 disables it
+                                             # (and `select_on: coc_gt` then errors out). 400, not the
+                                             # 200 of the D-051 recipe: at lr 1e-4 neighbouring epochs
+                                             # differ by less, and the CoC is sampled (T 0.6) with a
+                                             # draw-to-draw spread of ~0.06 on the sub-rows
+                                             # (D-052 addendum 2) - the selector must not pick noise.
+                                             # 400 is what the RL trainer's val eval uses.
   coc_gt_max_new_tokens: 64
-  early_stop_patience: 2                    # RUN 8: was 3. With a 6-epoch cap and the peak at 1-2.
+  early_stop_patience: 3                     # RUN 8: back to 3. At lr 1e-4 the per-epoch move is
+                                             # small enough that two flat evals in a row can be the
+                                             # sampling noise of the score rather than a real plateau.
   save_every_epoch: true                     # RUN 7, NEW: adapters (~75 MB) at every epoch
                                              # under runs/stage1/run-<job>/epoch-NN, so any
                                              # epoch can be free-run scored (05b) and
@@ -377,11 +393,20 @@ stage1_rl:
   # unverifiable, -1 contradicted; direction against the turn taken; hazard and
   # teacher-match at 0 (D-042). This is the lever that can move "driver braked ->
   # CoC says slow/stop" ABOVE the teacher's own 0.16-0.65, which SFT cannot.
-  init_ckpt: /data/vla/alpamayo2edge/runs/stage1/run-336/best
+  init_ckpt: /data/vla/alpamayo2edge/runs/stage1/run-351/best
                                              # merged); fresh r48 attention adapters on top are
-                                             # the policy, the merged weights the reference
-  run_name: rl-run-6c-coc-grounded       # RL run 6c (D-050): 6b + NUDGE charged, lr 3e-5. 6b = job 340.: run 6's recipe with the hold-speed
-                                           # over-claim penalty and lr 2e-5. Run 6 = job 337.
+                                             # the policy, the merged weights the reference.
+                                             # RUN 7: SFT run 8 = job 351 epoch 1 (D-057), replacing
+                                             # run-336/best (7c epoch 3). Better init on the rows RL
+                                             # is judged by: false-clear .240 vs .275, direction .287
+                                             # vs .107, hard brakes .162 vs .129 (2 draws, full val).
+  run_name: rl-run-7b-coc-grounded         # RL run 7b (D-059): run 7's recipe, init and SEED unchanged,
+                                           # stopped at 50 steps with evals every 5. Run 7 only sampled
+                                           # steps 0 and 25 before step 50, and step 25 already had the
+                                           # whole braking gain (D-058) while false-clear rises with
+                                           # training - the 0-50 trade curve is unmeasured. Same seed, so
+                                           # steps here reproduce run 7's trajectory. 6c = 343, 6b = 340,
+                                           # 6 = 337, 7 = 352; their dirs stay where they are.
   cameras: [camera_cross_left_120fov, camera_front_wide_120fov, camera_cross_right_120fov,
             camera_front_tele_30fov]         # RL-only override of data.cameras (1 cam for SFT)
   route_hint: true                           # <|route_start|>Turn left ahead<|route_end|> etc.,
@@ -390,7 +415,7 @@ stage1_rl:
   prompts_per_step: 8                        # joint rollouts are ~145 tokens, not ~14: half the
                                              # prompts per step to hold the step near 3-4 min
   prompt_alpha: 0.5
-  steps: 200                                 # run 1 had what it could get by ~75-150 steps
+  steps: 50                                 # run 1 had what it could get by ~75-150 steps
   traj_loss_weight: 1.0                      # trajectory span's PG term relative to the CoC's
                                              # (each span is mean-normalised on its own)
   score_chunk: 4                             # rows per scoring forward (grad accumulation); 4 cams
@@ -409,7 +434,7 @@ stage1_rl:
   coc_temperature: 1.0                       # run 4: CoC phase of the ROLLOUT only. The trajectory
                                              # bins and every val decode stay at `temperature`
   max_new_tokens: 64
-  eval_every: 25
+  eval_every: 5
   eval_windows: 400                          # each val window decodes a trajectory on 4-camera
                                              # contexts (~3x run 2's cost per window). 150 gave a
                                              # +/-0.08 gt_score noise floor, measured by evaluating

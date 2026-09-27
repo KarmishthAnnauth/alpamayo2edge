@@ -1,0 +1,12 @@
+{
+  "ckpt": "/data/vla/alpamayo2edge/runs/stage1/run-336/best",
+  "adapters": "/data/vla/alpamayo2edge/runs/stage1_rl/rl-run-6c-coc-grounded/step-0025",
+  "runs": [
+    {
+      "split": "val",
+      "k": 4,
+      "n": 200,
+      "minade": 2.472900629043579
+    }
+  ]
+}

@@ -33,10 +33,11 @@ on top of the untrained student).
 | `route_hint: true` | driver's direction in `<|route_start|>` | teacher was labelled route-blind, 17% of its turns are the wrong way (D-038) |
 | `filter_contradictions: true` | drop train windows whose CoC contradicts GT (~19%) | "say one thing, do another" pairs (D-043) |
 | `image_dropout: 0.0` | every CoC target is used | it only served the token head (D-047) |
-| `select_on: coc_gt`, `coc_gt_windows: 200` | pick the epoch on the free-running driver-grounded score | minADE picked the worst CoC epoch of run 7c (D-047) |
+| `select_on: coc_gt`, `coc_gt_windows: 400` | pick the epoch on the free-running driver-grounded score | minADE picked the worst CoC epoch of run 7c (D-047); 400 windows so the selector is not reading sampling noise (D-056) |
 | `save_every_epoch: true` | keep every epoch | 7c's best epoch was overwritten and lost (D-046) |
-| `epochs: 6`, `early_stop_patience: 2` | short | the CoC peaks at epoch 1-2, later epochs drift to the teacher's phrasing |
-| 4 cameras, LoRA r48 attention-only, lr 3e-4 | unchanged | D-036 |
+| `epochs: 12`, `early_stop_patience: 3` | long enough to contain the peak | at lr 1e-4 the distance where 3e-4 peaked falls around epoch 3, with room past it (D-056) |
+| `lr: 1.0e-4` | was 3e-4 | at 3e-4 the CoC peaked at epoch 1 of 6 - selection saw a two-point grid, not an optimum (D-056) |
+| 4 cameras, LoRA r48 attention-only | unchanged | D-036 |
 
 ## Reading the log
 
@@ -44,7 +45,7 @@ on top of the untrained student).
 grep -E 'coarse-minADE|vs DRIVER|early stop' logs/a2e-stage1-<job>.out
 ```
 
-Per epoch: `val CoC vs DRIVER (n=200): gt_score X | consistent .. false_clear ..
+Per epoch: `val CoC vs DRIVER (n=400): gt_score X | consistent .. false_clear ..
 direction_ok .. maneuver_acc .. | mix {...}`. `gt_score` = consistent minus
 false-clear. Reference points on the 500-window table (below): run 7c epoch 1
 had GT false-clear 0.164 / direction 0.417; the teacher scores 0.157 / 0.267.
