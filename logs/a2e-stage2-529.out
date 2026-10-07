@@ -1,0 +1,175 @@
+Job 529 on ProArt, started 2026-10-01T16:34:34+02:00
+Commit:         84c82d1
+   device 0 = NVIDIA RTX PRO 6000 Blackwell Workstation Edition  95.0 GiB total, 88.5 GiB free
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/vla/.netrc.
+wandb: Currently logged in as: karmishthannauth27 (karmishthannauth27-technical-university-of-munich) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run sft-run-4-b2d-arlora-traj-cocce-job529
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /home/vla/projects/alpamayo2edge/wandb/run-20261001_163437-sft-run-4-b2d-arlora-traj-cocce-job529
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run sft-run-4-b2d-arlora-traj-cocce-job529
+wandb: ⭐️ View project at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: 🚀 View run at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/sft-run-4-b2d-arlora-traj-cocce-job529
+2026-10-01 16:34:38,307 INFO wandb: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/sft-run-4-b2d-arlora-traj-cocce-job529
+2026-10-01 16:34:40,723 INFO The multistorageclient package is available.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/distributed/fsdp/src/megatron_fsdp/utils.py:108: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+2026-10-01 16:34:41,110 INFO Detected Megatron Core, using Megatron-FSDP with Megatron.
+2026-10-01 16:34:41,111 INFO Detected Megatron Core, using Megatron-FSDP with Megatron.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/__init__.py:24: UserWarning: Transformer Engine and Apex are not installed. Falling back to Torch optimizers.
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/optimizer.py:28: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/clip_grads.py:29: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier, multi_tensor_l2norm, and multi_tensor_scale
+  warnings.warn(
+[10-01 16:34:42|INFO|cosmos_framework/model/generator/omni_mot_model.py:124:__init__] OmniMoTModel: config {'tokenizer': {'bucket_name': 'bucket', 'object_store_credential_path_pretrained': 'credentials/gcp_training.secret', 'vae_path': 'pretrained/tokenizers/video/wan2pt2/Wan2.2_VAE.pth', 'chunk_duration': 93, 'keep_decoder_cache': False, 'use_streaming_encode': False, 'encode_chunk_frames': {'256': 68, '480': 24, '720': 8, '768': 8}, 'encode_exact_durations': [17, 61, 73], 'spatial_compression_factor': 16, 'temporal_compression_factor': 4, 'temporal_window': None, 'encode_bucket_multiple': None, 'causal': True, '_target_': 'cosmos_framework.model.generator.tokenizers.wan2pt2_vae_4x16x16.Wan2pt2VAEInterface'}, 'load_vision_tokenizer': True, 'lidar_tokenizer': None, 'lidar_state_ch': None, 'lidar_fps': None, 'net': None, 'ema': {'enabled': False, 'rate': 0.1, 'iteration_shift': 0, '_type': 'cosmos_framework.configs.base.defaults.ema.EMAConfig'}, 'parallelism': {'data_parallel_shard_degree': -1, 'data_parallel_replicate_degree': 1, 'context_parallel_shard_degree': 1, 'cfg_parallel_shard_degree': 1, 'enable_inference_mode': True, 'fsdp_master_dtype': 'float32', 'fsdp_reduce_dtype': None, '_type': 'cosmos_framework.configs.base.defaults.parallelism.ParallelismConfig'}, 'attention_io_layout': 'sequence_sharded', 'compile': {'enabled': False, 'compiled_region': 'language', 'compile_dynamic': True, 'use_cuda_graphs': False, 'ar_post_saturation_mode': 'default', 'max_autotune_pointwise': False, 'coordinate_descent_tuning': False, '_type': 'cosmos_framework.configs.base.defaults.compile.CompileConfig'}, 'quantization': {'method': None, 'fp8_granularity': 'per_row', 'modelopt_fp8_checkpoint_path': None, 'mixed_precision_first_steps': 0, 'mixed_precision_last_steps': 0, 'mixed_precision_reasoner_policy': 'high_precision', 'mixed_precision_w8a16_cache': 'none', 'include_regex': [], 'exclude_regex': [], 'modelopt_fp8_target_fqns': [], '_type': 'cosmos_framework.configs.base.defaults.quantization.QuantizationConfig'}, 'activation_checkpointing': {'mode': 'none', 'preserve_rng_state': True, 'determinism_check': 'default', 'save_ops_regex': ['fmha'], '_type': 'cosmos_framework.configs.base.defaults.activation_checkpointing.ActivationCheckpointingConfig'}, 'precision': 'bfloat16', 'lora_enabled': False, 'lora_rank': 16, 'lora_alpha': 32, 'lora_target_modules': 'q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen', 'rectified_flow_training_config': {'shift': {'256': 3, '480': 5, '720': 10}, 'shift_image': None, 'use_dynamic_shift': False, 'train_time_image_distribution': 'logitnormal', 'train_time_video_distribution': 'waver', 'train_time_action_distribution': 'logitnormal', 'train_time_sound_distribution': 'logitnormal', 'train_time_weight': 'uniform', 'loss_scale': 10.0, 'image_loss_scale': None, 'sound_loss_scale': 2.0, 'lidar_loss_scale': None, 'use_discrete_rf': False, 'action_loss_weight': 10.0, 'independent_action_schedule': False, 'shift_action': None, 'independent_sound_schedule': False, 'shift_sound': None, 'normalize_loss_by_active': False, 'sample_level_loss_averaging': False, 'high_sigma_ratio': 0.05, 'high_sigma_timesteps_max': 1000, 'high_sigma_timesteps_min': 995, 'use_high_sigma_strategy': False, 'use_high_sigma_strategy_action': False, 'use_high_sigma_strategy_sound': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowTrainingConfig'}, 'rectified_flow_inference_config': {'scheduler_type': 'unipc', 'num_train_timesteps': 1000, 'shift': 1, 'use_dynamic_shifting': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowInferenceConfig'}, 'fixed_step_sampler_config': None, 'vlm_config': {'model_name': 'nvidia/Cosmos3-Edge-Reasoner', 'safetensors_path': '', 'pretrained_weights': {'enabled': False, 'backbone_path': 's3://bucket/cosmos3/pretrained/huggingface/nvidia/Cosmos3-Edge-Reasoner-590c1c0/', 'credentials_path': 'credentials/gcp_checkpoint.secret', 'enable_gcs_patch_in_boto3': True, 'checkpoint_format': None, '_type': 'cosmos_framework.configs.base.defaults.reasoner.PretrainedWeightsConfig'}, 'model_instance': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLTextForCausalLM', 'config': {'_target_': 'cosmos_framework.configs.base.defaults.reasoner.create_vlm_config', 'base_config': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLMoTConfig.from_json_file', 'json_file': 'cosmos_framework/model/generator/reasoner/nemotron_3_dense_vl/configs/Nemotron-2B-Dense-VL.json'}, 'include_visual': None, 'qk_norm_for_text': False, 'use_und_k_norm_for_gen': True}}, 'tokenizer': {'repository': None, 'revision': None, 'subdir': '', '_target_': 'cosmos_framework.data.generator.processors.build_processor_lazy', 'tokenizer_type': '/bulk/users/vla/alpamayo2edge/cosmos3-edge'}, 'layer_module': None, 'qk_norm': False, 'tie_word_embeddings': False, 'use_system_prompt': False, '_type': 'cosmos_framework.configs.base.defaults.reasoner.VLMConfig'}, 'diffusion_expert_config': {'timestep_range': 1.0, 'load_weights_from_pretrained': False, 'enable_vision_modality_embeddings': False, 'enable_media_modality_embedding': False, 'enable_sound_modality_embedding': True, 'patch_spatial': 2, 'max_vae_latent_side_after_patchify': 20, 'enable_fps_modulation': True, 'base_fps': 24, 'sound_base_temporal_compression_factor': None, 'vision_temporal_position_mode': 'latent_index', 'unified_3d_mrope_reset_spatial_ids': True, 'unified_3d_mrope_temporal_modality_margin': 15000, '_type': 'cosmos_framework.configs.base.defaults.model_config.DiffusionExpertConfig'}, 'input_video_key': 'video', 'input_image_key': 'images', 'input_caption_key': 'ai_caption', 'state_ch': 48, 'state_t': 300, 'latent_downsample_factor': 16, 'resolution': '480', 'max_num_tokens_after_packing': 74000, 'joint_attn_implementation': 'two_way', 'flex_attention': {'enabled': False, 'backend': 'auto', 'mask': {'attention_scope': 'all_views'}}, 'natten_parameter_list': None, 'video_temporal_causal': False, 'causal_training_strategy': 'none', 'lbl': {'method': 'local', 'coeff_und': None, 'coeff_gen': None, '_type': 'cosmos_framework.configs.base.defaults.model_config.LBLConfig'}, 'vision_gen': True, 'action_gen': True, 'max_action_dim': 64, 'num_embodiment_domains': 32, 'sound_gen': False, 'sound_tokenizer': None, 'sound_dim': None, 'sound_latent_fps': 25, 'enable_input_bias': True, 'log_enc_time_every_n': 100, 'exclude_reasoner_weights_from_checkpoint': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.OmniMoTModelConfig'}
+[10-01 16:34:42|WARNING|cosmos_framework/model/generator/omni_mot_model.py:150:set_precision] OmniMoTModel: precision torch.bfloat16
+This processor does not use the `size` parameter. It will be ignored.
+[10-01 16:34:42|INFO|cosmos_framework/data/generator/processors/base.py:131:__init__] Successfully loaded processor from local cache
+[10-01 16:34:42|INFO|cosmos_framework/utils/checkpoint_db.py:338:download] Downloading checkpoint Wan2.2/vae(3c8a0dc8423d47f285681ad51fcfa276)
+[10-01 16:34:42|INFO|cosmos_framework/utils/checkpoint_db.py:171:_hf_download] uv run --isolated --project /home/vla/projects/cosmos-framework/cosmos_framework/utils/hf_cli --locked --no-default-groups hf download --format=json Wan-AI/Wan2.2-TI2V-5B --repo-type model --revision 921dbaf3f1674a56f47e83fb80a34bac8a8f203e Wan2.2_VAE.pth
+Installed 16 packages in 2ms
+[10-01 16:34:44|INFO|cosmos_framework/model/generator/tokenizers/wan2pt2_vae_4x16x16.py:1056:_video_vae] loading /bulk/users/vla/alpamayo2edge/hf-cache/models--Wan-AI--Wan2.2-TI2V-5B/snapshots/921dbaf3f1674a56f47e83fb80a34bac8a8f203e/Wan2.2_VAE.pth
+[10-01 16:34:44|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_tokenizers: 2.35 s
+[10-01 16:34:44|INFO|cosmos_framework/utils/generator/parallelism.py:110:_validate] dp_shard auto-inferred to world_size = 1
+[10-01 16:34:44|INFO|cosmos_framework/utils/generator/parallelism.py:124:_validate] dp_replicate is set to -1, will be automatically determined based on world_size 1 // dp_shard 1.
+[10-01 16:34:44|INFO|cosmos_framework/utils/generator/parallelism.py:129:_validate] dp_replicate is set to 1.
+`torch_dtype` is deprecated! Use `dtype` instead!
+[10-01 16:34:44|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on meta to cuda and broadcast model states: 0.04 s
+[10-01 16:34:44|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on Creating PyTorch model and ema if enabled: 0.11 s
+[10-01 16:34:44|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_model: 0.11 s
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/torch/distributed/checkpoint/utils.py:483: UserWarning: torch.distributed is disabled, unavailable or uninitialized, assuming the intent is to load in a single process.
+  return func(*args, **kwargs)
+[10-01 16:34:45|INFO|../cosmos-framework/cosmos_framework/model/generator/mot/unified_mot.py:2656:_ensure_vision_tower] Edge vision tower: loading from checkpoint-local bundle /bulk/users/vla/alpamayo2edge/cosmos3-edge/vision_encoder
+2026-10-01 16:34:46,698 INFO stage-1 checkpoint: /data/vla/alpamayo2edge/runs/stage1/run-351/best -> /data/vla/alpamayo2edge/runs/stage1/run-351/best
+2026-10-01 16:34:47,368 INFO loaded merged student <- /data/vla/alpamayo2edge/runs/stage1/run-351/best
+[10-01 16:34:47|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[10-01 16:34:47|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+2026-10-01 16:34:47,526 INFO loaded 224 adapter tensors + 6 stage-1 row tensors <- /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025
+2026-10-01 16:34:47,565 INFO folded 112 adapter modules from /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025 (step=25) into the AR tower
+2026-10-01 16:34:47,786 INFO image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+2026-10-01 16:34:47,889 INFO bench2drive train: 8040 windows, CoC cache /bulk/users/vla/alpamayo2edge/b2d_cache/coc_rl7s25.jsonl
+[10-01 16:34:47|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[10-01 16:34:47|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+2026-10-01 16:34:47,916 INFO LoRA: {'wrapped': 112, 'by_leaf': {'q_proj': 28, 'k_proj': 28, 'v_proj': 28, 'o_proj': 28}, 'lora_params': 19267584, 'example': ['0.self_attn.q_proj', '0.self_attn.k_proj', '0.self_attn.v_proj'], 'full_ft': True, 'fp32_master': True}
+2026-10-01 16:34:47,916 INFO trainable 1437.1M [group0(x1.0): 1409.4M, group1(x8.0): 8.5M, group2(x2.0): 19.3M]
+2026-10-01 16:34:48,133 INFO image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+2026-10-01 16:34:48,162 INFO gate: 863 val windows, k=6
+/home/vla/projects/alpamayo2edge/src/distill/train_stage2.py:234: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  total, parts = fm_gt, {"fm_gt": float(fm_gt)}
+2026-10-01 16:40:36,106 INFO epoch 0 step 20/2016 loss 1.8838 {'fm_gt': 1.4604735374450684, 'traj_m': 2.729630708694458, 'coc_ce': 0.15038740634918213}  peak 50.1 GiB
+2026-10-01 16:46:24,210 INFO epoch 0 step 40/2016 loss 0.9372 {'fm_gt': 0.7159466743469238, 'traj_m': 2.1892991065979004, 'coc_ce': 0.0023618785198777914}  peak 50.1 GiB
+2026-10-01 16:52:11,644 INFO epoch 0 step 60/2016 loss 0.8187 {'fm_gt': 0.46102848649024963, 'traj_m': 3.1377663612365723, 'coc_ce': 0.04387086257338524}  peak 50.1 GiB
+2026-10-01 16:57:59,552 INFO epoch 0 step 80/2016 loss 0.7135 {'fm_gt': 0.5251744985580444, 'traj_m': 1.6460272073745728, 'coc_ce': 0.02370196022093296}  peak 50.1 GiB
+2026-10-01 17:03:47,634 INFO epoch 0 step 100/2016 loss 1.2761 {'fm_gt': 1.0880063772201538, 'traj_m': 1.7221401929855347, 'coc_ce': 0.01591688208281994}  peak 50.1 GiB
+2026-10-01 17:09:35,248 INFO epoch 0 step 120/2016 loss 0.5203 {'fm_gt': 0.3819659948348999, 'traj_m': 1.1554640531539917, 'coc_ce': 0.022747447714209557}  peak 50.1 GiB
+2026-10-01 17:15:23,212 INFO epoch 0 step 140/2016 loss 1.3038 {'fm_gt': 0.89569491147995, 'traj_m': 2.27471923828125, 'coc_ce': 0.18066275119781494}  peak 50.1 GiB
+2026-10-01 17:21:11,190 INFO epoch 0 step 160/2016 loss 0.8081 {'fm_gt': 0.5550583004951477, 'traj_m': 2.279836893081665, 'coc_ce': 0.025025777518749237}  peak 50.1 GiB
+2026-10-01 17:26:59,068 INFO epoch 0 step 180/2016 loss 0.4071 {'fm_gt': 0.3056296706199646, 'traj_m': 0.873395562171936, 'coc_ce': 0.014143208973109722}  peak 50.1 GiB
+2026-10-01 17:32:46,658 INFO epoch 0 step 200/2016 loss 0.9684 {'fm_gt': 0.5942996144294739, 'traj_m': 2.5368034839630127, 'coc_ce': 0.12039387971162796}  peak 50.1 GiB
+2026-10-01 17:38:34,157 INFO epoch 0 step 220/2016 loss 0.7774 {'fm_gt': 0.6764460802078247, 'traj_m': 0.7005395293235779, 'coc_ce': 0.030910063534975052}  peak 50.1 GiB
+2026-10-01 17:44:21,722 INFO epoch 0 step 240/2016 loss 1.2283 {'fm_gt': 0.8052691221237183, 'traj_m': 2.066288471221924, 'coc_ce': 0.21640197932720184}  peak 50.1 GiB
+2026-10-01 17:56:19,608 INFO epoch 0 gate  n=863 k=6: minADE_6 3.210 m  meanADE 7.022  minFDE 6.735  p90 7.454 | CV 6.151 (522 s)
+2026-10-01 17:56:19,608 INFO   braked (687): minADE 3.670 vs CV 6.861 | others (176): 1.417 vs 3.377
+2026-10-01 17:56:19,608 INFO   by horizon: 1s 0.21 (CV 0.40)  2s 0.60 (CV 1.11)  3s 1.09 (CV 2.01)  4s 1.64 (CV 3.07)
+2026-10-01 17:56:19,608 INFO      ParkedObstacle                           n= 58  minADE 1.78  CV 4.17
+2026-10-01 17:56:19,608 INFO      CrossingBicycleFlow                      n= 51  minADE 1.51  CV 3.96
+2026-10-01 17:56:19,608 INFO      AccidentTwoWays                          n= 49  minADE 2.59  CV 6.09
+2026-10-01 17:56:19,608 INFO      HardBreakRoute                           n= 45  minADE 3.26  CV 5.53
+2026-10-01 17:56:19,608 INFO      ConstructionObstacleTwoWays              n= 44  minADE 2.72  CV 5.17
+2026-10-01 17:56:19,608 INFO      HazardAtSideLane                         n= 44  minADE 3.95  CV 7.31
+2026-10-01 17:56:19,608 INFO      TJunction                                n= 40  minADE 2.00  CV 4.16
+2026-10-01 17:56:19,608 INFO      ParkedObstacleTwoWays                    n= 39  minADE 2.48  CV 4.60
+2026-10-01 17:56:19,608 INFO      ParkingCutIn                             n= 30  minADE 3.21  CV 6.15
+2026-10-01 17:56:19,608 INFO      PedestrianCrossing                       n= 30  minADE 2.18  CV 4.41
+2026-10-01 17:56:19,608 INFO      VehicleTurningRoute                      n= 29  minADE 3.21  CV 5.79
+2026-10-01 17:56:19,608 INFO      VehicleTurningRoutePedestrian            n= 27  minADE 2.27  CV 3.82
+2026-10-01 17:56:23,683 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-4-b2d-arlora-traj-cocce/epoch0 (992 tensors)
+2026-10-01 17:56:23,868 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-4-b2d-arlora-traj-cocce/epoch0
+2026-10-01 17:56:23,869 INFO best -> epoch0 (val minADE 3.210)
+2026-10-01 17:59:00,740 INFO epoch 1 step 260/2016 loss 1.1425 {'fm_gt': 0.8625158071517944, 'traj_m': 1.6752794981002808, 'coc_ce': 0.11244384944438934}  peak 50.1 GiB
+2026-10-01 18:04:48,459 INFO epoch 1 step 280/2016 loss 1.1795 {'fm_gt': 0.9263544082641602, 'traj_m': 1.8564956188201904, 'coc_ce': 0.0674472525715828}  peak 50.1 GiB
+2026-10-01 18:10:36,065 INFO epoch 1 step 300/2016 loss 0.9988 {'fm_gt': 0.6938616037368774, 'traj_m': 2.0361530780792236, 'coc_ce': 0.10136962682008743}  peak 50.1 GiB
+2026-10-01 18:16:23,750 INFO epoch 1 step 320/2016 loss 0.9497 {'fm_gt': 0.7389163970947266, 'traj_m': 1.4576390981674194, 'coc_ce': 0.06502403318881989}  peak 50.1 GiB
+2026-10-01 18:22:11,559 INFO epoch 1 step 340/2016 loss 0.6013 {'fm_gt': 0.44025278091430664, 'traj_m': 1.5947487354278564, 'coc_ce': 0.0016193990595638752}  peak 50.1 GiB
+2026-10-01 18:27:59,632 INFO epoch 1 step 360/2016 loss 0.4151 {'fm_gt': 0.2912593185901642, 'traj_m': 0.8850598931312561, 'coc_ce': 0.035354968160390854}  peak 50.1 GiB
+2026-10-01 18:33:47,290 INFO epoch 1 step 380/2016 loss 0.4047 {'fm_gt': 0.2504257559776306, 'traj_m': 1.3808810710906982, 'coc_ce': 0.016148986294865608}  peak 50.1 GiB
+2026-10-01 18:39:34,892 INFO epoch 1 step 400/2016 loss 0.4672 {'fm_gt': 0.29509076476097107, 'traj_m': 1.2572462558746338, 'coc_ce': 0.046382661908864975}  peak 50.1 GiB
+2026-10-01 18:45:22,816 INFO epoch 1 step 420/2016 loss 0.1519 {'fm_gt': 0.050010036677122116, 'traj_m': 0.8605177998542786, 'coc_ce': 0.015837665647268295}  peak 50.1 GiB
+2026-10-01 18:51:10,710 INFO epoch 1 step 440/2016 loss 0.3658 {'fm_gt': 0.22444692254066467, 'traj_m': 1.1344257593154907, 'coc_ce': 0.02786347270011902}  peak 50.1 GiB
+2026-10-01 18:56:58,302 INFO epoch 1 step 460/2016 loss 0.5826 {'fm_gt': 0.4327642023563385, 'traj_m': 1.322333812713623, 'coc_ce': 0.017558809369802475}  peak 50.1 GiB
+2026-10-01 19:02:45,428 INFO epoch 1 step 480/2016 loss 1.0492 {'fm_gt': 0.8024171590805054, 'traj_m': 0.9797875881195068, 'coc_ce': 0.14881503582000732}  peak 50.1 GiB
+2026-10-01 19:08:33,313 INFO epoch 1 step 500/2016 loss 0.6744 {'fm_gt': 0.49712303280830383, 'traj_m': 0.8521013855934143, 'coc_ce': 0.09210407733917236}  peak 50.1 GiB
+2026-10-01 19:17:55,534 INFO epoch 1 gate  n=863 k=6: minADE_6 2.848 m  meanADE 5.942  minFDE 5.797  p90 6.623 | CV 6.151 (523 s)
+2026-10-01 19:17:55,535 INFO   braked (687): minADE 3.283 vs CV 6.861 | others (176): 1.148 vs 3.377
+2026-10-01 19:17:55,535 INFO   by horizon: 1s 0.19 (CV 0.40)  2s 0.54 (CV 1.11)  3s 0.97 (CV 2.01)  4s 1.46 (CV 3.07)
+2026-10-01 19:17:55,535 INFO      ParkedObstacle                           n= 58  minADE 1.77  CV 4.17
+2026-10-01 19:17:55,535 INFO      CrossingBicycleFlow                      n= 51  minADE 1.08  CV 3.96
+2026-10-01 19:17:55,535 INFO      AccidentTwoWays                          n= 49  minADE 2.87  CV 6.09
+2026-10-01 19:17:55,535 INFO      HardBreakRoute                           n= 45  minADE 3.02  CV 5.53
+2026-10-01 19:17:55,535 INFO      ConstructionObstacleTwoWays              n= 44  minADE 1.86  CV 5.17
+2026-10-01 19:17:55,535 INFO      HazardAtSideLane                         n= 44  minADE 3.40  CV 7.31
+2026-10-01 19:17:55,535 INFO      TJunction                                n= 40  minADE 2.69  CV 4.16
+2026-10-01 19:17:55,535 INFO      ParkedObstacleTwoWays                    n= 39  minADE 1.99  CV 4.60
+2026-10-01 19:17:55,535 INFO      ParkingCutIn                             n= 30  minADE 2.43  CV 6.15
+2026-10-01 19:17:55,535 INFO      PedestrianCrossing                       n= 30  minADE 1.98  CV 4.41
+2026-10-01 19:17:55,535 INFO      VehicleTurningRoute                      n= 29  minADE 4.42  CV 5.79
+2026-10-01 19:17:55,535 INFO      VehicleTurningRoutePedestrian            n= 27  minADE 2.34  CV 3.82
+wandb: updating run metadata
+wandb: uploading config.yaml; uploading output.log; uploading wandb-summary.json
+wandb: uploading output.log
+wandb: 
+wandb: Run history:
+wandb:              epoch ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁█████████████████████
+wandb: gate/braked_minade █▁
+wandb:        gate/cv_ade ▁▁
+wandb:       gate/meanade █▁
+wandb:        gate/minade █▁
+wandb:        gate/minfde █▁
+wandb:  gate/other_minade █▁
+wandb:        loss/coc_ce ▁▅▂▂▃▄▁▃▁▃▂▂▂▄▅▁▁▆▂▁▃▁▂▃▁▁▂▂▃▁▃▃▁▁▃▂█▁▂▂
+wandb:         loss/fm_gt █▆▅▄▂▂▃▂▅▂▃▂▂▂▃▂▂▃▁▁▂▁▂▃▃▁▂▁▃▂▃▂▃▂▂▃▄▂▃▁
+wandb:         loss/total ██▂▆▂▃▄▃▁▄▂▂▃▄▂▄▂▂▄▁▂▅▂▁▂▃▃▃▄▂▃▃▂▂▄▂▄▂▄▃
+wandb:                 +2 ...
+wandb: 
+wandb: Run summary:
+wandb:              epoch 1
+wandb: gate/braked_minade 3.2832
+wandb:        gate/cv_ade 6.15072
+wandb:       gate/meanade 5.94203
+wandb:        gate/minade 2.84773
+wandb:        gate/minfde 5.7968
+wandb:  gate/other_minade 1.14791
+wandb:        loss/coc_ce 0.03466
+wandb:         loss/fm_gt 0.18567
+wandb:         loss/total 0.31441
+wandb:                 +2 ...
+wandb: 
+wandb: 🚀 View run sft-run-4-b2d-arlora-traj-cocce-job529 at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/sft-run-4-b2d-arlora-traj-cocce-job529
+wandb: ⭐️ View project at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20261001_163437-sft-run-4-b2d-arlora-traj-cocce-job529/logs
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/vla/projects/alpamayo2edge/src/distill/train_stage2.py", line 351, in <module>
+    main(a.config, smoke=a.smoke)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vla/projects/alpamayo2edge/src/distill/train_stage2.py", line 258, in main
+    _train(cfg, smoke, wb)
+    ~~~~~~^^^^^^^^^^^^^^^^
+  File "/home/vla/projects/alpamayo2edge/src/distill/train_stage2.py", line 334, in _train
+    checkpoint.save(student, ckpt, save_dtype=torch.bfloat16, **meta)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vla/projects/alpamayo2edge/src/distill/checkpoint.py", line 63, in save
+    save_file(out, str(path / WEIGHTS_NAME))
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/safetensors/torch.py", line 323, in save_file
+    serialize_file(
+    ~~~~~~~~~~~~~~^
+        _flatten_as_ptr(tensors, keep_references_alive), filename, metadata=metadata
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+safetensors._safetensors_rust.SafetensorError: Error while serializing: I/O error: No space left on device (os error 28)

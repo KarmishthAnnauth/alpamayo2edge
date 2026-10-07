@@ -533,19 +533,51 @@ class EdgeStudent(nn.Module):
         """
         lcfg = self.cfg.student.lora.stage2
         self._reset_trainable()
+        # Optional LoRA on the AR tower so the trajectory loss reaches perception
+        # (run 3, 2026-10-01: the CoC probe showed the decoder ignores the text,
+        # so the decision signal has to come through the reasoner K/V). Injected
+        # FIRST: `inject` freezes its whole subtree, the gen-tower params are
+        # re-enabled below. `build_flow_context` keeps the reasoner graph when
+        # `train_ar_context` is set.
+        acfg = self.cfg.student.lora.get("stage2_ar")
+        ar_lora = bool(acfg and acfg.get("enabled", False))
+        self.train_ar_context = ar_lora
+        if ar_lora and lcfg.get("enabled", True):
+            raise NotImplementedError("stage2_ar with a gen-tower LoRA: one EdgeStudent injects once")
+        ar_params: list[nn.Parameter] = []
+        if ar_lora:
+            self.lora_stats = self._inject(acfg, lora.AR_ATTN_TARGETS)
+            ar_params = lora.lora_parameters(self._decoder_layers())
         if lcfg.get("enabled", True):
             self.lora_stats = self._inject(lcfg, lora.GEN_ATTN_TARGETS)
             adapted = lora.lora_parameters(self._decoder_layers())
         else:
-            adapted = [p for n, p in self.lm.model.named_parameters() if self._is_diff(n)]
-            for p in adapted:
+            # FULL FT of the gen tower (decided 2026-09-28 for the 96 GB card).
+            # AdamW over bf16 parameters with no fp32 master copy loses the
+            # 1e-5-scale updates in the bf16 mantissa, so the trainable tensors
+            # are promoted to fp32 here; autocast keeps the matmuls in bf16.
+            # ~1.94B params x (4 w + 4 g + 8 AdamW) = 31 GB. `checkpoint.save`
+            # casts them back to bf16 on disk.
+            adapted = [p for n, p in self.lm.model.named_parameters()
+                       if self._is_diff(n) and "lora_" not in n]
+            fp32 = bool(self.cfg.stage2.get("fp32_master", True))
+            for p in adapted + ar_params:
+                if fp32 and p.dtype != torch.float32:
+                    p.data = p.data.float()
                 p.requires_grad_(True)
-            self.lora_stats = {"wrapped": 0, "full_ft": True}
+            self.lora_stats = {**self.lora_stats, "full_ft": True, "fp32_master": fp32}
         new_iface = self._enable_action_domain_rows()
+        if not lcfg.get("enabled", True) and bool(self.cfg.stage2.get("fp32_master", True)):
+            for p in new_iface:
+                if p.dtype != torch.float32:
+                    p.data = p.data.float()
         if self.cfg.student.lora.get("train_shared_action_embeds", False):
             new_iface += self._enable_shared_action_embeds()
-        return [{"params": adapted, "lr_mult": 1.0},
-                {"params": new_iface, "lr_mult": self.cfg.student.new_token_lr_mult}]
+        groups = [{"params": adapted, "lr_mult": 1.0},
+                  {"params": new_iface, "lr_mult": self.cfg.student.new_token_lr_mult}]
+        if ar_params:
+            groups.append({"params": ar_params, "lr_mult": float(acfg.get("lr_mult", 1.0))})
+        return groups
 
     def _inject(self, lcfg, default_targets: list[str]) -> dict:
         targets = list(lcfg.get("targets", default_targets))
@@ -652,15 +684,29 @@ class EdgeStudent(nn.Module):
                 else:
                     del layer.__dict__["reasoner_forward"]
 
-    def flow_forward(self, batch, a_t, t, context_kv=None) -> torch.Tensor:
-        """Gen-tower velocity prediction at cached teacher points, returned in
-        the TEACHER convention (D-016 conversion handled here).
+    def build_flow_context(self, batch, keep_final_hidden: bool = False):
+        """Frozen reasoner pass -> per-layer K/V the action tokens attend
+        (student/flow_path.py). One per window, reused across its flow samples."""
+        from . import flow_path
+        return flow_path.build_flow_context(self, batch, keep_final_hidden=keep_final_hidden)
 
-        a_t: (N, 64, 2) noised actions, teacher convention (t = data weight).
-        t:   (N,) teacher timesteps.
-        context_kv: (kv, owner) - frozen AR KV per window + per-sample owner idx.
+    def sample_actions(self, ctx, owner, **kw) -> dict:
+        """Flow-head sampler (ODE, or SDE with per-step log-probs); see flow_path."""
+        from . import flow_path
+        return flow_path.sample_actions(self, ctx, owner, **kw)
+
+    def flow_forward(self, a_t, t, ctx, owner, grad_checkpoint: bool | None = None) -> torch.Tensor:
+        """Gen-tower velocity prediction at (a_t, t), returned in the TEACHER
+        convention (D-016 conversion handled here).
+
+        a_t:   (N, 64, 2) noised actions, teacher convention (t = data weight).
+        t:     (N,) teacher timesteps.
+        ctx:   FlowContext from `build_flow_context` (frozen reasoner K/V per window).
+        owner: (N,) window index of each sample in `ctx`.
         """
         n = a_t.shape[0]
+        if grad_checkpoint is None:
+            grad_checkpoint = bool(self.cfg.stage2.get("grad_checkpoint", False))
         sigma = (1.0 - t).clamp(0.0, 1.0)                 # student noise weight
         # Zero-pad raw 2-dim actions into the 64-wide domain interface (D-017).
         x = a_t.new_zeros(n, self.n_action_tokens, self.max_action_dim)
@@ -670,18 +716,15 @@ class EdgeStudent(nn.Module):
 
         # Action tokens -> gen-pathway embeddings: domain projection + timestep
         # embedding + action modality embedding (mirrors Cosmos3VFMNetwork's
-        # packing of action tokens). VALIDATE-ON-GPU: timestep scale/shift must
-        # match net.config.timestep_scale exactly.
+        # `_encode_action`, cosmos3_vfm_network.py:876-924: action2llm + modality
+        # embed + per-token timestep embed of `timesteps * timestep_scale`).
         emb = self.net.action2llm(x, domain)               # (N, 64, hidden)
         ts = self.net.time_embedder(self._embedder_timesteps(sigma))
         emb = emb + ts.unsqueeze(1) + self.net.action_modality_embed
 
-        # Joint two-way attention against the frozen AR context KV: gen-pathway
-        # (\*_moe_gen) parameters over the action tokens, und KV from context_kv.
-        # VALIDATE-ON-GPU: packing via cosmos_framework pack_input_sequence with
-        # action-only gen sequence; reuse und KV across the K flow samples of a
-        # window via the owner index.
-        h = self._gen_pathway_forward(emb, context_kv)     # (N, 64, hidden)
+        # Gen pathway (*_moe_gen) over the action tokens, attending the frozen
+        # reasoner K/V of the owning window (flow_path.gen_pathway_forward).
+        h = self._gen_pathway_forward(emb, ctx, owner, grad_checkpoint)   # (N, 64, hidden)
 
         v_student = self.net.llm2action(self.net.norm_moe_gen(h)
                                         if hasattr(self.net, "norm_moe_gen") else h,
@@ -714,13 +757,15 @@ class EdgeStudent(nn.Module):
             rng = float(self.net.timestep_scale) * float(n) if n else 1.0
         return float(rng)
 
-    def _gen_pathway_forward(self, gen_embeds, context_kv):
-        """Run the MoT gen pathway over action-token embeds with und-context KV.
-        VALIDATE-ON-GPU: wire through unified_mot's packed forward
-        (set_gen_seq/get_gen_seq + PackedAttentionMoT with cached und K/V)."""
-        raise NotImplementedError(
-            "Gen-pathway packed forward - wire on the GPU box against "
-            "cosmos_framework.model.generator.mot.unified_mot (see D-015).")
+    def _gen_pathway_forward(self, gen_embeds, ctx, owner, grad_checkpoint=False):
+        """Dense action-only gen pathway (student/flow_path.py): the sub-modules of
+        `MoTDecoderLayer.forward(gen_only=True)` over [N, 64, hidden], attending
+        the reasoner K/V the framework's own AR inference would read from its
+        MemoryState. Not the packed SequencePack forward, which refuses
+        action-only sequences (D-015)."""
+        from . import flow_path
+        return flow_path.gen_pathway_forward(self, gen_embeds, ctx, owner,
+                                             grad_checkpoint=grad_checkpoint)
 
     @torch.no_grad()
     def generate_coc_and_traj(self, batch, max_coc_tokens: int = 64,

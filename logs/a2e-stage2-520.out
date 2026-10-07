@@ -1,0 +1,333 @@
+Job 520 on ProArt, started 2026-10-01T01:43:57+02:00
+Commit:         84c82d1
+   device 0 = NVIDIA RTX PRO 6000 Blackwell Workstation Edition  95.0 GiB total, 88.5 GiB free
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/vla/.netrc.
+wandb: Currently logged in as: karmishthannauth27 (karmishthannauth27-technical-university-of-munich) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run sft-run-3-b2d-fullft-arlora-job520
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /home/vla/projects/alpamayo2edge/wandb/run-20261001_014359-sft-run-3-b2d-fullft-arlora-job520
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run sft-run-3-b2d-fullft-arlora-job520
+wandb: ⭐️ View project at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: 🚀 View run at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/sft-run-3-b2d-fullft-arlora-job520
+2026-10-01 01:44:00,794 INFO wandb: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/sft-run-3-b2d-fullft-arlora-job520
+2026-10-01 01:44:02,770 INFO The multistorageclient package is available.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/distributed/fsdp/src/megatron_fsdp/utils.py:108: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+2026-10-01 01:44:03,100 INFO Detected Megatron Core, using Megatron-FSDP with Megatron.
+2026-10-01 01:44:03,101 INFO Detected Megatron Core, using Megatron-FSDP with Megatron.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/__init__.py:24: UserWarning: Transformer Engine and Apex are not installed. Falling back to Torch optimizers.
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/optimizer.py:28: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/clip_grads.py:29: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier, multi_tensor_l2norm, and multi_tensor_scale
+  warnings.warn(
+[10-01 01:44:03|INFO|cosmos_framework/model/generator/omni_mot_model.py:124:__init__] OmniMoTModel: config {'tokenizer': {'bucket_name': 'bucket', 'object_store_credential_path_pretrained': 'credentials/gcp_training.secret', 'vae_path': 'pretrained/tokenizers/video/wan2pt2/Wan2.2_VAE.pth', 'chunk_duration': 93, 'keep_decoder_cache': False, 'use_streaming_encode': False, 'encode_chunk_frames': {'256': 68, '480': 24, '720': 8, '768': 8}, 'encode_exact_durations': [17, 61, 73], 'spatial_compression_factor': 16, 'temporal_compression_factor': 4, 'temporal_window': None, 'encode_bucket_multiple': None, 'causal': True, '_target_': 'cosmos_framework.model.generator.tokenizers.wan2pt2_vae_4x16x16.Wan2pt2VAEInterface'}, 'load_vision_tokenizer': True, 'lidar_tokenizer': None, 'lidar_state_ch': None, 'lidar_fps': None, 'net': None, 'ema': {'enabled': False, 'rate': 0.1, 'iteration_shift': 0, '_type': 'cosmos_framework.configs.base.defaults.ema.EMAConfig'}, 'parallelism': {'data_parallel_shard_degree': -1, 'data_parallel_replicate_degree': 1, 'context_parallel_shard_degree': 1, 'cfg_parallel_shard_degree': 1, 'enable_inference_mode': True, 'fsdp_master_dtype': 'float32', 'fsdp_reduce_dtype': None, '_type': 'cosmos_framework.configs.base.defaults.parallelism.ParallelismConfig'}, 'attention_io_layout': 'sequence_sharded', 'compile': {'enabled': False, 'compiled_region': 'language', 'compile_dynamic': True, 'use_cuda_graphs': False, 'ar_post_saturation_mode': 'default', 'max_autotune_pointwise': False, 'coordinate_descent_tuning': False, '_type': 'cosmos_framework.configs.base.defaults.compile.CompileConfig'}, 'quantization': {'method': None, 'fp8_granularity': 'per_row', 'modelopt_fp8_checkpoint_path': None, 'mixed_precision_first_steps': 0, 'mixed_precision_last_steps': 0, 'mixed_precision_reasoner_policy': 'high_precision', 'mixed_precision_w8a16_cache': 'none', 'include_regex': [], 'exclude_regex': [], 'modelopt_fp8_target_fqns': [], '_type': 'cosmos_framework.configs.base.defaults.quantization.QuantizationConfig'}, 'activation_checkpointing': {'mode': 'none', 'preserve_rng_state': True, 'determinism_check': 'default', 'save_ops_regex': ['fmha'], '_type': 'cosmos_framework.configs.base.defaults.activation_checkpointing.ActivationCheckpointingConfig'}, 'precision': 'bfloat16', 'lora_enabled': False, 'lora_rank': 16, 'lora_alpha': 32, 'lora_target_modules': 'q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen', 'rectified_flow_training_config': {'shift': {'256': 3, '480': 5, '720': 10}, 'shift_image': None, 'use_dynamic_shift': False, 'train_time_image_distribution': 'logitnormal', 'train_time_video_distribution': 'waver', 'train_time_action_distribution': 'logitnormal', 'train_time_sound_distribution': 'logitnormal', 'train_time_weight': 'uniform', 'loss_scale': 10.0, 'image_loss_scale': None, 'sound_loss_scale': 2.0, 'lidar_loss_scale': None, 'use_discrete_rf': False, 'action_loss_weight': 10.0, 'independent_action_schedule': False, 'shift_action': None, 'independent_sound_schedule': False, 'shift_sound': None, 'normalize_loss_by_active': False, 'sample_level_loss_averaging': False, 'high_sigma_ratio': 0.05, 'high_sigma_timesteps_max': 1000, 'high_sigma_timesteps_min': 995, 'use_high_sigma_strategy': False, 'use_high_sigma_strategy_action': False, 'use_high_sigma_strategy_sound': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowTrainingConfig'}, 'rectified_flow_inference_config': {'scheduler_type': 'unipc', 'num_train_timesteps': 1000, 'shift': 1, 'use_dynamic_shifting': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowInferenceConfig'}, 'fixed_step_sampler_config': None, 'vlm_config': {'model_name': 'nvidia/Cosmos3-Edge-Reasoner', 'safetensors_path': '', 'pretrained_weights': {'enabled': False, 'backbone_path': 's3://bucket/cosmos3/pretrained/huggingface/nvidia/Cosmos3-Edge-Reasoner-590c1c0/', 'credentials_path': 'credentials/gcp_checkpoint.secret', 'enable_gcs_patch_in_boto3': True, 'checkpoint_format': None, '_type': 'cosmos_framework.configs.base.defaults.reasoner.PretrainedWeightsConfig'}, 'model_instance': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLTextForCausalLM', 'config': {'_target_': 'cosmos_framework.configs.base.defaults.reasoner.create_vlm_config', 'base_config': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLMoTConfig.from_json_file', 'json_file': 'cosmos_framework/model/generator/reasoner/nemotron_3_dense_vl/configs/Nemotron-2B-Dense-VL.json'}, 'include_visual': None, 'qk_norm_for_text': False, 'use_und_k_norm_for_gen': True}}, 'tokenizer': {'repository': None, 'revision': None, 'subdir': '', '_target_': 'cosmos_framework.data.generator.processors.build_processor_lazy', 'tokenizer_type': '/bulk/users/vla/alpamayo2edge/cosmos3-edge'}, 'layer_module': None, 'qk_norm': False, 'tie_word_embeddings': False, 'use_system_prompt': False, '_type': 'cosmos_framework.configs.base.defaults.reasoner.VLMConfig'}, 'diffusion_expert_config': {'timestep_range': 1.0, 'load_weights_from_pretrained': False, 'enable_vision_modality_embeddings': False, 'enable_media_modality_embedding': False, 'enable_sound_modality_embedding': True, 'patch_spatial': 2, 'max_vae_latent_side_after_patchify': 20, 'enable_fps_modulation': True, 'base_fps': 24, 'sound_base_temporal_compression_factor': None, 'vision_temporal_position_mode': 'latent_index', 'unified_3d_mrope_reset_spatial_ids': True, 'unified_3d_mrope_temporal_modality_margin': 15000, '_type': 'cosmos_framework.configs.base.defaults.model_config.DiffusionExpertConfig'}, 'input_video_key': 'video', 'input_image_key': 'images', 'input_caption_key': 'ai_caption', 'state_ch': 48, 'state_t': 300, 'latent_downsample_factor': 16, 'resolution': '480', 'max_num_tokens_after_packing': 74000, 'joint_attn_implementation': 'two_way', 'flex_attention': {'enabled': False, 'backend': 'auto', 'mask': {'attention_scope': 'all_views'}}, 'natten_parameter_list': None, 'video_temporal_causal': False, 'causal_training_strategy': 'none', 'lbl': {'method': 'local', 'coeff_und': None, 'coeff_gen': None, '_type': 'cosmos_framework.configs.base.defaults.model_config.LBLConfig'}, 'vision_gen': True, 'action_gen': True, 'max_action_dim': 64, 'num_embodiment_domains': 32, 'sound_gen': False, 'sound_tokenizer': None, 'sound_dim': None, 'sound_latent_fps': 25, 'enable_input_bias': True, 'log_enc_time_every_n': 100, 'exclude_reasoner_weights_from_checkpoint': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.OmniMoTModelConfig'}
+[10-01 01:44:03|WARNING|cosmos_framework/model/generator/omni_mot_model.py:150:set_precision] OmniMoTModel: precision torch.bfloat16
+This processor does not use the `size` parameter. It will be ignored.
+[10-01 01:44:04|INFO|cosmos_framework/data/generator/processors/base.py:131:__init__] Successfully loaded processor from local cache
+[10-01 01:44:04|INFO|cosmos_framework/utils/checkpoint_db.py:338:download] Downloading checkpoint Wan2.2/vae(e428726e8f6d460c95c6764891c37409)
+[10-01 01:44:04|INFO|cosmos_framework/utils/checkpoint_db.py:171:_hf_download] uv run --isolated --project /home/vla/projects/cosmos-framework/cosmos_framework/utils/hf_cli --locked --no-default-groups hf download --format=json Wan-AI/Wan2.2-TI2V-5B --repo-type model --revision 921dbaf3f1674a56f47e83fb80a34bac8a8f203e Wan2.2_VAE.pth
+Installed 16 packages in 1ms
+[10-01 01:44:06|INFO|cosmos_framework/model/generator/tokenizers/wan2pt2_vae_4x16x16.py:1056:_video_vae] loading /bulk/users/vla/alpamayo2edge/hf-cache/models--Wan-AI--Wan2.2-TI2V-5B/snapshots/921dbaf3f1674a56f47e83fb80a34bac8a8f203e/Wan2.2_VAE.pth
+[10-01 01:44:06|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_tokenizers: 2.10 s
+[10-01 01:44:06|INFO|cosmos_framework/utils/generator/parallelism.py:110:_validate] dp_shard auto-inferred to world_size = 1
+[10-01 01:44:06|INFO|cosmos_framework/utils/generator/parallelism.py:124:_validate] dp_replicate is set to -1, will be automatically determined based on world_size 1 // dp_shard 1.
+[10-01 01:44:06|INFO|cosmos_framework/utils/generator/parallelism.py:129:_validate] dp_replicate is set to 1.
+`torch_dtype` is deprecated! Use `dtype` instead!
+[10-01 01:44:06|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on meta to cuda and broadcast model states: 0.04 s
+[10-01 01:44:06|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on Creating PyTorch model and ema if enabled: 0.11 s
+[10-01 01:44:06|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_model: 0.11 s
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/torch/distributed/checkpoint/utils.py:483: UserWarning: torch.distributed is disabled, unavailable or uninitialized, assuming the intent is to load in a single process.
+  return func(*args, **kwargs)
+[10-01 01:44:07|INFO|../cosmos-framework/cosmos_framework/model/generator/mot/unified_mot.py:2656:_ensure_vision_tower] Edge vision tower: loading from checkpoint-local bundle /bulk/users/vla/alpamayo2edge/cosmos3-edge/vision_encoder
+2026-10-01 01:44:08,283 INFO stage-1 checkpoint: /data/vla/alpamayo2edge/runs/stage1/run-351/best -> /data/vla/alpamayo2edge/runs/stage1/run-351/best
+2026-10-01 01:44:08,950 INFO loaded merged student <- /data/vla/alpamayo2edge/runs/stage1/run-351/best
+[10-01 01:44:09|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[10-01 01:44:09|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+2026-10-01 01:44:09,075 INFO loaded 224 adapter tensors + 6 stage-1 row tensors <- /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025
+2026-10-01 01:44:09,114 INFO folded 112 adapter modules from /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025 (step=25) into the AR tower
+2026-10-01 01:44:09,335 INFO image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+2026-10-01 01:44:09,405 INFO bench2drive train: 8040 windows, CoC cache /bulk/users/vla/alpamayo2edge/b2d_cache/coc_rl7s25.jsonl
+[10-01 01:44:09|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[10-01 01:44:09|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+2026-10-01 01:44:09,433 INFO LoRA: {'wrapped': 112, 'by_leaf': {'q_proj': 28, 'k_proj': 28, 'v_proj': 28, 'o_proj': 28}, 'lora_params': 19267584, 'example': ['0.self_attn.q_proj', '0.self_attn.k_proj', '0.self_attn.v_proj'], 'full_ft': True, 'fp32_master': True}
+2026-10-01 01:44:09,433 INFO trainable 1437.1M [group0(x1.0): 1409.4M, group1(x8.0): 8.5M, group2(x2.0): 19.3M]
+2026-10-01 01:44:09,647 INFO image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+2026-10-01 01:44:09,676 INFO gate: 160 val windows, k=6
+/home/vla/projects/alpamayo2edge/src/distill/train_stage2.py:173: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  return fm_gt, {"fm_gt": float(fm_gt)}
+2026-10-01 01:49:52,929 INFO epoch 0 step 20/2016 loss 1.8718 {'fm_gt': 1.871826171875}  peak 49.4 GiB
+2026-10-01 01:55:37,274 INFO epoch 0 step 40/2016 loss 1.1133 {'fm_gt': 1.113277792930603}  peak 49.5 GiB
+2026-10-01 02:01:21,348 INFO epoch 0 step 60/2016 loss 0.7755 {'fm_gt': 0.7754809260368347}  peak 49.5 GiB
+2026-10-01 02:07:05,527 INFO epoch 0 step 80/2016 loss 0.4572 {'fm_gt': 0.45718663930892944}  peak 49.5 GiB
+2026-10-01 02:12:50,372 INFO epoch 0 step 100/2016 loss 0.8898 {'fm_gt': 0.889817476272583}  peak 49.5 GiB
+2026-10-01 02:18:34,732 INFO epoch 0 step 120/2016 loss 0.7843 {'fm_gt': 0.7842870950698853}  peak 49.5 GiB
+2026-10-01 02:24:18,973 INFO epoch 0 step 140/2016 loss 0.3187 {'fm_gt': 0.3186526298522949}  peak 49.5 GiB
+2026-10-01 02:30:03,395 INFO epoch 0 step 160/2016 loss 0.3795 {'fm_gt': 0.37949416041374207}  peak 49.5 GiB
+2026-10-01 02:35:47,641 INFO epoch 0 step 180/2016 loss 0.3924 {'fm_gt': 0.39235204458236694}  peak 49.5 GiB
+2026-10-01 02:41:31,608 INFO epoch 0 step 200/2016 loss 0.1218 {'fm_gt': 0.12179591506719589}  peak 49.5 GiB
+2026-10-01 02:47:15,652 INFO epoch 0 step 220/2016 loss 0.7294 {'fm_gt': 0.7294192314147949}  peak 49.5 GiB
+2026-10-01 02:53:00,085 INFO epoch 0 step 240/2016 loss 0.4193 {'fm_gt': 0.41928061842918396}  peak 49.5 GiB
+2026-10-01 02:57:51,758 INFO epoch 0 gate  n=160 k=6: minADE_6 2.667 m  meanADE 6.754  minFDE 5.825  p90 5.643 | CV 6.115 (98 s)
+2026-10-01 02:57:51,759 INFO   braked (136): minADE 2.939 vs CV 6.681 | others (24): 1.126 vs 2.909
+2026-10-01 02:57:51,759 INFO   by horizon: 1s 0.18 (CV 0.39)  2s 0.50 (CV 1.10)  3s 0.91 (CV 2.01)  4s 1.34 (CV 3.06)
+2026-10-01 02:57:51,759 INFO      AccidentTwoWays                          n= 17  minADE 2.38  CV 5.23
+2026-10-01 02:57:51,759 INFO      ParkedObstacle                           n= 13  minADE 2.52  CV 4.58
+2026-10-01 02:57:51,759 INFO      ConstructionObstacleTwoWays              n=  9  minADE 1.22  CV 3.62
+2026-10-01 02:57:51,759 INFO      TJunction                                n=  8  minADE 1.50  CV 2.56
+2026-10-01 02:57:51,759 INFO      ParkingCutIn                             n=  8  minADE 2.11  CV 3.62
+2026-10-01 02:57:51,759 INFO      HazardAtSideLane                         n=  7  minADE 2.96  CV 6.64
+2026-10-01 02:57:51,759 INFO      ParkingExit                              n=  7  minADE 1.67  CV 6.02
+2026-10-01 02:57:51,759 INFO      HardBreakRoute                           n=  7  minADE 1.38  CV 2.96
+2026-10-01 02:57:51,759 INFO      VanillaSignalizedTurnEncounterGreenLight n=  7  minADE 1.34  CV 3.25
+2026-10-01 02:57:51,759 INFO      BlockedIntersection                      n=  5  minADE 2.89  CV 7.46
+2026-10-01 02:57:51,759 INFO      YieldToEmergencyVehicle                  n=  4  minADE 4.78  CV 8.20
+2026-10-01 02:57:51,759 INFO      ConstructionObstacle                     n=  4  minADE 4.13  CV 3.97
+2026-10-01 02:57:55,818 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch0 (992 tensors)
+2026-10-01 02:57:55,969 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch0
+2026-10-01 02:57:55,970 INFO best -> epoch0 (val minADE 2.667)
+2026-10-01 03:00:31,052 INFO epoch 1 step 260/2016 loss 0.8020 {'fm_gt': 0.8019641637802124}  peak 49.5 GiB
+2026-10-01 03:06:15,431 INFO epoch 1 step 280/2016 loss 0.3253 {'fm_gt': 0.32528620958328247}  peak 49.5 GiB
+2026-10-01 03:11:59,318 INFO epoch 1 step 300/2016 loss 0.5405 {'fm_gt': 0.540459156036377}  peak 49.5 GiB
+2026-10-01 03:17:43,691 INFO epoch 1 step 320/2016 loss 0.4404 {'fm_gt': 0.44041556119918823}  peak 49.5 GiB
+2026-10-01 03:23:27,730 INFO epoch 1 step 340/2016 loss 1.1581 {'fm_gt': 1.1581430435180664}  peak 49.5 GiB
+2026-10-01 03:29:11,644 INFO epoch 1 step 360/2016 loss 0.7837 {'fm_gt': 0.7836663722991943}  peak 49.5 GiB
+2026-10-01 03:34:56,129 INFO epoch 1 step 380/2016 loss 0.4537 {'fm_gt': 0.4537432789802551}  peak 49.5 GiB
+2026-10-01 03:40:40,471 INFO epoch 1 step 400/2016 loss 0.0385 {'fm_gt': 0.03849482536315918}  peak 49.5 GiB
+2026-10-01 03:46:24,768 INFO epoch 1 step 420/2016 loss 0.8306 {'fm_gt': 0.8306251764297485}  peak 49.5 GiB
+2026-10-01 03:52:09,249 INFO epoch 1 step 440/2016 loss 0.5955 {'fm_gt': 0.595454216003418}  peak 49.5 GiB
+2026-10-01 03:57:53,525 INFO epoch 1 step 460/2016 loss 0.7561 {'fm_gt': 0.7561119794845581}  peak 49.5 GiB
+2026-10-01 04:03:37,849 INFO epoch 1 step 480/2016 loss 0.3115 {'fm_gt': 0.31154370307922363}  peak 49.5 GiB
+2026-10-01 04:09:21,836 INFO epoch 1 step 500/2016 loss 0.5269 {'fm_gt': 0.5269036293029785}  peak 49.5 GiB
+2026-10-01 04:11:38,509 INFO epoch 1 gate  n=160 k=6: minADE_6 2.877 m  meanADE 5.450  minFDE 6.204  p90 6.873 | CV 6.115 (98 s)
+2026-10-01 04:11:38,509 INFO   braked (136): minADE 3.133 vs CV 6.681 | others (24): 1.425 vs 2.909
+2026-10-01 04:11:38,509 INFO   by horizon: 1s 0.18 (CV 0.39)  2s 0.46 (CV 1.10)  3s 0.85 (CV 2.01)  4s 1.30 (CV 3.06)
+2026-10-01 04:11:38,510 INFO      AccidentTwoWays                          n= 17  minADE 1.86  CV 5.23
+2026-10-01 04:11:38,510 INFO      ParkedObstacle                           n= 13  minADE 3.23  CV 4.58
+2026-10-01 04:11:38,510 INFO      ConstructionObstacleTwoWays              n=  9  minADE 2.26  CV 3.62
+2026-10-01 04:11:38,510 INFO      TJunction                                n=  8  minADE 2.01  CV 2.56
+2026-10-01 04:11:38,510 INFO      ParkingCutIn                             n=  8  minADE 1.80  CV 3.62
+2026-10-01 04:11:38,510 INFO      HazardAtSideLane                         n=  7  minADE 3.52  CV 6.64
+2026-10-01 04:11:38,510 INFO      ParkingExit                              n=  7  minADE 1.65  CV 6.02
+2026-10-01 04:11:38,510 INFO      HardBreakRoute                           n=  7  minADE 1.02  CV 2.96
+2026-10-01 04:11:38,510 INFO      VanillaSignalizedTurnEncounterGreenLight n=  7  minADE 1.07  CV 3.25
+2026-10-01 04:11:38,510 INFO      BlockedIntersection                      n=  5  minADE 3.16  CV 7.46
+2026-10-01 04:11:38,510 INFO      YieldToEmergencyVehicle                  n=  4  minADE 7.03  CV 8.20
+2026-10-01 04:11:38,510 INFO      ConstructionObstacle                     n=  4  minADE 2.08  CV 3.97
+2026-10-01 04:11:42,606 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch1 (992 tensors)
+2026-10-01 04:11:42,784 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch1
+2026-10-01 04:16:52,754 INFO epoch 2 step 520/2016 loss 0.4202 {'fm_gt': 0.42015540599823}  peak 49.5 GiB
+2026-10-01 04:22:36,724 INFO epoch 2 step 540/2016 loss 0.3657 {'fm_gt': 0.3656858205795288}  peak 49.5 GiB
+2026-10-01 04:28:20,664 INFO epoch 2 step 560/2016 loss 0.5915 {'fm_gt': 0.5915359854698181}  peak 49.5 GiB
+2026-10-01 04:34:04,911 INFO epoch 2 step 580/2016 loss 0.3169 {'fm_gt': 0.31688952445983887}  peak 49.5 GiB
+2026-10-01 04:39:49,192 INFO epoch 2 step 600/2016 loss 0.8127 {'fm_gt': 0.8126534819602966}  peak 49.5 GiB
+2026-10-01 04:45:33,445 INFO epoch 2 step 620/2016 loss 0.5757 {'fm_gt': 0.5756898522377014}  peak 49.5 GiB
+2026-10-01 04:51:17,827 INFO epoch 2 step 640/2016 loss 0.3753 {'fm_gt': 0.3752872347831726}  peak 49.5 GiB
+2026-10-01 04:57:02,283 INFO epoch 2 step 660/2016 loss 0.6814 {'fm_gt': 0.6813671588897705}  peak 49.5 GiB
+2026-10-01 05:02:46,900 INFO epoch 2 step 680/2016 loss 0.8338 {'fm_gt': 0.8337594866752625}  peak 49.5 GiB
+2026-10-01 05:08:30,648 INFO epoch 2 step 700/2016 loss 0.0280 {'fm_gt': 0.027998782694339752}  peak 49.5 GiB
+2026-10-01 05:14:15,024 INFO epoch 2 step 720/2016 loss 0.1722 {'fm_gt': 0.17215842008590698}  peak 49.5 GiB
+2026-10-01 05:19:59,516 INFO epoch 2 step 740/2016 loss 0.2280 {'fm_gt': 0.22797013819217682}  peak 49.5 GiB
+2026-10-01 05:25:25,481 INFO epoch 2 gate  n=160 k=6: minADE_6 2.122 m  meanADE 4.892  minFDE 4.121  p90 4.004 | CV 6.115 (98 s)
+2026-10-01 05:25:25,481 INFO   braked (136): minADE 2.370 vs CV 6.681 | others (24): 0.717 vs 2.909
+2026-10-01 05:25:25,481 INFO   by horizon: 1s 0.15 (CV 0.39)  2s 0.43 (CV 1.10)  3s 0.77 (CV 2.01)  4s 1.11 (CV 3.06)
+2026-10-01 05:25:25,481 INFO      AccidentTwoWays                          n= 17  minADE 1.37  CV 5.23
+2026-10-01 05:25:25,481 INFO      ParkedObstacle                           n= 13  minADE 1.81  CV 4.58
+2026-10-01 05:25:25,481 INFO      ConstructionObstacleTwoWays              n=  9  minADE 1.11  CV 3.62
+2026-10-01 05:25:25,481 INFO      TJunction                                n=  8  minADE 1.69  CV 2.56
+2026-10-01 05:25:25,481 INFO      ParkingCutIn                             n=  8  minADE 2.30  CV 3.62
+2026-10-01 05:25:25,481 INFO      HazardAtSideLane                         n=  7  minADE 2.74  CV 6.64
+2026-10-01 05:25:25,481 INFO      ParkingExit                              n=  7  minADE 1.57  CV 6.02
+2026-10-01 05:25:25,481 INFO      HardBreakRoute                           n=  7  minADE 0.92  CV 2.96
+2026-10-01 05:25:25,481 INFO      VanillaSignalizedTurnEncounterGreenLight n=  7  minADE 1.42  CV 3.25
+2026-10-01 05:25:25,481 INFO      BlockedIntersection                      n=  5  minADE 2.08  CV 7.46
+2026-10-01 05:25:25,481 INFO      YieldToEmergencyVehicle                  n=  4  minADE 4.91  CV 8.20
+2026-10-01 05:25:25,481 INFO      ConstructionObstacle                     n=  4  minADE 2.55  CV 3.97
+2026-10-01 05:25:29,447 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch2 (992 tensors)
+2026-10-01 05:25:29,599 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch2
+2026-10-01 05:25:29,600 INFO best -> epoch2 (val minADE 2.122)
+2026-10-01 05:27:30,402 INFO epoch 3 step 760/2016 loss 0.5965 {'fm_gt': 0.5964640378952026}  peak 49.5 GiB
+2026-10-01 05:33:14,847 INFO epoch 3 step 780/2016 loss 0.1264 {'fm_gt': 0.1264088749885559}  peak 49.5 GiB
+2026-10-01 05:38:58,749 INFO epoch 3 step 800/2016 loss 0.3321 {'fm_gt': 0.33206015825271606}  peak 49.5 GiB
+2026-10-01 05:44:43,068 INFO epoch 3 step 820/2016 loss 0.8300 {'fm_gt': 0.8299592137336731}  peak 49.5 GiB
+2026-10-01 05:50:27,267 INFO epoch 3 step 840/2016 loss 0.7861 {'fm_gt': 0.786091148853302}  peak 49.5 GiB
+2026-10-01 05:56:11,694 INFO epoch 3 step 860/2016 loss 0.3101 {'fm_gt': 0.3100726902484894}  peak 49.5 GiB
+2026-10-01 06:01:56,119 INFO epoch 3 step 880/2016 loss 0.4230 {'fm_gt': 0.4230033755302429}  peak 49.5 GiB
+2026-10-01 06:07:40,228 INFO epoch 3 step 900/2016 loss 0.3440 {'fm_gt': 0.3439634442329407}  peak 49.5 GiB
+2026-10-01 06:13:24,470 INFO epoch 3 step 920/2016 loss 0.1380 {'fm_gt': 0.13796424865722656}  peak 49.5 GiB
+2026-10-01 06:19:08,824 INFO epoch 3 step 940/2016 loss 0.2944 {'fm_gt': 0.294381707906723}  peak 49.5 GiB
+2026-10-01 06:24:54,227 INFO epoch 3 step 960/2016 loss 0.6521 {'fm_gt': 0.6521453857421875}  peak 49.5 GiB
+2026-10-01 06:30:38,529 INFO epoch 3 step 980/2016 loss 0.4225 {'fm_gt': 0.4224829077720642}  peak 49.5 GiB
+2026-10-01 06:36:23,014 INFO epoch 3 step 1000/2016 loss 0.5575 {'fm_gt': 0.5574774742126465}  peak 49.5 GiB
+2026-10-01 06:39:13,981 INFO epoch 3 gate  n=160 k=6: minADE_6 2.014 m  meanADE 4.164  minFDE 3.785  p90 4.590 | CV 6.115 (98 s)
+2026-10-01 06:39:13,981 INFO   braked (136): minADE 2.246 vs CV 6.681 | others (24): 0.699 vs 2.909
+2026-10-01 06:39:13,981 INFO   by horizon: 1s 0.15 (CV 0.39)  2s 0.42 (CV 1.10)  3s 0.73 (CV 2.01)  4s 1.08 (CV 3.06)
+2026-10-01 06:39:13,981 INFO      AccidentTwoWays                          n= 17  minADE 1.39  CV 5.23
+2026-10-01 06:39:13,981 INFO      ParkedObstacle                           n= 13  minADE 1.34  CV 4.58
+2026-10-01 06:39:13,981 INFO      ConstructionObstacleTwoWays              n=  9  minADE 1.17  CV 3.62
+2026-10-01 06:39:13,981 INFO      TJunction                                n=  8  minADE 1.97  CV 2.56
+2026-10-01 06:39:13,981 INFO      ParkingCutIn                             n=  8  minADE 2.03  CV 3.62
+2026-10-01 06:39:13,981 INFO      HazardAtSideLane                         n=  7  minADE 3.03  CV 6.64
+2026-10-01 06:39:13,981 INFO      ParkingExit                              n=  7  minADE 1.73  CV 6.02
+2026-10-01 06:39:13,981 INFO      HardBreakRoute                           n=  7  minADE 0.69  CV 2.96
+2026-10-01 06:39:13,982 INFO      VanillaSignalizedTurnEncounterGreenLight n=  7  minADE 0.86  CV 3.25
+2026-10-01 06:39:13,982 INFO      BlockedIntersection                      n=  5  minADE 1.79  CV 7.46
+2026-10-01 06:39:13,982 INFO      YieldToEmergencyVehicle                  n=  4  minADE 4.83  CV 8.20
+2026-10-01 06:39:13,982 INFO      ConstructionObstacle                     n=  4  minADE 1.87  CV 3.97
+2026-10-01 06:39:18,331 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch3 (992 tensors)
+2026-10-01 06:39:18,508 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch3
+2026-10-01 06:39:18,509 INFO best -> epoch3 (val minADE 2.014)
+2026-10-01 06:43:54,430 INFO epoch 4 step 1020/2016 loss 0.1762 {'fm_gt': 0.1761884093284607}  peak 49.5 GiB
+2026-10-01 06:49:38,198 INFO epoch 4 step 1040/2016 loss 0.8890 {'fm_gt': 0.8890213966369629}  peak 49.5 GiB
+2026-10-01 06:55:22,653 INFO epoch 4 step 1060/2016 loss 0.2836 {'fm_gt': 0.2836248278617859}  peak 49.5 GiB
+2026-10-01 07:01:06,740 INFO epoch 4 step 1080/2016 loss 0.3444 {'fm_gt': 0.3444368839263916}  peak 49.5 GiB
+2026-10-01 07:06:51,336 INFO epoch 4 step 1100/2016 loss 0.5652 {'fm_gt': 0.5651955008506775}  peak 49.5 GiB
+2026-10-01 07:12:35,381 INFO epoch 4 step 1120/2016 loss 0.2182 {'fm_gt': 0.2182396501302719}  peak 49.5 GiB
+2026-10-01 07:18:19,651 INFO epoch 4 step 1140/2016 loss 0.1486 {'fm_gt': 0.14856213331222534}  peak 49.5 GiB
+2026-10-01 07:24:04,198 INFO epoch 4 step 1160/2016 loss 0.4302 {'fm_gt': 0.43024712800979614}  peak 49.5 GiB
+2026-10-01 07:29:48,321 INFO epoch 4 step 1180/2016 loss 0.3274 {'fm_gt': 0.3273540139198303}  peak 49.5 GiB
+2026-10-01 07:35:32,828 INFO epoch 4 step 1200/2016 loss 0.4634 {'fm_gt': 0.46336355805397034}  peak 49.5 GiB
+2026-10-01 07:41:17,185 INFO epoch 4 step 1220/2016 loss 0.7735 {'fm_gt': 0.7735254764556885}  peak 49.5 GiB
+2026-10-01 07:47:01,300 INFO epoch 4 step 1240/2016 loss 0.4285 {'fm_gt': 0.428526908159256}  peak 49.5 GiB
+2026-10-01 07:53:02,036 INFO epoch 4 gate  n=160 k=6: minADE_6 1.841 m  meanADE 3.927  minFDE 3.744  p90 4.030 | CV 6.115 (98 s)
+2026-10-01 07:53:02,036 INFO   braked (136): minADE 1.980 vs CV 6.681 | others (24): 1.049 vs 2.909
+2026-10-01 07:53:02,036 INFO   by horizon: 1s 0.15 (CV 0.39)  2s 0.39 (CV 1.10)  3s 0.66 (CV 2.01)  4s 0.95 (CV 3.06)
+2026-10-01 07:53:02,036 INFO      AccidentTwoWays                          n= 17  minADE 1.15  CV 5.23
+2026-10-01 07:53:02,036 INFO      ParkedObstacle                           n= 13  minADE 1.93  CV 4.58
+2026-10-01 07:53:02,036 INFO      ConstructionObstacleTwoWays              n=  9  minADE 0.91  CV 3.62
+2026-10-01 07:53:02,036 INFO      TJunction                                n=  8  minADE 1.82  CV 2.56
+2026-10-01 07:53:02,036 INFO      ParkingCutIn                             n=  8  minADE 1.59  CV 3.62
+2026-10-01 07:53:02,036 INFO      HazardAtSideLane                         n=  7  minADE 0.92  CV 6.64
+2026-10-01 07:53:02,036 INFO      ParkingExit                              n=  7  minADE 1.07  CV 6.02
+2026-10-01 07:53:02,036 INFO      HardBreakRoute                           n=  7  minADE 1.81  CV 2.96
+2026-10-01 07:53:02,036 INFO      VanillaSignalizedTurnEncounterGreenLight n=  7  minADE 0.84  CV 3.25
+2026-10-01 07:53:02,037 INFO      BlockedIntersection                      n=  5  minADE 1.54  CV 7.46
+2026-10-01 07:53:02,037 INFO      YieldToEmergencyVehicle                  n=  4  minADE 2.67  CV 8.20
+2026-10-01 07:53:02,037 INFO      ConstructionObstacle                     n=  4  minADE 2.04  CV 3.97
+2026-10-01 07:53:06,123 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch4 (992 tensors)
+2026-10-01 07:53:06,297 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch4
+2026-10-01 07:53:06,298 INFO best -> epoch4 (val minADE 1.841)
+2026-10-01 07:54:32,823 INFO epoch 5 step 1260/2016 loss 0.5575 {'fm_gt': 0.5575159788131714}  peak 49.5 GiB
+2026-10-01 08:00:17,132 INFO epoch 5 step 1280/2016 loss 0.4217 {'fm_gt': 0.4217454195022583}  peak 49.5 GiB
+2026-10-01 08:06:01,415 INFO epoch 5 step 1300/2016 loss 0.2069 {'fm_gt': 0.2069064825773239}  peak 49.5 GiB
+2026-10-01 08:11:45,712 INFO epoch 5 step 1320/2016 loss 0.1655 {'fm_gt': 0.16546516120433807}  peak 49.5 GiB
+2026-10-01 08:17:30,013 INFO epoch 5 step 1340/2016 loss 0.3015 {'fm_gt': 0.30152130126953125}  peak 49.5 GiB
+2026-10-01 08:23:14,434 INFO epoch 5 step 1360/2016 loss 0.2670 {'fm_gt': 0.2669786810874939}  peak 49.5 GiB
+2026-10-01 08:28:58,709 INFO epoch 5 step 1380/2016 loss 0.6638 {'fm_gt': 0.6637731790542603}  peak 49.5 GiB
+2026-10-01 08:34:42,928 INFO epoch 5 step 1400/2016 loss 0.5095 {'fm_gt': 0.5094549655914307}  peak 49.5 GiB
+2026-10-01 08:40:27,433 INFO epoch 5 step 1420/2016 loss 0.7154 {'fm_gt': 0.7154152989387512}  peak 49.5 GiB
+2026-10-01 08:46:11,825 INFO epoch 5 step 1440/2016 loss 0.2749 {'fm_gt': 0.2748618423938751}  peak 49.5 GiB
+2026-10-01 08:51:56,343 INFO epoch 5 step 1460/2016 loss 0.4923 {'fm_gt': 0.49234047532081604}  peak 49.5 GiB
+2026-10-01 08:57:40,710 INFO epoch 5 step 1480/2016 loss 0.3949 {'fm_gt': 0.39485079050064087}  peak 49.5 GiB
+2026-10-01 09:03:25,089 INFO epoch 5 step 1500/2016 loss 0.4055 {'fm_gt': 0.4054880738258362}  peak 49.5 GiB
+2026-10-01 09:06:50,811 INFO epoch 5 gate  n=160 k=6: minADE_6 1.629 m  meanADE 3.548  minFDE 3.300  p90 3.857 | CV 6.115 (98 s)
+2026-10-01 09:06:50,811 INFO   braked (136): minADE 1.750 vs CV 6.681 | others (24): 0.944 vs 2.909
+2026-10-01 09:06:50,811 INFO   by horizon: 1s 0.16 (CV 0.39)  2s 0.38 (CV 1.10)  3s 0.61 (CV 2.01)  4s 0.87 (CV 3.06)
+2026-10-01 09:06:50,811 INFO      AccidentTwoWays                          n= 17  minADE 0.73  CV 5.23
+2026-10-01 09:06:50,811 INFO      ParkedObstacle                           n= 13  minADE 1.42  CV 4.58
+2026-10-01 09:06:50,811 INFO      ConstructionObstacleTwoWays              n=  9  minADE 0.94  CV 3.62
+2026-10-01 09:06:50,811 INFO      TJunction                                n=  8  minADE 1.53  CV 2.56
+2026-10-01 09:06:50,811 INFO      ParkingCutIn                             n=  8  minADE 1.37  CV 3.62
+2026-10-01 09:06:50,811 INFO      HazardAtSideLane                         n=  7  minADE 2.89  CV 6.64
+2026-10-01 09:06:50,811 INFO      ParkingExit                              n=  7  minADE 1.24  CV 6.02
+2026-10-01 09:06:50,811 INFO      HardBreakRoute                           n=  7  minADE 0.74  CV 2.96
+2026-10-01 09:06:50,811 INFO      VanillaSignalizedTurnEncounterGreenLight n=  7  minADE 0.65  CV 3.25
+2026-10-01 09:06:50,811 INFO      BlockedIntersection                      n=  5  minADE 2.30  CV 7.46
+2026-10-01 09:06:50,811 INFO      YieldToEmergencyVehicle                  n=  4  minADE 3.69  CV 8.20
+2026-10-01 09:06:50,811 INFO      ConstructionObstacle                     n=  4  minADE 1.72  CV 3.97
+2026-10-01 09:06:54,902 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch5 (992 tensors)
+2026-10-01 09:06:55,062 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch5
+2026-10-01 09:06:55,063 INFO best -> epoch5 (val minADE 1.629)
+2026-10-01 09:10:56,239 INFO epoch 6 step 1520/2016 loss 0.4648 {'fm_gt': 0.46484503149986267}  peak 49.5 GiB
+2026-10-01 09:16:40,460 INFO epoch 6 step 1540/2016 loss 0.2481 {'fm_gt': 0.24805231392383575}  peak 49.5 GiB
+2026-10-01 09:22:24,314 INFO epoch 6 step 1560/2016 loss 0.6009 {'fm_gt': 0.6009438037872314}  peak 49.5 GiB
+2026-10-01 09:28:08,012 INFO epoch 6 step 1580/2016 loss 0.2729 {'fm_gt': 0.27287259697914124}  peak 49.5 GiB
+2026-10-01 09:33:52,179 INFO epoch 6 step 1600/2016 loss 0.0717 {'fm_gt': 0.0717061385512352}  peak 49.5 GiB
+2026-10-01 09:39:36,548 INFO epoch 6 step 1620/2016 loss 0.2106 {'fm_gt': 0.21064433455467224}  peak 49.5 GiB
+2026-10-01 09:45:21,023 INFO epoch 6 step 1640/2016 loss 0.7028 {'fm_gt': 0.7027606964111328}  peak 49.5 GiB
+2026-10-01 09:51:05,348 INFO epoch 6 step 1660/2016 loss 0.2658 {'fm_gt': 0.2658030688762665}  peak 49.5 GiB
+2026-10-01 09:56:50,018 INFO epoch 6 step 1680/2016 loss 0.4452 {'fm_gt': 0.44519928097724915}  peak 49.5 GiB
+2026-10-01 10:02:34,291 INFO epoch 6 step 1700/2016 loss 0.3305 {'fm_gt': 0.33051973581314087}  peak 49.5 GiB
+2026-10-01 10:08:18,099 INFO epoch 6 step 1720/2016 loss 0.5209 {'fm_gt': 0.5209124684333801}  peak 49.5 GiB
+2026-10-01 10:14:01,943 INFO epoch 6 step 1740/2016 loss 0.4868 {'fm_gt': 0.48682382702827454}  peak 49.5 GiB
+2026-10-01 10:20:36,541 INFO epoch 6 gate  n=160 k=6: minADE_6 1.686 m  meanADE 3.299  minFDE 3.501  p90 3.622 | CV 6.115 (98 s)
+2026-10-01 10:20:36,541 INFO   braked (136): minADE 1.858 vs CV 6.681 | others (24): 0.708 vs 2.909
+2026-10-01 10:20:36,542 INFO   by horizon: 1s 0.14 (CV 0.39)  2s 0.36 (CV 1.10)  3s 0.63 (CV 2.01)  4s 0.92 (CV 3.06)
+2026-10-01 10:20:36,542 INFO      AccidentTwoWays                          n= 17  minADE 0.70  CV 5.23
+2026-10-01 10:20:36,542 INFO      ParkedObstacle                           n= 13  minADE 1.24  CV 4.58
+2026-10-01 10:20:36,542 INFO      ConstructionObstacleTwoWays              n=  9  minADE 1.00  CV 3.62
+2026-10-01 10:20:36,542 INFO      TJunction                                n=  8  minADE 1.61  CV 2.56
+2026-10-01 10:20:36,542 INFO      ParkingCutIn                             n=  8  minADE 1.67  CV 3.62
+2026-10-01 10:20:36,542 INFO      HazardAtSideLane                         n=  7  minADE 2.80  CV 6.64
+2026-10-01 10:20:36,542 INFO      ParkingExit                              n=  7  minADE 1.04  CV 6.02
+2026-10-01 10:20:36,542 INFO      HardBreakRoute                           n=  7  minADE 0.53  CV 2.96
+2026-10-01 10:20:36,542 INFO      VanillaSignalizedTurnEncounterGreenLight n=  7  minADE 0.79  CV 3.25
+2026-10-01 10:20:36,542 INFO      BlockedIntersection                      n=  5  minADE 1.68  CV 7.46
+2026-10-01 10:20:36,542 INFO      YieldToEmergencyVehicle                  n=  4  minADE 3.14  CV 8.20
+2026-10-01 10:20:36,542 INFO      ConstructionObstacle                     n=  4  minADE 1.58  CV 3.97
+2026-10-01 10:20:40,564 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch6 (992 tensors)
+2026-10-01 10:20:40,723 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch6
+2026-10-01 10:21:32,645 INFO epoch 7 step 1760/2016 loss 0.4543 {'fm_gt': 0.4542560577392578}  peak 49.5 GiB
+2026-10-01 10:27:16,724 INFO epoch 7 step 1780/2016 loss 0.3906 {'fm_gt': 0.39056387543678284}  peak 49.5 GiB
+2026-10-01 10:33:00,506 INFO epoch 7 step 1800/2016 loss 0.3980 {'fm_gt': 0.3979746103286743}  peak 49.5 GiB
+2026-10-01 10:38:44,537 INFO epoch 7 step 1820/2016 loss 0.3229 {'fm_gt': 0.32286208868026733}  peak 49.5 GiB
+2026-10-01 10:44:29,036 INFO epoch 7 step 1840/2016 loss 0.2445 {'fm_gt': 0.2445184290409088}  peak 49.5 GiB
+2026-10-01 10:50:13,423 INFO epoch 7 step 1860/2016 loss 0.3481 {'fm_gt': 0.34805595874786377}  peak 49.5 GiB
+2026-10-01 10:55:58,029 INFO epoch 7 step 1880/2016 loss 0.6757 {'fm_gt': 0.6757479310035706}  peak 49.5 GiB
+2026-10-01 11:01:42,310 INFO epoch 7 step 1900/2016 loss 0.7526 {'fm_gt': 0.7525599002838135}  peak 49.5 GiB
+2026-10-01 11:07:26,718 INFO epoch 7 step 1920/2016 loss 0.2004 {'fm_gt': 0.2004229575395584}  peak 49.5 GiB
+2026-10-01 11:13:10,955 INFO epoch 7 step 1940/2016 loss 0.2952 {'fm_gt': 0.29517900943756104}  peak 49.5 GiB
+2026-10-01 11:18:55,064 INFO epoch 7 step 1960/2016 loss 0.2506 {'fm_gt': 0.2506435513496399}  peak 49.5 GiB
+2026-10-01 11:24:39,856 INFO epoch 7 step 1980/2016 loss 0.1280 {'fm_gt': 0.1279761642217636}  peak 49.5 GiB
+2026-10-01 11:30:23,813 INFO epoch 7 step 2000/2016 loss 0.1203 {'fm_gt': 0.1203300952911377}  peak 49.5 GiB
+2026-10-01 11:34:23,343 INFO epoch 7 gate  n=160 k=6: minADE_6 1.664 m  meanADE 3.225  minFDE 3.375  p90 3.863 | CV 6.115 (98 s)
+2026-10-01 11:34:23,344 INFO   braked (136): minADE 1.793 vs CV 6.681 | others (24): 0.932 vs 2.909
+2026-10-01 11:34:23,344 INFO   by horizon: 1s 0.15 (CV 0.39)  2s 0.37 (CV 1.10)  3s 0.60 (CV 2.01)  4s 0.85 (CV 3.06)
+2026-10-01 11:34:23,344 INFO      AccidentTwoWays                          n= 17  minADE 1.01  CV 5.23
+2026-10-01 11:34:23,344 INFO      ParkedObstacle                           n= 13  minADE 1.24  CV 4.58
+2026-10-01 11:34:23,344 INFO      ConstructionObstacleTwoWays              n=  9  minADE 0.97  CV 3.62
+2026-10-01 11:34:23,344 INFO      TJunction                                n=  8  minADE 1.73  CV 2.56
+2026-10-01 11:34:23,344 INFO      ParkingCutIn                             n=  8  minADE 1.33  CV 3.62
+2026-10-01 11:34:23,344 INFO      HazardAtSideLane                         n=  7  minADE 2.08  CV 6.64
+2026-10-01 11:34:23,344 INFO      ParkingExit                              n=  7  minADE 0.81  CV 6.02
+2026-10-01 11:34:23,344 INFO      HardBreakRoute                           n=  7  minADE 0.64  CV 2.96
+2026-10-01 11:34:23,344 INFO      VanillaSignalizedTurnEncounterGreenLight n=  7  minADE 0.65  CV 3.25
+2026-10-01 11:34:23,344 INFO      BlockedIntersection                      n=  5  minADE 2.28  CV 7.46
+2026-10-01 11:34:23,344 INFO      YieldToEmergencyVehicle                  n=  4  minADE 2.66  CV 8.20
+2026-10-01 11:34:23,344 INFO      ConstructionObstacle                     n=  4  minADE 1.46  CV 3.97
+2026-10-01 11:34:27,401 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch7 (992 tensors)
+2026-10-01 11:34:27,563 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-3-b2d-fullft-arlora/epoch7
+wandb: updating run metadata
+wandb: uploading output.log; uploading wandb-summary.json; uploading config.yaml
+wandb: uploading history steps 2007-2007, summary, console lines 271-287
+wandb: 
+wandb: Run history:
+wandb:              epoch ▁▁▁▁▁▂▂▂▂▂▂▃▃▃▃▃▃▃▄▄▅▅▅▅▆▆▆▆▆▆▇▇▇▇▇▇████
+wandb: gate/braked_minade ▇█▄▄▂▁▂▁
+wandb:        gate/cv_ade ▁▁▁▁▁▁▁▁
+wandb:       gate/meanade █▅▄▃▂▂▁▁
+wandb:        gate/minade ▇█▄▃▂▁▁▁
+wandb:        gate/minfde ▇█▃▂▂▁▁▁
+wandb:  gate/other_minade ▅█▁▁▄▃▁▃
+wandb:         loss/fm_gt ██▇▃▃▃▃▂▃▃▂▂▂▁▁▁▁▁▁▂▂▃▂▂▂▁▂▂▁▂▂▂▂▂▂▂▂▂▁▂
+wandb:         loss/total ▅▆▃▅▄▂█▂▃▃▄▆▄▅▃▂▃▅▁▄▄▃▅▅▅▃▆▃▁▃▄▆▃▄▄▃▄▅▂▁
+wandb:                 lr ██████████▇▇▇▇▇▇▇▇▆▆▅▅▄▄▃▃▃▃▃▃▂▂▂▂▁▁▁▁▁▁
+wandb: 
+wandb: Run summary:
+wandb:              epoch 7
+wandb: gate/braked_minade 1.79275
+wandb:        gate/cv_ade 6.11497
+wandb:       gate/meanade 3.22538
+wandb:        gate/minade 1.66358
+wandb:        gate/minfde 3.37528
+wandb:  gate/other_minade 0.93163
+wandb:         loss/fm_gt 0.42342
+wandb:         loss/total 0.42342
+wandb:                 lr 0.0
+wandb: 
+wandb: 🚀 View run sft-run-3-b2d-fullft-arlora-job520 at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/sft-run-3-b2d-fullft-arlora-job520
+wandb: ⭐️ View project at: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20261001_014359-sft-run-3-b2d-fullft-arlora-job520/logs

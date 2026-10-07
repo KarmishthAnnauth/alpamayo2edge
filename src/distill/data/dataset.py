@@ -363,8 +363,14 @@ def collate_stage1(batch: list[dict], pad_id: int) -> dict:
 
 
 def collate_stage2(batch: list[dict], pad_id: int) -> dict:
-    """Flattens the K cached flow targets per window into the batch dim."""
+    """Flattens the K cached flow targets per window into the batch dim.
+
+    Windows without cached `flow_*` tuples (Bench2Drive, `supervision: gt_flow`)
+    pass through with the stage-1 keys only; `train_stage2` then draws its own
+    (t, a0) per window."""
     base = collate_stage1(batch, pad_id)
+    if "flow_t" not in batch[0]:
+        return base
     t, a_t, v = [], [], []
     owner = []
     for j, b in enumerate(batch):

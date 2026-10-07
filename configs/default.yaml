@@ -14,6 +14,14 @@ paths:
   dataset_root: /bulk/users/vla/alpamayo2edge/data/physicalai-av
   cache_root: /bulk/users/vla/alpamayo2edge/distill_cache
   runs_root: /data/vla/alpamayo2edge/runs
+  # Phase 2 (2026-09-28): Bench2Drive windows built by scripts/01c_b2d_windows.py
+  # from /bulk/datasets/bench2drive/extracted (same shard layout as distill_cache,
+  # no teacher targets - src/distill/data/bench2drive.py).
+  b2d_cache_root: /bulk/users/vla/alpamayo2edge/b2d_cache_b2dnorm
+                                             # run 2+: actions normalised with Bench2Drive's own
+                                             # stats (configs/b2d_action_stats.json -> <cache>/
+                                             # action_space.json, T1). Run 1's teacher-normalised
+                                             # cache is /bulk/users/vla/alpamayo2edge/b2d_cache.
   # Local snapshot of nvidia/Alpamayo-1.5-10B (21 GB, 5 shards). from_pretrained takes
   # a path, so this skips the re-download. Its config.json still points
   # vlm_name_or_path at nvidia/Cosmos-Reason2-8B, whose processor/tokenizer are
@@ -152,10 +160,24 @@ student:
       # the leaf names are shared with the gen tower) were runs 4-5's addition and
       # revert with the rank; see the rank comment.
     stage2:                                  # generation/diffusion tower
-      enabled: true
+      enabled: false                         # PHASE 2 (2026-09-28): FULL FT of the gen tower,
+                                             # NVIDIA's own action post-training split (reasoner
+                                             # frozen, gen tower fully trained, fresh head rows at a
+                                             # higher lr). Fits the 96 GB card at ~50 GB with fp32
+                                             # master weights (stage2.fp32_master). true = the LoRA
+                                             # r16 comparison arm, NVIDIA's shipped Edge default.
       rank: 16                               # Cosmos3-Edge.yaml's shipped default
       alpha: 32
       targets: [q_proj_moe_gen, k_proj_moe_gen, v_proj_moe_gen, o_proj_moe_gen]
+    stage2_ar:                               # RUN 3 (2026-10-01): LoRA on the AR tower DURING
+      enabled: true                          # stage 2, trained by the flow loss through the
+      rank: 48                               # reasoner K/V (build_flow_context keeps the graph).
+      alpha: 96                              # Why: the CoC probe on run 2 (oracle vs anti-oracle
+      targets: [q_proj, k_proj, v_proj, o_proj]   # CoC: 1.97 vs 2.03 m) showed the decoder
+      lr_mult: 2.0                           # ignores the text, so decisions must come through
+                                             # perception. Stage-1 geometry (r48, attention-only);
+                                             # lr = 2 x stage2.lr = 1e-4, stage 1's rate.
+                                             # false = run 2's recipe (AR tower frozen).
     train_shared_action_embeds: false        # action_modality_embed + time_embedder are
                                              # shared by all 32 embodiments: a forgetting
                                              # channel no row mask covers. Keep off.
@@ -492,19 +514,90 @@ stage1_rl:
     max_tokens: 48
 
 stage2:
-  supervision: teacher_flow                  # teacher_flow (D-007) | gt_flow (ablation baseline)
+  # PHASE 2 (2026-09-28): the flow head is trained on Bench2Drive expert
+  # trajectories (`dataset: bench2drive`, `supervision: gt_flow` - there is no
+  # teacher-flow cache for CARLA data) from the best CoC checkpoint (RL run 7
+  # step 25 = adapters on run-351/best, D-058/D-059), gen tower FULLY fine-tuned
+  # (student.lora.stage2.enabled: false). The PhysicalAI-AV teacher-flow path
+  # (`dataset: physicalai`, `supervision: teacher_flow`, D-007) stays as the
+  # comparison arm; both run through the same trainer.
+  dataset: bench2drive                       # physicalai (cached teacher tuples) | bench2drive
+  coc_cache: /bulk/users/vla/alpamayo2edge/b2d_cache/coc_rl7s25.jsonl
+                                             # bench2drive only: the CoC the flow head conditions
+                                             # on, generated offline by scripts/05j_b2d_coc.py
+                                             # with the init checkpoint (RL7 step 25). null =
+                                             # free-running prompt, i.e. NO CoC in the context.
+  supervision: gt_flow                       # teacher_flow (D-007, physicalai only) | gt_flow
+  init_ckpt: /data/vla/alpamayo2edge/runs/stage1/run-351/best   # merged stage-1 checkpoint
+  init_adapters: /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025
+                                             # RL adapters folded into the AR tower before
+                                             # stage 2 starts (null = the init_ckpt as is)
   epochs: 8
-  micro_batch: 8                             # was 4; same LoRA headroom as stage 1
-  grad_accum: 4                              # effective batch held at 32
+  micro_batch: 2                             # windows per micro-batch (x k_samples flow samples).
+                                             # RUN 3: 8 -> 2 because the AR-tower graph is kept
+                                             # (no checkpointing on reasoner_forward): stage 1
+                                             # measured ~12 GiB/window of reasoner activations.
+  grad_accum: 16                             # effective batch held at 32
   lr: 5.0e-5
   warmup_frac: 0.03
   weight_decay: 0.0
-  grad_checkpoint: true
+  grad_checkpoint: true                      # per-layer checkpointing of the gen pathway
+  fp32_master: true                          # full FT: promote trainable tensors to fp32
+  k_samples: 8                               # (t, a0) draws per window when the data has no
+                                             # cached teacher tuples (gt_flow on bench2drive)
+  t_sampler: beta                            # RUN 5: beta = the teacher's training law (D-012),
+                                             # s ~ Beta(1.5, 1), t = 0.999 (1 - s), stratified via
+                                             # the inverse CDF: mean t 0.40 (uniform 0.50), 28% of
+                                             # draws at t < 0.2 (uniform 20%) - more weight on the
+                                             # high-noise end where the sampler picks go vs stay.
+                                             # | stratified (runs 1-4: uniform over [0, 0.999))
+                                             # | logitnormal (unshifted; NOT what Edge trains actions
+                                             # with - that is the video's waver + shift 5)
+  sample_steps: 10                           # Euler steps of the eval sampler (A1.5 default)
+  run_name: sft-run-5-b2d-tbeta-t0gate      # runs/stage2/<run_name>/epoch<N> + best -> lowest gate_metric
+                                             # RUN 5 (2026-10-05) = run 4 + t_sampler beta + gate on
+                                             # T0 ADE; buckets OFF (one change at a time). The context
+                                             # probe (05o) showed depart/brake ARE decodable from the
+                                             # K/V the head reads (AUC 0.83-0.86 vs ego 0.63-0.70).
+  buckets:                                   # bucketed sampling of the train
+    enabled: false                           # windows (data/b2d_buckets.py; table written by
+    share:                                   # scripts/01e_b2d_buckets.py). Probability of drawing
+      standing: 0.05                         # each bucket; uniform inside a bucket; the epoch
+      start: 0.18                            # keeps its length. false = runs 1-4's uniform
+      hard_brake: 0.12                       # shuffle. Natural mix (8,040 windows): standing
+      to_stop: 0.13                          # 24.8%, start 15.9%, hard_brake 7.8%, to_stop 9.2%,
+      brake: 0.10                            # brake 4.0%, turn 15.9%, accel 5.4%, cruise 17.1%.
+      turn: 0.18                             # The val gate is never resampled.
+      accel: 0.12
+      cruise: 0.12
+  gate_windows: 863                          # val windows scored after every epoch. RUN 4: the full
+                                             # val (was 160): run 3's 160-window gate read 1.63 / 1.66 m
+                                             # for epochs 5 / 7 that are 1.84 / 1.94 m on the full val.
+  gate_k: 6
+  gate_metric: t0_ade                        # what `best` is chosen on: t0_ade = the deterministic
+                                             # x0 = 0 sample the car drives (paired, one extra
+                                             # sample per window) | minade (runs 1-4: best-of-k,
+                                             # which rewards covering go AND stay - 2026-10-05
+                                             # probe: best-of-16 1.44 m vs T0 3.39 m on run 4)
+  gate_batch: 8
+  wandb: true                                # direct W&B run per job (project below); alerts on
+                                             # start / finish / failure (user request 2026-09-29)
+  wandb_project: alpamayo2edge
   loss_weights:
     flow_distill: 1.0
     fm_gt: 0.5
+    # gt_flow runs (bench2drive): total = fm_gt + traj * ADE[m] + coc_ce * CE.
+    traj: 0.1                                # RUN 4: trajectory-space term, metres (see
+                                             # train_stage2.traj_space_loss). 0.1 x ~2 m is
+                                             # the size of the fm loss (0.3-0.4). 0 = off.
+    coc_ce: 1.0                              # RUN 4: CoC preservation on the AR-tower LoRA
+                                             # (run 3 broke the CoC: 27% unterminated).
+                                             # Only active with student.lora.stage2_ar. 0 = off.
+  traj_loss_t_power: 1.0                     # weight t^p on the trajectory term (t = data weight)
   anneal_to_gt_frac: 0.2                     # last 20%: ramp fm_gt up, flow_distill down
   scheduled_sampling_start_frac: 0.5         # after 50%: condition on student-sampled traj tokens
+                                             # (physicalai only; the flow context masks the
+                                             # future bins anyway - see flow_path.py)
 
 eval:
   horizon_s: 6.4

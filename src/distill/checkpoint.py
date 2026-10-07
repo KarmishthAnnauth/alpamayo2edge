@@ -32,18 +32,24 @@ WEIGHTS_NAME = "student.safetensors"
 META_NAME = "distill_meta.json"
 
 
-def save(student, path: str | Path, **meta) -> Path:
+def save(student, path: str | Path, save_dtype=None, **meta) -> Path:
     """Write LoRA-merged weights + the geometry needed to reload them.
 
     Non-destructive: the live model keeps its adapters and training continues,
     which is what makes this safe to call from the per-epoch best-checkpoint
     branch.
+
+    `save_dtype` (stage 2 full FT passes torch.bfloat16): floating tensors are
+    cast to it on the way out, so fp32 master weights do not double the file.
+    `load_into` copies into the live parameters' dtype either way.
     """
     from safetensors.torch import save_file
 
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
     sd = student.merged_state_dict()
+    if save_dtype is not None:
+        sd = {k: (v.to(save_dtype) if v.is_floating_point() else v) for k, v in sd.items()}
 
     # safetensors refuses aliased storage; merged tensors are fresh CPU copies
     # but the untouched ones came straight off `state_dict()`.

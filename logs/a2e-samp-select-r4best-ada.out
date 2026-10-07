@@ -1,0 +1,270 @@
+others currently on the Ada: 18712 MiB
+sitecustomize: capped at 60% of 47.4 GiB = 28.4 GiB
+The multistorageclient package is available.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/distributed/fsdp/src/megatron_fsdp/utils.py:108: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+Detected Megatron Core, using Megatron-FSDP with Megatron.
+Detected Megatron Core, using Megatron-FSDP with Megatron.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/__init__.py:24: UserWarning: Transformer Engine and Apex are not installed. Falling back to Torch optimizers.
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/optimizer.py:28: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/clip_grads.py:29: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier, multi_tensor_l2norm, and multi_tensor_scale
+  warnings.warn(
+[10-05 19:29:16|INFO|cosmos_framework/model/generator/omni_mot_model.py:124:__init__] OmniMoTModel: config {'tokenizer': {'bucket_name': 'bucket', 'object_store_credential_path_pretrained': 'credentials/gcp_training.secret', 'vae_path': 'pretrained/tokenizers/video/wan2pt2/Wan2.2_VAE.pth', 'chunk_duration': 93, 'keep_decoder_cache': False, 'use_streaming_encode': False, 'encode_chunk_frames': {'256': 68, '480': 24, '720': 8, '768': 8}, 'encode_exact_durations': [17, 61, 73], 'spatial_compression_factor': 16, 'temporal_compression_factor': 4, 'temporal_window': None, 'encode_bucket_multiple': None, 'causal': True, '_target_': 'cosmos_framework.model.generator.tokenizers.wan2pt2_vae_4x16x16.Wan2pt2VAEInterface'}, 'load_vision_tokenizer': True, 'lidar_tokenizer': None, 'lidar_state_ch': None, 'lidar_fps': None, 'net': None, 'ema': {'enabled': False, 'rate': 0.1, 'iteration_shift': 0, '_type': 'cosmos_framework.configs.base.defaults.ema.EMAConfig'}, 'parallelism': {'data_parallel_shard_degree': -1, 'data_parallel_replicate_degree': 1, 'context_parallel_shard_degree': 1, 'cfg_parallel_shard_degree': 1, 'enable_inference_mode': True, 'fsdp_master_dtype': 'float32', 'fsdp_reduce_dtype': None, '_type': 'cosmos_framework.configs.base.defaults.parallelism.ParallelismConfig'}, 'attention_io_layout': 'sequence_sharded', 'compile': {'enabled': False, 'compiled_region': 'language', 'compile_dynamic': True, 'use_cuda_graphs': False, 'ar_post_saturation_mode': 'default', 'max_autotune_pointwise': False, 'coordinate_descent_tuning': False, '_type': 'cosmos_framework.configs.base.defaults.compile.CompileConfig'}, 'quantization': {'method': None, 'fp8_granularity': 'per_row', 'modelopt_fp8_checkpoint_path': None, 'mixed_precision_first_steps': 0, 'mixed_precision_last_steps': 0, 'mixed_precision_reasoner_policy': 'high_precision', 'mixed_precision_w8a16_cache': 'none', 'include_regex': [], 'exclude_regex': [], 'modelopt_fp8_target_fqns': [], '_type': 'cosmos_framework.configs.base.defaults.quantization.QuantizationConfig'}, 'activation_checkpointing': {'mode': 'none', 'preserve_rng_state': True, 'determinism_check': 'default', 'save_ops_regex': ['fmha'], '_type': 'cosmos_framework.configs.base.defaults.activation_checkpointing.ActivationCheckpointingConfig'}, 'precision': 'bfloat16', 'lora_enabled': False, 'lora_rank': 16, 'lora_alpha': 32, 'lora_target_modules': 'q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen', 'rectified_flow_training_config': {'shift': {'256': 3, '480': 5, '720': 10}, 'shift_image': None, 'use_dynamic_shift': False, 'train_time_image_distribution': 'logitnormal', 'train_time_video_distribution': 'waver', 'train_time_action_distribution': 'logitnormal', 'train_time_sound_distribution': 'logitnormal', 'train_time_weight': 'uniform', 'loss_scale': 10.0, 'image_loss_scale': None, 'sound_loss_scale': 2.0, 'lidar_loss_scale': None, 'use_discrete_rf': False, 'action_loss_weight': 10.0, 'independent_action_schedule': False, 'shift_action': None, 'independent_sound_schedule': False, 'shift_sound': None, 'normalize_loss_by_active': False, 'sample_level_loss_averaging': False, 'high_sigma_ratio': 0.05, 'high_sigma_timesteps_max': 1000, 'high_sigma_timesteps_min': 995, 'use_high_sigma_strategy': False, 'use_high_sigma_strategy_action': False, 'use_high_sigma_strategy_sound': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowTrainingConfig'}, 'rectified_flow_inference_config': {'scheduler_type': 'unipc', 'num_train_timesteps': 1000, 'shift': 1, 'use_dynamic_shifting': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowInferenceConfig'}, 'fixed_step_sampler_config': None, 'vlm_config': {'model_name': 'nvidia/Cosmos3-Edge-Reasoner', 'safetensors_path': '', 'pretrained_weights': {'enabled': False, 'backbone_path': 's3://bucket/cosmos3/pretrained/huggingface/nvidia/Cosmos3-Edge-Reasoner-590c1c0/', 'credentials_path': 'credentials/gcp_checkpoint.secret', 'enable_gcs_patch_in_boto3': True, 'checkpoint_format': None, '_type': 'cosmos_framework.configs.base.defaults.reasoner.PretrainedWeightsConfig'}, 'model_instance': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLTextForCausalLM', 'config': {'_target_': 'cosmos_framework.configs.base.defaults.reasoner.create_vlm_config', 'base_config': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLMoTConfig.from_json_file', 'json_file': 'cosmos_framework/model/generator/reasoner/nemotron_3_dense_vl/configs/Nemotron-2B-Dense-VL.json'}, 'include_visual': None, 'qk_norm_for_text': False, 'use_und_k_norm_for_gen': True}}, 'tokenizer': {'repository': None, 'revision': None, 'subdir': '', '_target_': 'cosmos_framework.data.generator.processors.build_processor_lazy', 'tokenizer_type': '/bulk/users/vla/alpamayo2edge/cosmos3-edge'}, 'layer_module': None, 'qk_norm': False, 'tie_word_embeddings': False, 'use_system_prompt': False, '_type': 'cosmos_framework.configs.base.defaults.reasoner.VLMConfig'}, 'diffusion_expert_config': {'timestep_range': 1.0, 'load_weights_from_pretrained': False, 'enable_vision_modality_embeddings': False, 'enable_media_modality_embedding': False, 'enable_sound_modality_embedding': True, 'patch_spatial': 2, 'max_vae_latent_side_after_patchify': 20, 'enable_fps_modulation': True, 'base_fps': 24, 'sound_base_temporal_compression_factor': None, 'vision_temporal_position_mode': 'latent_index', 'unified_3d_mrope_reset_spatial_ids': True, 'unified_3d_mrope_temporal_modality_margin': 15000, '_type': 'cosmos_framework.configs.base.defaults.model_config.DiffusionExpertConfig'}, 'input_video_key': 'video', 'input_image_key': 'images', 'input_caption_key': 'ai_caption', 'state_ch': 48, 'state_t': 300, 'latent_downsample_factor': 16, 'resolution': '480', 'max_num_tokens_after_packing': 74000, 'joint_attn_implementation': 'two_way', 'flex_attention': {'enabled': False, 'backend': 'auto', 'mask': {'attention_scope': 'all_views'}}, 'natten_parameter_list': None, 'video_temporal_causal': False, 'causal_training_strategy': 'none', 'lbl': {'method': 'local', 'coeff_und': None, 'coeff_gen': None, '_type': 'cosmos_framework.configs.base.defaults.model_config.LBLConfig'}, 'vision_gen': True, 'action_gen': True, 'max_action_dim': 64, 'num_embodiment_domains': 32, 'sound_gen': False, 'sound_tokenizer': None, 'sound_dim': None, 'sound_latent_fps': 25, 'enable_input_bias': True, 'log_enc_time_every_n': 100, 'exclude_reasoner_weights_from_checkpoint': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.OmniMoTModelConfig'}
+[10-05 19:29:16|WARNING|cosmos_framework/model/generator/omni_mot_model.py:150:set_precision] OmniMoTModel: precision torch.bfloat16
+This processor does not use the `size` parameter. It will be ignored.
+[10-05 19:29:16|INFO|cosmos_framework/data/generator/processors/base.py:131:__init__] Successfully loaded processor from local cache
+[10-05 19:29:16|INFO|cosmos_framework/utils/checkpoint_db.py:338:download] Downloading checkpoint Wan2.2/vae(9c72e8365d2c48d78ae62dbefad8771f)
+[10-05 19:29:16|INFO|cosmos_framework/utils/checkpoint_db.py:171:_hf_download] uv run --isolated --project /home/vla/projects/cosmos-framework/cosmos_framework/utils/hf_cli --locked --no-default-groups hf download --format=json Wan-AI/Wan2.2-TI2V-5B --repo-type model --revision 921dbaf3f1674a56f47e83fb80a34bac8a8f203e Wan2.2_VAE.pth
+Installed 16 packages in 4ms
+[10-05 19:29:19|INFO|cosmos_framework/model/generator/tokenizers/wan2pt2_vae_4x16x16.py:1056:_video_vae] loading /bulk/users/vla/alpamayo2edge/hf-cache/models--Wan-AI--Wan2.2-TI2V-5B/snapshots/921dbaf3f1674a56f47e83fb80a34bac8a8f203e/Wan2.2_VAE.pth
+[10-05 19:29:19|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_tokenizers: 2.66 s
+[10-05 19:29:19|INFO|cosmos_framework/utils/generator/parallelism.py:110:_validate] dp_shard auto-inferred to world_size = 1
+[10-05 19:29:19|INFO|cosmos_framework/utils/generator/parallelism.py:124:_validate] dp_replicate is set to -1, will be automatically determined based on world_size 1 // dp_shard 1.
+[10-05 19:29:19|INFO|cosmos_framework/utils/generator/parallelism.py:129:_validate] dp_replicate is set to 1.
+`torch_dtype` is deprecated! Use `dtype` instead!
+[10-05 19:29:19|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on meta to cuda and broadcast model states: 0.04 s
+[10-05 19:29:19|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on Creating PyTorch model and ema if enabled: 0.12 s
+[10-05 19:29:19|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_model: 0.12 s
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/torch/distributed/checkpoint/utils.py:483: UserWarning: torch.distributed is disabled, unavailable or uninitialized, assuming the intent is to load in a single process.
+  return func(*args, **kwargs)
+[10-05 19:29:20|INFO|../cosmos-framework/cosmos_framework/model/generator/mot/unified_mot.py:2656:_ensure_vision_tower] Edge vision tower: loading from checkpoint-local bundle /bulk/users/vla/alpamayo2edge/cosmos3-edge/vision_encoder
+loaded merged student <- /data/vla/alpamayo2edge/runs/stage2/sft-run-4-b2d-arlora-traj-cocce/best
+stage-2 checkpoint /data/vla/alpamayo2edge/runs/stage2/sft-run-4-b2d-arlora-traj-cocce/best (epoch=7)
+image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+val: 863 windows, k_max=16 (+ T=0), 10 steps, ckpt /data/vla/alpamayo2edge/runs/stage2/sft-run-4-b2d-arlora-traj-cocce/best
+  4 windows, 9 s
+  8 windows, 16 s
+  12 windows, 24 s
+  16 windows, 32 s
+  20 windows, 40 s
+  24 windows, 48 s
+  28 windows, 56 s
+  32 windows, 64 s
+  36 windows, 72 s
+  40 windows, 80 s
+  44 windows, 88 s
+  48 windows, 96 s
+  52 windows, 104 s
+  56 windows, 112 s
+  60 windows, 120 s
+  64 windows, 128 s
+  68 windows, 136 s
+  72 windows, 144 s
+  76 windows, 152 s
+  80 windows, 160 s
+  84 windows, 168 s
+  88 windows, 176 s
+  92 windows, 184 s
+  96 windows, 192 s
+  100 windows, 200 s
+  104 windows, 208 s
+  108 windows, 216 s
+  112 windows, 224 s
+  116 windows, 232 s
+  120 windows, 240 s
+  124 windows, 248 s
+  128 windows, 256 s
+  132 windows, 264 s
+  136 windows, 272 s
+  140 windows, 280 s
+  144 windows, 288 s
+  148 windows, 296 s
+  152 windows, 304 s
+  156 windows, 312 s
+  160 windows, 320 s
+  164 windows, 328 s
+  168 windows, 336 s
+  172 windows, 344 s
+  176 windows, 352 s
+  180 windows, 360 s
+  184 windows, 368 s
+  188 windows, 376 s
+  192 windows, 384 s
+  196 windows, 392 s
+  200 windows, 401 s
+  204 windows, 409 s
+  208 windows, 417 s
+  212 windows, 425 s
+  216 windows, 433 s
+  220 windows, 441 s
+  224 windows, 449 s
+  228 windows, 457 s
+  232 windows, 465 s
+  236 windows, 473 s
+  240 windows, 481 s
+  244 windows, 489 s
+  248 windows, 497 s
+  252 windows, 505 s
+  256 windows, 513 s
+  260 windows, 521 s
+  264 windows, 529 s
+  268 windows, 537 s
+  272 windows, 545 s
+  276 windows, 553 s
+  280 windows, 562 s
+  284 windows, 570 s
+  288 windows, 578 s
+  292 windows, 586 s
+  296 windows, 594 s
+  300 windows, 602 s
+  304 windows, 610 s
+  308 windows, 618 s
+  312 windows, 626 s
+  316 windows, 634 s
+  320 windows, 642 s
+  324 windows, 650 s
+  328 windows, 658 s
+  332 windows, 666 s
+  336 windows, 674 s
+  340 windows, 682 s
+  344 windows, 690 s
+  348 windows, 698 s
+  352 windows, 706 s
+  356 windows, 714 s
+  360 windows, 722 s
+  364 windows, 730 s
+  368 windows, 738 s
+  372 windows, 746 s
+  376 windows, 754 s
+  380 windows, 762 s
+  384 windows, 771 s
+  388 windows, 779 s
+  392 windows, 787 s
+  396 windows, 795 s
+  400 windows, 803 s
+  404 windows, 811 s
+  408 windows, 819 s
+  412 windows, 827 s
+  416 windows, 835 s
+  420 windows, 843 s
+  424 windows, 851 s
+  428 windows, 859 s
+  432 windows, 867 s
+  436 windows, 875 s
+  440 windows, 883 s
+  444 windows, 891 s
+  448 windows, 899 s
+  452 windows, 907 s
+  456 windows, 915 s
+  460 windows, 923 s
+  464 windows, 931 s
+  468 windows, 939 s
+  472 windows, 947 s
+  476 windows, 955 s
+  480 windows, 963 s
+  484 windows, 971 s
+  488 windows, 979 s
+  492 windows, 987 s
+  496 windows, 995 s
+  500 windows, 1003 s
+  504 windows, 1011 s
+  508 windows, 1019 s
+  512 windows, 1027 s
+  516 windows, 1035 s
+  520 windows, 1044 s
+  524 windows, 1052 s
+  528 windows, 1060 s
+  532 windows, 1068 s
+  536 windows, 1076 s
+  540 windows, 1084 s
+  544 windows, 1092 s
+  548 windows, 1100 s
+  552 windows, 1108 s
+  556 windows, 1116 s
+  560 windows, 1124 s
+  564 windows, 1132 s
+  568 windows, 1140 s
+  572 windows, 1148 s
+  576 windows, 1156 s
+  580 windows, 1164 s
+  584 windows, 1172 s
+  588 windows, 1180 s
+  592 windows, 1188 s
+  596 windows, 1196 s
+  600 windows, 1204 s
+  604 windows, 1213 s
+  608 windows, 1221 s
+  612 windows, 1229 s
+  616 windows, 1237 s
+  620 windows, 1245 s
+  624 windows, 1253 s
+  628 windows, 1261 s
+  632 windows, 1269 s
+  636 windows, 1277 s
+  640 windows, 1285 s
+  644 windows, 1293 s
+  648 windows, 1301 s
+  652 windows, 1309 s
+  656 windows, 1317 s
+  660 windows, 1325 s
+  664 windows, 1333 s
+  668 windows, 1341 s
+  672 windows, 1349 s
+  676 windows, 1357 s
+  680 windows, 1365 s
+  684 windows, 1374 s
+  688 windows, 1382 s
+  692 windows, 1390 s
+  696 windows, 1398 s
+  700 windows, 1406 s
+  704 windows, 1414 s
+  708 windows, 1422 s
+  712 windows, 1430 s
+  716 windows, 1438 s
+  720 windows, 1446 s
+  724 windows, 1454 s
+  728 windows, 1462 s
+  732 windows, 1470 s
+  736 windows, 1478 s
+  740 windows, 1486 s
+  744 windows, 1494 s
+  748 windows, 1502 s
+  752 windows, 1510 s
+  756 windows, 1518 s
+  760 windows, 1526 s
+  764 windows, 1534 s
+  768 windows, 1542 s
+  772 windows, 1551 s
+  776 windows, 1559 s
+  780 windows, 1567 s
+  784 windows, 1575 s
+  788 windows, 1583 s
+  792 windows, 1591 s
+  796 windows, 1599 s
+  800 windows, 1607 s
+  804 windows, 1615 s
+  808 windows, 1623 s
+  812 windows, 1631 s
+  816 windows, 1639 s
+  820 windows, 1647 s
+  824 windows, 1655 s
+  828 windows, 1663 s
+  832 windows, 1671 s
+  836 windows, 1679 s
+  840 windows, 1687 s
+  844 windows, 1695 s
+  848 windows, 1703 s
+  852 windows, 1712 s
+  856 windows, 1720 s
+  860 windows, 1728 s
+  863 windows, 1734 s
+/data/vla/alpamayo2edge/runs/stage2/sft-run-4-b2d-arlora-traj-cocce/best n=863 (1734 s)  mean sample spread 2.76 m
+  selector           ADE     FDE   braked   others
+  single           3.823   8.956    4.233    2.224
+  mean_traj_4      3.341   7.753    3.623    2.239
+  mean_act_4       3.368   7.869    3.646    2.285
+  medoid_4         3.401   7.975    3.759    2.005
+  mean_traj_8      3.287   7.620    3.576    2.158
+  mean_act_8       3.315   7.749    3.597    2.213
+  medoid_8         3.359   7.917    3.682    2.100
+  mean_traj_16     3.233   7.522    3.509    2.157
+  mean_act_16      3.273   7.687    3.543    2.218
+  medoid_16        3.259   7.611    3.567    2.056
+  t0               3.390   8.181    3.874    1.503
+  min_1            3.823       -    4.233    2.224
+  min_4            2.208       -    2.456    1.241
+  min_8            1.768       -    1.975    0.956
+  min_16           1.439       -    1.619    0.738
+-> runs/sampler_probe/r4-best-select-valfull.json

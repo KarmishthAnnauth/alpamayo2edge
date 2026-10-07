@@ -1,0 +1,380 @@
+Job 483 on ProArt, started 2026-09-28T21:51:18+02:00; commit 84c82d1
+=== 05k sanity: untrained init, 32 val windows, no CoC ===
+The multistorageclient package is available.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/distributed/fsdp/src/megatron_fsdp/utils.py:108: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+Detected Megatron Core, using Megatron-FSDP with Megatron.
+Detected Megatron Core, using Megatron-FSDP with Megatron.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/__init__.py:24: UserWarning: Transformer Engine and Apex are not installed. Falling back to Torch optimizers.
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/optimizer.py:28: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/clip_grads.py:29: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier, multi_tensor_l2norm, and multi_tensor_scale
+  warnings.warn(
+[09-28 21:51:23|INFO|cosmos_framework/model/generator/omni_mot_model.py:124:__init__] OmniMoTModel: config {'tokenizer': {'bucket_name': 'bucket', 'object_store_credential_path_pretrained': 'credentials/gcp_training.secret', 'vae_path': 'pretrained/tokenizers/video/wan2pt2/Wan2.2_VAE.pth', 'chunk_duration': 93, 'keep_decoder_cache': False, 'use_streaming_encode': False, 'encode_chunk_frames': {'256': 68, '480': 24, '720': 8, '768': 8}, 'encode_exact_durations': [17, 61, 73], 'spatial_compression_factor': 16, 'temporal_compression_factor': 4, 'temporal_window': None, 'encode_bucket_multiple': None, 'causal': True, '_target_': 'cosmos_framework.model.generator.tokenizers.wan2pt2_vae_4x16x16.Wan2pt2VAEInterface'}, 'load_vision_tokenizer': True, 'lidar_tokenizer': None, 'lidar_state_ch': None, 'lidar_fps': None, 'net': None, 'ema': {'enabled': False, 'rate': 0.1, 'iteration_shift': 0, '_type': 'cosmos_framework.configs.base.defaults.ema.EMAConfig'}, 'parallelism': {'data_parallel_shard_degree': -1, 'data_parallel_replicate_degree': 1, 'context_parallel_shard_degree': 1, 'cfg_parallel_shard_degree': 1, 'enable_inference_mode': True, 'fsdp_master_dtype': 'float32', 'fsdp_reduce_dtype': None, '_type': 'cosmos_framework.configs.base.defaults.parallelism.ParallelismConfig'}, 'attention_io_layout': 'sequence_sharded', 'compile': {'enabled': False, 'compiled_region': 'language', 'compile_dynamic': True, 'use_cuda_graphs': False, 'ar_post_saturation_mode': 'default', 'max_autotune_pointwise': False, 'coordinate_descent_tuning': False, '_type': 'cosmos_framework.configs.base.defaults.compile.CompileConfig'}, 'quantization': {'method': None, 'fp8_granularity': 'per_row', 'modelopt_fp8_checkpoint_path': None, 'mixed_precision_first_steps': 0, 'mixed_precision_last_steps': 0, 'mixed_precision_reasoner_policy': 'high_precision', 'mixed_precision_w8a16_cache': 'none', 'include_regex': [], 'exclude_regex': [], 'modelopt_fp8_target_fqns': [], '_type': 'cosmos_framework.configs.base.defaults.quantization.QuantizationConfig'}, 'activation_checkpointing': {'mode': 'none', 'preserve_rng_state': True, 'determinism_check': 'default', 'save_ops_regex': ['fmha'], '_type': 'cosmos_framework.configs.base.defaults.activation_checkpointing.ActivationCheckpointingConfig'}, 'precision': 'bfloat16', 'lora_enabled': False, 'lora_rank': 16, 'lora_alpha': 32, 'lora_target_modules': 'q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen', 'rectified_flow_training_config': {'shift': {'256': 3, '480': 5, '720': 10}, 'shift_image': None, 'use_dynamic_shift': False, 'train_time_image_distribution': 'logitnormal', 'train_time_video_distribution': 'waver', 'train_time_action_distribution': 'logitnormal', 'train_time_sound_distribution': 'logitnormal', 'train_time_weight': 'uniform', 'loss_scale': 10.0, 'image_loss_scale': None, 'sound_loss_scale': 2.0, 'lidar_loss_scale': None, 'use_discrete_rf': False, 'action_loss_weight': 10.0, 'independent_action_schedule': False, 'shift_action': None, 'independent_sound_schedule': False, 'shift_sound': None, 'normalize_loss_by_active': False, 'sample_level_loss_averaging': False, 'high_sigma_ratio': 0.05, 'high_sigma_timesteps_max': 1000, 'high_sigma_timesteps_min': 995, 'use_high_sigma_strategy': False, 'use_high_sigma_strategy_action': False, 'use_high_sigma_strategy_sound': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowTrainingConfig'}, 'rectified_flow_inference_config': {'scheduler_type': 'unipc', 'num_train_timesteps': 1000, 'shift': 1, 'use_dynamic_shifting': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowInferenceConfig'}, 'fixed_step_sampler_config': None, 'vlm_config': {'model_name': 'nvidia/Cosmos3-Edge-Reasoner', 'safetensors_path': '', 'pretrained_weights': {'enabled': False, 'backbone_path': 's3://bucket/cosmos3/pretrained/huggingface/nvidia/Cosmos3-Edge-Reasoner-590c1c0/', 'credentials_path': 'credentials/gcp_checkpoint.secret', 'enable_gcs_patch_in_boto3': True, 'checkpoint_format': None, '_type': 'cosmos_framework.configs.base.defaults.reasoner.PretrainedWeightsConfig'}, 'model_instance': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLTextForCausalLM', 'config': {'_target_': 'cosmos_framework.configs.base.defaults.reasoner.create_vlm_config', 'base_config': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLMoTConfig.from_json_file', 'json_file': 'cosmos_framework/model/generator/reasoner/nemotron_3_dense_vl/configs/Nemotron-2B-Dense-VL.json'}, 'include_visual': None, 'qk_norm_for_text': False, 'use_und_k_norm_for_gen': True}}, 'tokenizer': {'repository': None, 'revision': None, 'subdir': '', '_target_': 'cosmos_framework.data.generator.processors.build_processor_lazy', 'tokenizer_type': '/bulk/users/vla/alpamayo2edge/cosmos3-edge'}, 'layer_module': None, 'qk_norm': False, 'tie_word_embeddings': False, 'use_system_prompt': False, '_type': 'cosmos_framework.configs.base.defaults.reasoner.VLMConfig'}, 'diffusion_expert_config': {'timestep_range': 1.0, 'load_weights_from_pretrained': False, 'enable_vision_modality_embeddings': False, 'enable_media_modality_embedding': False, 'enable_sound_modality_embedding': True, 'patch_spatial': 2, 'max_vae_latent_side_after_patchify': 20, 'enable_fps_modulation': True, 'base_fps': 24, 'sound_base_temporal_compression_factor': None, 'vision_temporal_position_mode': 'latent_index', 'unified_3d_mrope_reset_spatial_ids': True, 'unified_3d_mrope_temporal_modality_margin': 15000, '_type': 'cosmos_framework.configs.base.defaults.model_config.DiffusionExpertConfig'}, 'input_video_key': 'video', 'input_image_key': 'images', 'input_caption_key': 'ai_caption', 'state_ch': 48, 'state_t': 300, 'latent_downsample_factor': 16, 'resolution': '480', 'max_num_tokens_after_packing': 74000, 'joint_attn_implementation': 'two_way', 'flex_attention': {'enabled': False, 'backend': 'auto', 'mask': {'attention_scope': 'all_views'}}, 'natten_parameter_list': None, 'video_temporal_causal': False, 'causal_training_strategy': 'none', 'lbl': {'method': 'local', 'coeff_und': None, 'coeff_gen': None, '_type': 'cosmos_framework.configs.base.defaults.model_config.LBLConfig'}, 'vision_gen': True, 'action_gen': True, 'max_action_dim': 64, 'num_embodiment_domains': 32, 'sound_gen': False, 'sound_tokenizer': None, 'sound_dim': None, 'sound_latent_fps': 25, 'enable_input_bias': True, 'log_enc_time_every_n': 100, 'exclude_reasoner_weights_from_checkpoint': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.OmniMoTModelConfig'}
+[09-28 21:51:23|WARNING|cosmos_framework/model/generator/omni_mot_model.py:150:set_precision] OmniMoTModel: precision torch.bfloat16
+This processor does not use the `size` parameter. It will be ignored.
+[09-28 21:51:24|INFO|cosmos_framework/data/generator/processors/base.py:131:__init__] Successfully loaded processor from local cache
+[09-28 21:51:24|INFO|cosmos_framework/utils/checkpoint_db.py:338:download] Downloading checkpoint Wan2.2/vae(a29829f74d294f9090382e804343eb4d)
+[09-28 21:51:24|INFO|cosmos_framework/utils/checkpoint_db.py:171:_hf_download] uv run --isolated --project /home/vla/projects/cosmos-framework/cosmos_framework/utils/hf_cli --locked --no-default-groups hf download --format=json Wan-AI/Wan2.2-TI2V-5B --repo-type model --revision 921dbaf3f1674a56f47e83fb80a34bac8a8f203e Wan2.2_VAE.pth
+[2mInstalled [1m16 packages[0m [2min 3ms[0m[0m
+[09-28 21:51:26|INFO|cosmos_framework/model/generator/tokenizers/wan2pt2_vae_4x16x16.py:1056:_video_vae] loading /bulk/users/vla/alpamayo2edge/hf-cache/models--Wan-AI--Wan2.2-TI2V-5B/snapshots/921dbaf3f1674a56f47e83fb80a34bac8a8f203e/Wan2.2_VAE.pth
+[09-28 21:51:26|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_tokenizers: 2.79 s
+[09-28 21:51:26|INFO|cosmos_framework/utils/generator/parallelism.py:110:_validate] dp_shard auto-inferred to world_size = 1
+[09-28 21:51:26|INFO|cosmos_framework/utils/generator/parallelism.py:124:_validate] dp_replicate is set to -1, will be automatically determined based on world_size 1 // dp_shard 1.
+[09-28 21:51:26|INFO|cosmos_framework/utils/generator/parallelism.py:129:_validate] dp_replicate is set to 1.
+`torch_dtype` is deprecated! Use `dtype` instead!
+[09-28 21:51:26|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on meta to cuda and broadcast model states: 0.04 s
+[09-28 21:51:26|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on Creating PyTorch model and ema if enabled: 0.12 s
+[09-28 21:51:26|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_model: 0.12 s
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/torch/distributed/checkpoint/utils.py:483: UserWarning: torch.distributed is disabled, unavailable or uninitialized, assuming the intent is to load in a single process.
+  return func(*args, **kwargs)
+[09-28 21:51:27|INFO|../cosmos-framework/cosmos_framework/model/generator/mot/unified_mot.py:2656:_ensure_vision_tower] Edge vision tower: loading from checkpoint-local bundle /bulk/users/vla/alpamayo2edge/cosmos3-edge/vision_encoder
+stage-1 checkpoint: /data/vla/alpamayo2edge/runs/stage1/run-351/best -> /data/vla/alpamayo2edge/runs/stage1/run-351/best
+loaded merged student <- /data/vla/alpamayo2edge/runs/stage1/run-351/best
+[09-28 21:51:31|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[09-28 21:51:31|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+loaded 224 adapter tensors + 6 stage-1 row tensors <- /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025
+folded 112 adapter modules from /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025 (step=25) into the AR tower
+image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+val: 32 windows, k=6, 10 steps, CoC NONE
+
+phase-2 init (untrained head)  split=val  n=32  k=6
+  minADE_6 7.031 m   meanADE 8.311   minFDE 18.210   p90 minADE 15.815
+  constant-velocity baseline ADE 5.969 m
+  braked windows (32): minADE 7.031 vs CV 5.969 | others (0): nan vs nan
+     AccidentTwoWays                          n= 32  minADE 7.03  CV 5.97
+-> runs/flow-minade-init-val32-nococ.json
+=== 05j generate: CoC cache over every window (resumable) ===
+The multistorageclient package is available.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/distributed/fsdp/src/megatron_fsdp/utils.py:108: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+Detected Megatron Core, using Megatron-FSDP with Megatron.
+Detected Megatron Core, using Megatron-FSDP with Megatron.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/__init__.py:24: UserWarning: Transformer Engine and Apex are not installed. Falling back to Torch optimizers.
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/optimizer.py:28: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/clip_grads.py:29: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier, multi_tensor_l2norm, and multi_tensor_scale
+  warnings.warn(
+[09-28 21:51:56|INFO|cosmos_framework/model/generator/omni_mot_model.py:124:__init__] OmniMoTModel: config {'tokenizer': {'bucket_name': 'bucket', 'object_store_credential_path_pretrained': 'credentials/gcp_training.secret', 'vae_path': 'pretrained/tokenizers/video/wan2pt2/Wan2.2_VAE.pth', 'chunk_duration': 93, 'keep_decoder_cache': False, 'use_streaming_encode': False, 'encode_chunk_frames': {'256': 68, '480': 24, '720': 8, '768': 8}, 'encode_exact_durations': [17, 61, 73], 'spatial_compression_factor': 16, 'temporal_compression_factor': 4, 'temporal_window': None, 'encode_bucket_multiple': None, 'causal': True, '_target_': 'cosmos_framework.model.generator.tokenizers.wan2pt2_vae_4x16x16.Wan2pt2VAEInterface'}, 'load_vision_tokenizer': True, 'lidar_tokenizer': None, 'lidar_state_ch': None, 'lidar_fps': None, 'net': None, 'ema': {'enabled': False, 'rate': 0.1, 'iteration_shift': 0, '_type': 'cosmos_framework.configs.base.defaults.ema.EMAConfig'}, 'parallelism': {'data_parallel_shard_degree': -1, 'data_parallel_replicate_degree': 1, 'context_parallel_shard_degree': 1, 'cfg_parallel_shard_degree': 1, 'enable_inference_mode': True, 'fsdp_master_dtype': 'float32', 'fsdp_reduce_dtype': None, '_type': 'cosmos_framework.configs.base.defaults.parallelism.ParallelismConfig'}, 'attention_io_layout': 'sequence_sharded', 'compile': {'enabled': False, 'compiled_region': 'language', 'compile_dynamic': True, 'use_cuda_graphs': False, 'ar_post_saturation_mode': 'default', 'max_autotune_pointwise': False, 'coordinate_descent_tuning': False, '_type': 'cosmos_framework.configs.base.defaults.compile.CompileConfig'}, 'quantization': {'method': None, 'fp8_granularity': 'per_row', 'modelopt_fp8_checkpoint_path': None, 'mixed_precision_first_steps': 0, 'mixed_precision_last_steps': 0, 'mixed_precision_reasoner_policy': 'high_precision', 'mixed_precision_w8a16_cache': 'none', 'include_regex': [], 'exclude_regex': [], 'modelopt_fp8_target_fqns': [], '_type': 'cosmos_framework.configs.base.defaults.quantization.QuantizationConfig'}, 'activation_checkpointing': {'mode': 'none', 'preserve_rng_state': True, 'determinism_check': 'default', 'save_ops_regex': ['fmha'], '_type': 'cosmos_framework.configs.base.defaults.activation_checkpointing.ActivationCheckpointingConfig'}, 'precision': 'bfloat16', 'lora_enabled': False, 'lora_rank': 16, 'lora_alpha': 32, 'lora_target_modules': 'q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen', 'rectified_flow_training_config': {'shift': {'256': 3, '480': 5, '720': 10}, 'shift_image': None, 'use_dynamic_shift': False, 'train_time_image_distribution': 'logitnormal', 'train_time_video_distribution': 'waver', 'train_time_action_distribution': 'logitnormal', 'train_time_sound_distribution': 'logitnormal', 'train_time_weight': 'uniform', 'loss_scale': 10.0, 'image_loss_scale': None, 'sound_loss_scale': 2.0, 'lidar_loss_scale': None, 'use_discrete_rf': False, 'action_loss_weight': 10.0, 'independent_action_schedule': False, 'shift_action': None, 'independent_sound_schedule': False, 'shift_sound': None, 'normalize_loss_by_active': False, 'sample_level_loss_averaging': False, 'high_sigma_ratio': 0.05, 'high_sigma_timesteps_max': 1000, 'high_sigma_timesteps_min': 995, 'use_high_sigma_strategy': False, 'use_high_sigma_strategy_action': False, 'use_high_sigma_strategy_sound': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowTrainingConfig'}, 'rectified_flow_inference_config': {'scheduler_type': 'unipc', 'num_train_timesteps': 1000, 'shift': 1, 'use_dynamic_shifting': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowInferenceConfig'}, 'fixed_step_sampler_config': None, 'vlm_config': {'model_name': 'nvidia/Cosmos3-Edge-Reasoner', 'safetensors_path': '', 'pretrained_weights': {'enabled': False, 'backbone_path': 's3://bucket/cosmos3/pretrained/huggingface/nvidia/Cosmos3-Edge-Reasoner-590c1c0/', 'credentials_path': 'credentials/gcp_checkpoint.secret', 'enable_gcs_patch_in_boto3': True, 'checkpoint_format': None, '_type': 'cosmos_framework.configs.base.defaults.reasoner.PretrainedWeightsConfig'}, 'model_instance': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLTextForCausalLM', 'config': {'_target_': 'cosmos_framework.configs.base.defaults.reasoner.create_vlm_config', 'base_config': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLMoTConfig.from_json_file', 'json_file': 'cosmos_framework/model/generator/reasoner/nemotron_3_dense_vl/configs/Nemotron-2B-Dense-VL.json'}, 'include_visual': None, 'qk_norm_for_text': False, 'use_und_k_norm_for_gen': True}}, 'tokenizer': {'repository': None, 'revision': None, 'subdir': '', '_target_': 'cosmos_framework.data.generator.processors.build_processor_lazy', 'tokenizer_type': '/bulk/users/vla/alpamayo2edge/cosmos3-edge'}, 'layer_module': None, 'qk_norm': False, 'tie_word_embeddings': False, 'use_system_prompt': False, '_type': 'cosmos_framework.configs.base.defaults.reasoner.VLMConfig'}, 'diffusion_expert_config': {'timestep_range': 1.0, 'load_weights_from_pretrained': False, 'enable_vision_modality_embeddings': False, 'enable_media_modality_embedding': False, 'enable_sound_modality_embedding': True, 'patch_spatial': 2, 'max_vae_latent_side_after_patchify': 20, 'enable_fps_modulation': True, 'base_fps': 24, 'sound_base_temporal_compression_factor': None, 'vision_temporal_position_mode': 'latent_index', 'unified_3d_mrope_reset_spatial_ids': True, 'unified_3d_mrope_temporal_modality_margin': 15000, '_type': 'cosmos_framework.configs.base.defaults.model_config.DiffusionExpertConfig'}, 'input_video_key': 'video', 'input_image_key': 'images', 'input_caption_key': 'ai_caption', 'state_ch': 48, 'state_t': 300, 'latent_downsample_factor': 16, 'resolution': '480', 'max_num_tokens_after_packing': 74000, 'joint_attn_implementation': 'two_way', 'flex_attention': {'enabled': False, 'backend': 'auto', 'mask': {'attention_scope': 'all_views'}}, 'natten_parameter_list': None, 'video_temporal_causal': False, 'causal_training_strategy': 'none', 'lbl': {'method': 'local', 'coeff_und': None, 'coeff_gen': None, '_type': 'cosmos_framework.configs.base.defaults.model_config.LBLConfig'}, 'vision_gen': True, 'action_gen': True, 'max_action_dim': 64, 'num_embodiment_domains': 32, 'sound_gen': False, 'sound_tokenizer': None, 'sound_dim': None, 'sound_latent_fps': 25, 'enable_input_bias': True, 'log_enc_time_every_n': 100, 'exclude_reasoner_weights_from_checkpoint': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.OmniMoTModelConfig'}
+[09-28 21:51:56|WARNING|cosmos_framework/model/generator/omni_mot_model.py:150:set_precision] OmniMoTModel: precision torch.bfloat16
+This processor does not use the `size` parameter. It will be ignored.
+[09-28 21:51:56|INFO|cosmos_framework/data/generator/processors/base.py:131:__init__] Successfully loaded processor from local cache
+[09-28 21:51:56|INFO|cosmos_framework/utils/checkpoint_db.py:338:download] Downloading checkpoint Wan2.2/vae(05090ecd0e254a8f89e10a8951dc3ed9)
+[09-28 21:51:56|INFO|cosmos_framework/utils/checkpoint_db.py:171:_hf_download] uv run --isolated --project /home/vla/projects/cosmos-framework/cosmos_framework/utils/hf_cli --locked --no-default-groups hf download --format=json Wan-AI/Wan2.2-TI2V-5B --repo-type model --revision 921dbaf3f1674a56f47e83fb80a34bac8a8f203e Wan2.2_VAE.pth
+[2mInstalled [1m16 packages[0m [2min 3ms[0m[0m
+[09-28 21:51:59|INFO|cosmos_framework/model/generator/tokenizers/wan2pt2_vae_4x16x16.py:1056:_video_vae] loading /bulk/users/vla/alpamayo2edge/hf-cache/models--Wan-AI--Wan2.2-TI2V-5B/snapshots/921dbaf3f1674a56f47e83fb80a34bac8a8f203e/Wan2.2_VAE.pth
+[09-28 21:51:59|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_tokenizers: 2.78 s
+[09-28 21:51:59|INFO|cosmos_framework/utils/generator/parallelism.py:110:_validate] dp_shard auto-inferred to world_size = 1
+[09-28 21:51:59|INFO|cosmos_framework/utils/generator/parallelism.py:124:_validate] dp_replicate is set to -1, will be automatically determined based on world_size 1 // dp_shard 1.
+[09-28 21:51:59|INFO|cosmos_framework/utils/generator/parallelism.py:129:_validate] dp_replicate is set to 1.
+`torch_dtype` is deprecated! Use `dtype` instead!
+[09-28 21:51:59|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on meta to cuda and broadcast model states: 0.05 s
+[09-28 21:51:59|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on Creating PyTorch model and ema if enabled: 0.15 s
+[09-28 21:51:59|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_model: 0.15 s
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/torch/distributed/checkpoint/utils.py:483: UserWarning: torch.distributed is disabled, unavailable or uninitialized, assuming the intent is to load in a single process.
+  return func(*args, **kwargs)
+[09-28 21:52:00|INFO|../cosmos-framework/cosmos_framework/model/generator/mot/unified_mot.py:2656:_ensure_vision_tower] Edge vision tower: loading from checkpoint-local bundle /bulk/users/vla/alpamayo2edge/cosmos3-edge/vision_encoder
+stage-1 checkpoint: /data/vla/alpamayo2edge/runs/stage1/run-351/best -> /data/vla/alpamayo2edge/runs/stage1/run-351/best
+loaded merged student <- /data/vla/alpamayo2edge/runs/stage1/run-351/best
+[09-28 21:52:04|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[09-28 21:52:04|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+loaded 224 adapter tensors + 6 stage-1 row tensors <- /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025
+folded 112 adapter modules from /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025 (step=25) into the AR tower
+image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+8903 windows total, 8903 to generate
+  50/8903  0.77 s/window  terminated 1.000  eta 114 min
+  100/8903  0.71 s/window  terminated 1.000  eta 104 min
+  150/8903  0.70 s/window  terminated 1.000  eta 102 min
+  200/8903  0.72 s/window  terminated 1.000  eta 104 min
+  250/8903  0.74 s/window  terminated 1.000  eta 107 min
+  300/8903  0.75 s/window  terminated 1.000  eta 108 min
+  350/8903  0.77 s/window  terminated 1.000  eta 110 min
+  400/8903  0.78 s/window  terminated 1.000  eta 111 min
+  450/8903  0.78 s/window  terminated 1.000  eta 110 min
+  500/8903  0.79 s/window  terminated 1.000  eta 111 min
+  550/8903  0.80 s/window  terminated 1.000  eta 111 min
+  600/8903  0.80 s/window  terminated 1.000  eta 110 min
+  650/8903  0.80 s/window  terminated 1.000  eta 109 min
+  700/8903  0.80 s/window  terminated 1.000  eta 110 min
+  750/8903  0.80 s/window  terminated 1.000  eta 109 min
+  800/8903  0.81 s/window  terminated 1.000  eta 109 min
+  850/8903  0.81 s/window  terminated 1.000  eta 108 min
+  900/8903  0.81 s/window  terminated 1.000  eta 108 min
+  950/8903  0.81 s/window  terminated 1.000  eta 107 min
+  1000/8903  0.81 s/window  terminated 1.000  eta 106 min
+  1050/8903  0.81 s/window  terminated 1.000  eta 105 min
+  1100/8903  0.81 s/window  terminated 1.000  eta 105 min
+  1150/8903  0.81 s/window  terminated 1.000  eta 104 min
+  1200/8903  0.80 s/window  terminated 1.000  eta 103 min
+  1250/8903  0.80 s/window  terminated 1.000  eta 103 min
+  1300/8903  0.80 s/window  terminated 1.000  eta 102 min
+  1350/8903  0.81 s/window  terminated 1.000  eta 101 min
+  1400/8903  0.81 s/window  terminated 1.000  eta 101 min
+  1450/8903  0.80 s/window  terminated 1.000  eta 100 min
+  1500/8903  0.81 s/window  terminated 1.000  eta 99 min
+  1550/8903  0.81 s/window  terminated 1.000  eta 99 min
+  1600/8903  0.81 s/window  terminated 1.000  eta 98 min
+  1650/8903  0.81 s/window  terminated 1.000  eta 98 min
+  1700/8903  0.81 s/window  terminated 1.000  eta 97 min
+  1750/8903  0.81 s/window  terminated 1.000  eta 96 min
+  1800/8903  0.81 s/window  terminated 1.000  eta 95 min
+  1850/8903  0.80 s/window  terminated 1.000  eta 95 min
+  1900/8903  0.80 s/window  terminated 1.000  eta 94 min
+  1950/8903  0.80 s/window  terminated 1.000  eta 93 min
+  2000/8903  0.80 s/window  terminated 1.000  eta 92 min
+  2050/8903  0.80 s/window  terminated 1.000  eta 92 min
+  2100/8903  0.80 s/window  terminated 1.000  eta 91 min
+  2150/8903  0.80 s/window  terminated 1.000  eta 90 min
+  2200/8903  0.80 s/window  terminated 1.000  eta 90 min
+  2250/8903  0.80 s/window  terminated 1.000  eta 89 min
+  2300/8903  0.81 s/window  terminated 1.000  eta 89 min
+  2350/8903  0.80 s/window  terminated 1.000  eta 88 min
+  2400/8903  0.81 s/window  terminated 1.000  eta 87 min
+  2450/8903  0.80 s/window  terminated 1.000  eta 86 min
+  2500/8903  0.80 s/window  terminated 1.000  eta 86 min
+  2550/8903  0.80 s/window  terminated 1.000  eta 85 min
+  2600/8903  0.80 s/window  terminated 1.000  eta 84 min
+  2650/8903  0.80 s/window  terminated 1.000  eta 84 min
+  2700/8903  0.80 s/window  terminated 1.000  eta 83 min
+  2750/8903  0.80 s/window  terminated 1.000  eta 82 min
+  2800/8903  0.80 s/window  terminated 1.000  eta 82 min
+  2850/8903  0.80 s/window  terminated 1.000  eta 81 min
+  2900/8903  0.80 s/window  terminated 1.000  eta 80 min
+  2950/8903  0.80 s/window  terminated 1.000  eta 80 min
+  3000/8903  0.80 s/window  terminated 1.000  eta 79 min
+  3050/8903  0.81 s/window  terminated 1.000  eta 79 min
+  3100/8903  0.81 s/window  terminated 1.000  eta 78 min
+  3150/8903  0.81 s/window  terminated 1.000  eta 77 min
+  3200/8903  0.81 s/window  terminated 1.000  eta 77 min
+  3250/8903  0.81 s/window  terminated 1.000  eta 76 min
+  3300/8903  0.81 s/window  terminated 1.000  eta 75 min
+  3350/8903  0.81 s/window  terminated 1.000  eta 75 min
+  3400/8903  0.81 s/window  terminated 1.000  eta 74 min
+  3450/8903  0.81 s/window  terminated 1.000  eta 73 min
+  3500/8903  0.81 s/window  terminated 1.000  eta 73 min
+  3550/8903  0.81 s/window  terminated 1.000  eta 72 min
+  3600/8903  0.81 s/window  terminated 1.000  eta 72 min
+  3650/8903  0.81 s/window  terminated 1.000  eta 71 min
+  3700/8903  0.81 s/window  terminated 1.000  eta 70 min
+  3750/8903  0.81 s/window  terminated 1.000  eta 70 min
+  3800/8903  0.81 s/window  terminated 1.000  eta 69 min
+  3850/8903  0.81 s/window  terminated 1.000  eta 68 min
+  3900/8903  0.81 s/window  terminated 1.000  eta 68 min
+  3950/8903  0.81 s/window  terminated 1.000  eta 67 min
+  4000/8903  0.81 s/window  terminated 1.000  eta 66 min
+  4050/8903  0.81 s/window  terminated 1.000  eta 65 min
+  4100/8903  0.81 s/window  terminated 1.000  eta 65 min
+  4150/8903  0.81 s/window  terminated 1.000  eta 64 min
+  4200/8903  0.81 s/window  terminated 1.000  eta 63 min
+  4250/8903  0.81 s/window  terminated 1.000  eta 63 min
+  4300/8903  0.81 s/window  terminated 1.000  eta 62 min
+  4350/8903  0.81 s/window  terminated 1.000  eta 62 min
+  4400/8903  0.81 s/window  terminated 1.000  eta 61 min
+  4450/8903  0.81 s/window  terminated 1.000  eta 60 min
+  4500/8903  0.81 s/window  terminated 1.000  eta 60 min
+  4550/8903  0.81 s/window  terminated 1.000  eta 59 min
+  4600/8903  0.81 s/window  terminated 1.000  eta 58 min
+  4650/8903  0.81 s/window  terminated 1.000  eta 57 min
+  4700/8903  0.81 s/window  terminated 1.000  eta 57 min
+  4750/8903  0.81 s/window  terminated 1.000  eta 56 min
+  4800/8903  0.81 s/window  terminated 1.000  eta 55 min
+  4850/8903  0.81 s/window  terminated 1.000  eta 55 min
+  4900/8903  0.81 s/window  terminated 1.000  eta 54 min
+  4950/8903  0.81 s/window  terminated 1.000  eta 53 min
+  5000/8903  0.81 s/window  terminated 1.000  eta 53 min
+  5050/8903  0.81 s/window  terminated 1.000  eta 52 min
+  5100/8903  0.81 s/window  terminated 1.000  eta 51 min
+  5150/8903  0.81 s/window  terminated 1.000  eta 51 min
+  5200/8903  0.81 s/window  terminated 1.000  eta 50 min
+  5250/8903  0.81 s/window  terminated 1.000  eta 50 min
+  5300/8903  0.81 s/window  terminated 1.000  eta 49 min
+  5350/8903  0.81 s/window  terminated 1.000  eta 48 min
+  5400/8903  0.81 s/window  terminated 1.000  eta 47 min
+  5450/8903  0.81 s/window  terminated 1.000  eta 47 min
+  5500/8903  0.81 s/window  terminated 1.000  eta 46 min
+  5550/8903  0.81 s/window  terminated 1.000  eta 46 min
+  5600/8903  0.81 s/window  terminated 1.000  eta 45 min
+  5650/8903  0.81 s/window  terminated 1.000  eta 44 min
+  5700/8903  0.82 s/window  terminated 1.000  eta 44 min
+  5750/8903  0.82 s/window  terminated 1.000  eta 43 min
+  5800/8903  0.82 s/window  terminated 1.000  eta 42 min
+  5850/8903  0.82 s/window  terminated 1.000  eta 42 min
+  5900/8903  0.82 s/window  terminated 1.000  eta 41 min
+  5950/8903  0.82 s/window  terminated 1.000  eta 40 min
+  6000/8903  0.82 s/window  terminated 1.000  eta 40 min
+  6050/8903  0.82 s/window  terminated 1.000  eta 39 min
+  6100/8903  0.82 s/window  terminated 1.000  eta 38 min
+  6150/8903  0.82 s/window  terminated 1.000  eta 37 min
+  6200/8903  0.82 s/window  terminated 1.000  eta 37 min
+  6250/8903  0.82 s/window  terminated 1.000  eta 36 min
+  6300/8903  0.82 s/window  terminated 1.000  eta 35 min
+  6350/8903  0.82 s/window  terminated 1.000  eta 35 min
+  6400/8903  0.82 s/window  terminated 1.000  eta 34 min
+  6450/8903  0.82 s/window  terminated 1.000  eta 33 min
+  6500/8903  0.82 s/window  terminated 1.000  eta 33 min
+  6550/8903  0.82 s/window  terminated 1.000  eta 32 min
+  6600/8903  0.82 s/window  terminated 1.000  eta 31 min
+  6650/8903  0.82 s/window  terminated 1.000  eta 31 min
+  6700/8903  0.82 s/window  terminated 1.000  eta 30 min
+  6750/8903  0.82 s/window  terminated 1.000  eta 29 min
+  6800/8903  0.82 s/window  terminated 1.000  eta 29 min
+  6850/8903  0.82 s/window  terminated 1.000  eta 28 min
+  6900/8903  0.82 s/window  terminated 1.000  eta 27 min
+  6950/8903  0.81 s/window  terminated 1.000  eta 27 min
+  7000/8903  0.81 s/window  terminated 1.000  eta 26 min
+  7050/8903  0.82 s/window  terminated 1.000  eta 25 min
+  7100/8903  0.82 s/window  terminated 1.000  eta 25 min
+  7150/8903  0.82 s/window  terminated 1.000  eta 24 min
+  7200/8903  0.82 s/window  terminated 1.000  eta 23 min
+  7250/8903  0.82 s/window  terminated 1.000  eta 22 min
+  7300/8903  0.82 s/window  terminated 1.000  eta 22 min
+  7350/8903  0.82 s/window  terminated 1.000  eta 21 min
+  7400/8903  0.82 s/window  terminated 1.000  eta 20 min
+  7450/8903  0.82 s/window  terminated 1.000  eta 20 min
+  7500/8903  0.82 s/window  terminated 1.000  eta 19 min
+  7550/8903  0.82 s/window  terminated 1.000  eta 18 min
+  7600/8903  0.82 s/window  terminated 1.000  eta 18 min
+  7650/8903  0.82 s/window  terminated 1.000  eta 17 min
+  7700/8903  0.82 s/window  terminated 1.000  eta 16 min
+  7750/8903  0.82 s/window  terminated 1.000  eta 16 min
+  7800/8903  0.82 s/window  terminated 1.000  eta 15 min
+  7850/8903  0.82 s/window  terminated 1.000  eta 14 min
+  7900/8903  0.81 s/window  terminated 1.000  eta 14 min
+  7950/8903  0.81 s/window  terminated 1.000  eta 13 min
+  8000/8903  0.81 s/window  terminated 1.000  eta 12 min
+  8050/8903  0.81 s/window  terminated 1.000  eta 12 min
+  8100/8903  0.81 s/window  terminated 1.000  eta 11 min
+  8150/8903  0.81 s/window  terminated 1.000  eta 10 min
+  8200/8903  0.81 s/window  terminated 1.000  eta 10 min
+  8250/8903  0.81 s/window  terminated 1.000  eta 9 min
+  8300/8903  0.81 s/window  terminated 1.000  eta 8 min
+  8350/8903  0.81 s/window  terminated 1.000  eta 8 min
+  8400/8903  0.81 s/window  terminated 1.000  eta 7 min
+  8450/8903  0.81 s/window  terminated 1.000  eta 6 min
+  8500/8903  0.81 s/window  terminated 1.000  eta 5 min
+  8550/8903  0.81 s/window  terminated 1.000  eta 5 min
+  8600/8903  0.81 s/window  terminated 1.000  eta 4 min
+  8650/8903  0.81 s/window  terminated 1.000  eta 3 min
+  8700/8903  0.82 s/window  terminated 1.000  eta 3 min
+  8750/8903  0.81 s/window  terminated 1.000  eta 2 min
+  8800/8903  0.81 s/window  terminated 1.000  eta 1 min
+  8850/8903  0.81 s/window  terminated 1.000  eta 1 min
+  8900/8903  0.81 s/window  terminated 1.000  eta 0 min
+done: 8903 generated in 7252 s -> /bulk/users/vla/alpamayo2edge/b2d_cache/coc_rl7s25.jsonl
+=== 05j score ===
+coc_rl7s25.jsonl: 8903 windows, split all   (reference: RL7 step 25 / teacher on PhysicalAI-AV val, D-058)
+  row                                   CARLA  n      PAI RL7  PAI teacher
+  GT-consistent (checkable)             0.765  8637     0.780        0.691
+  GT false-clear (braked)               0.149  2370     0.288        0.190
+  direction stated ok (turns)           0.456  1498 
+  hazard named, no reaction             0.082  8215 
+  braked -> says slow/stop              0.215  2370     0.385        0.216
+    expert STOPPED                      0.231  2165     0.750        0.690
+    expert braked HARD                  0.045  110      0.379        0.165
+    expert slowed mildly                0.032  95    
+  NUDGE share on braked                 0.036  2370     0.035        0.099
+  should_brake>0.5 -> says slow/stop    0.274  3908 
+  terminated 1.000   maneuver mix: {'STOP': 3345, 'FOLLOW': 3014, 'TURN': 1121, 'KEEP': 578, 'SLOW': 450, 'NUDGE': 192, 'ADAPT_SPEED': 63, 'LANE_CHANGE': 49}
+  per scenario (n, braked, braked->slow/stop, false-clear):
+     AccidentTwoWays                           547  156   0.154   0.128
+     TJunction                                 517  122   0.270   0.025
+     CrossingBicycleFlow                       458   57   0.754   0.000
+     HardBreakRoute                            446   67   0.030   0.000
+     VanillaSignalizedTurnEncounterRedLight    393   25   0.400   0.040
+     ConstructionObstacleTwoWays               373   93   0.333   0.086
+     ParkingCutIn                              352  134   0.097   0.127
+     ParkedObstacleTwoWays                     344  105   0.219   0.181
+     HazardAtSideLane                          340  145   0.110   0.062
+     BlockedIntersection                       323   77   0.208   0.273
+     PedestrianCrossing                        292   25   0.920   0.040
+     VanillaSignalizedTurnEncounterGreenLight  286   14   0.214   0.143
+     ParkingExit                               264   21   0.333   0.095
+     NonSignalizedJunctionLeftTurn             258   75   0.227   0.400
+     ParkedObstacle                            257  101   0.079   0.040
+     ParkingCrossingPedestrian                 248   86   0.186   0.105
+     Accident                                  236  111   0.072   0.027
+     HazardAtSideLaneTwoWays                   233  105   0.162   0.076
+     VehicleTurningRoute                       197   73   0.164   0.425
+     EnterActorFlow                            196   19   0.737   0.211
+     DynamicObjectCrossing                     184   80   0.263   0.275
+     ConstructionObstacle                      179   78   0.103   0.038
+     StaticCutIn                               162   63   0.000   0.143
+     VehicleTurningRoutePedestrian             159   45   0.289   0.422
+     OppositeVehicleTakingPriority             144   52   0.635   0.231
+     ControlLoss                               137   54   0.019   0.056
+     HighwayExit                               128    9   0.000   0.444
+     YieldToEmergencyVehicle                   123   17   0.000   0.000
+     SignalizedJunctionLeftTurnEnterFlow       119   51   0.392   0.059
+     SignalizedJunctionLeftTurn                119   45   0.267   0.067
+     OppositeVehicleRunningRedLight            100   50   0.540   0.340
+     VanillaNonSignalizedTurnEncounterStopsign   98   25   0.080   0.320
+     HighwayCutIn                               94   12   0.000   1.000
+     LaneChange                                 78   20   0.200   0.000
+     SignalizedJunctionRightTurn                76   34   0.353   0.118
+     InvadingTurn                               74   16   0.312   0.312
+     MergerIntoSlowTrafficV2                    74   15   0.000   0.600
+     NonSignalizedJunctionRightTurn             59   29   0.172   0.379
+     InterurbanAdvancedActorFlow                56   17   0.176   0.353
+     InterurbanActorFlow                        53    7   0.000   0.571
+     NonSignalizedJunctionLeftTurnEnterFlow     52   21   0.333   0.143
+     VehicleOpensDoorTwoWays                    42   13   0.000   0.077
+     MergerIntoSlowTraffic                      33    6   0.000   0.500
+coc_rl7s25.jsonl: 863 windows, split val   (reference: RL7 step 25 / teacher on PhysicalAI-AV val, D-058)
+  row                                   CARLA  n      PAI RL7  PAI teacher
+  GT-consistent (checkable)             0.735  834      0.780        0.691
+  GT false-clear (braked)               0.175  246      0.288        0.190
+  direction stated ok (turns)           0.491  161  
+  hazard named, no reaction             0.085  786  
+  braked -> says slow/stop              0.183  246      0.385        0.216
+    expert STOPPED                      0.205  220      0.750        0.690
+    expert braked HARD                  0.000  15       0.379        0.165
+    expert slowed mildly                0.000  11    
+  NUDGE share on braked                 0.041  246      0.035        0.099
+  should_brake>0.5 -> says slow/stop    0.313  438  
+  terminated 1.000   maneuver mix: {'FOLLOW': 298, 'STOP': 270, 'TURN': 142, 'KEEP': 68, 'SLOW': 46, 'NUDGE': 21, 'LANE_CHANGE': 5, 'ADAPT_SPEED': 5}
+  per scenario (n, braked, braked->slow/stop, false-clear):
+     ParkedObstacle                             58   16   0.062   0.062
+     CrossingBicycleFlow                        51    7   0.571   0.000
+     AccidentTwoWays                            49   15   0.067   0.133
+     HardBreakRoute                             45   11   0.091   0.000
+     ConstructionObstacleTwoWays                44   10   0.300   0.100
+     HazardAtSideLane                           44   16   0.125   0.125
+     TJunction                                  40    9   0.000   0.111
+     ParkedObstacleTwoWays                      39   11   0.182   0.273
+     ParkingCutIn                               30   12   0.000   0.333
+     PedestrianCrossing                         30    4   1.000   0.000
+     VehicleTurningRoute                        29   11   0.182   0.364
+     VehicleTurningRoutePedestrian              27    6   0.000   0.667
+     HazardAtSideLaneTwoWays                    26   10   0.200   0.000
+     VanillaSignalizedTurnEncounterGreenLight   26    0   0.000   0.000
+     Accident                                   23   10   0.000   0.000
+     ConstructionObstacle                       23    9   0.000   0.111
+     ParkingExit                                21    0   0.000   0.000
+     YieldToEmergencyVehicle                    20    4   0.000   0.000
+     DynamicObjectCrossing                      19    9   0.333   0.333
+     BlockedIntersection                        18    7   0.000   0.286
+     NonSignalizedJunctionLeftTurn              16    7   0.429   0.286
+     ParkingCrossingPedestrian                  14    6   0.500   0.000
+     SignalizedJunctionLeftTurnEnterFlow        14    6   0.500   0.167
+     HighwayExit                                13    1   0.000   1.000
+     StaticCutIn                                13    6   0.000   0.333
+     LaneChange                                 12    4   0.250   0.000
+     VanillaSignalizedTurnEncounterRedLight     11    2   0.500   0.000
+     VanillaNonSignalizedTurnEncounterStopsign   10    3   0.000   0.333
+     VehicleOpensDoorTwoWays                    10    3   0.000   0.000
+     NonSignalizedJunctionLeftTurnEnterFlow      9    5   0.000   0.200
+     HighwayCutIn                                8    2   0.000   1.000
+     MergerIntoSlowTrafficV2                     8    3   0.000   0.667
+     InterurbanAdvancedActorFlow                 7    1   0.000   0.000
+     OppositeVehicleRunningRedLight              7    3   0.667   0.333
+     OppositeVehicleTakingPriority               7    4   1.000   0.000
+     SignalizedJunctionLeftTurn                  7    3   0.000   0.000
+     SignalizedJunctionRightTurn                 7    3   0.333   0.000
+     InvadingTurn                                6    3   0.667   0.000
+     ControlLoss                                 5    0   0.000   0.000
+     MergerIntoSlowTraffic                       5    1   0.000   1.000
+     EnterActorFlow                              4    0   0.000   0.000
+     InterurbanActorFlow                         4    1   0.000   1.000
+     NonSignalizedJunctionRightTurn              4    2   0.000   0.000

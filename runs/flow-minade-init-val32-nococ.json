@@ -1,0 +1,384 @@
+{
+ "ckpt": null,
+ "split": "val",
+ "n": 32,
+ "k": 6,
+ "steps": 10,
+ "coc": null,
+ "minade": 7.031050321646035,
+ "meanade": 8.311231944710016,
+ "minfde": 18.210176698397845,
+ "cv_ade": 5.969209444709122,
+ "p90_minade": 15.815408897399903,
+ "braked": {
+  "n": 32,
+  "minade": 7.031050321646035,
+  "cv_ade": 5.969209444709122
+ },
+ "not_braked": {
+  "n": 0,
+  "minade": NaN,
+  "cv_ade": NaN
+ },
+ "by_scenario": {
+  "AccidentTwoWays": {
+   "n": 32,
+   "minade": 7.031050321646035,
+   "cv_ade": 5.969209444709122
+  }
+ },
+ "per_window": [
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 0,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 10.778406143188477,
+   "meanade": 11.683798789978027,
+   "minfde": 20.442447662353516,
+   "cv_ade": 6.555413246154785,
+   "v0": 6.429498672485352
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 1,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 7.731173992156982,
+   "meanade": 10.402911186218262,
+   "minfde": 21.096023559570312,
+   "cv_ade": 5.253923416137695,
+   "v0": 7.9872307777404785
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 2,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 13.271810531616211,
+   "meanade": 13.750129699707031,
+   "minfde": 31.565462112426758,
+   "cv_ade": 14.0873441696167,
+   "v0": 7.837602615356445
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 3,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 0.3306792974472046,
+   "meanade": 1.1576788425445557,
+   "minfde": 1.1614328622817993,
+   "cv_ade": 1.2002418041229248,
+   "v0": -0.009898754768073559
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 4,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 1.025432825088501,
+   "meanade": 1.549160361289978,
+   "minfde": 2.6152026653289795,
+   "cv_ade": 0.41819632053375244,
+   "v0": 0.06208318844437599
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 5,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 1.2231580018997192,
+   "meanade": 1.7924469709396362,
+   "minfde": 3.648411750793457,
+   "cv_ade": 0.20283235609531403,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 6,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 0.21833482384681702,
+   "meanade": 1.7259454727172852,
+   "minfde": 0.13596712052822113,
+   "cv_ade": 0.20282579958438873,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 7,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 0.5464401841163635,
+   "meanade": 1.6268826723098755,
+   "minfde": 1.9522778987884521,
+   "cv_ade": 0.20282579958438873,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 8,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 1.0863077640533447,
+   "meanade": 2.0130698680877686,
+   "minfde": 3.9014341831207275,
+   "cv_ade": 0.16849158704280853,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 9,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 2.6794488430023193,
+   "meanade": 3.159547805786133,
+   "minfde": 13.473466873168945,
+   "cv_ade": 1.444520115852356,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 10,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 7.816014766693115,
+   "meanade": 8.679354667663574,
+   "minfde": 30.155080795288086,
+   "cv_ade": 7.501633644104004,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 11,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 16.685564041137695,
+   "meanade": 17.67876625061035,
+   "minfde": 41.381195068359375,
+   "cv_ade": 16.09836769104004,
+   "v0": 0.9842666983604431
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 12,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 18.83078384399414,
+   "meanade": 19.472047805786133,
+   "minfde": 41.6811637878418,
+   "cv_ade": 10.497626304626465,
+   "v0": 6.280364513397217
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1106_Weather14",
+   "window": 13,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 11.660284996032715,
+   "meanade": 17.10999298095703,
+   "minfde": 36.25387191772461,
+   "cv_ade": 11.514991760253906,
+   "v0": 11.157382011413574
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 0,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 10.95699691772461,
+   "meanade": 11.603351593017578,
+   "minfde": 22.52459144592285,
+   "cv_ade": 5.667429447174072,
+   "v0": 5.757147789001465
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 1,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 10.797124862670898,
+   "meanade": 12.962889671325684,
+   "minfde": 27.99199867248535,
+   "cv_ade": 6.359884262084961,
+   "v0": 8.238349914550781
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 2,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 13.6133394241333,
+   "meanade": 14.424616813659668,
+   "minfde": 32.74338150024414,
+   "cv_ade": 15.125605583190918,
+   "v0": 7.634929180145264
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 3,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 0.17772117257118225,
+   "meanade": 1.33277428150177,
+   "minfde": 0.3931424021720886,
+   "cv_ade": 0.3377639353275299,
+   "v0": -0.012400873936712742
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 4,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 0.5595364570617676,
+   "meanade": 1.325536847114563,
+   "minfde": 1.7516580820083618,
+   "cv_ade": 0.28374946117401123,
+   "v0": 0.030083950608968735
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 5,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 0.37652134895324707,
+   "meanade": 1.3213814496994019,
+   "minfde": 0.5783708691596985,
+   "cv_ade": 0.20282579958438873,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 6,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 1.1726672649383545,
+   "meanade": 1.5181251764297485,
+   "minfde": 3.053741931915283,
+   "cv_ade": 0.20282579958438873,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 7,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 0.4015204906463623,
+   "meanade": 1.449411392211914,
+   "minfde": 1.6683562994003296,
+   "cv_ade": 0.20282579958438873,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 8,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 0.42464688420295715,
+   "meanade": 2.243075132369995,
+   "minfde": 2.6730008125305176,
+   "cv_ade": 0.17720405757427216,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 9,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 2.4831418991088867,
+   "meanade": 3.0953214168548584,
+   "minfde": 13.124497413635254,
+   "cv_ade": 1.9063942432403564,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 10,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 9.177806854248047,
+   "meanade": 9.90302562713623,
+   "minfde": 32.374813079833984,
+   "cv_ade": 8.434762001037598,
+   "v0": 0.0
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 11,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 15.19674301147461,
+   "meanade": 15.831269264221191,
+   "minfde": 37.33518981933594,
+   "cv_ade": 14.242716789245605,
+   "v0": 1.7169685363769531
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 12,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 15.884149551391602,
+   "meanade": 17.34299659729004,
+   "minfde": 37.10488510131836,
+   "cv_ade": 9.01129150390625,
+   "v0": 6.1855340003967285
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1112_Weather20",
+   "window": 13,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 12.338432312011719,
+   "meanade": 15.654536247253418,
+   "minfde": 33.35276412963867,
+   "cv_ade": 10.399593353271484,
+   "v0": 10.64017105102539
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1121_Weather3",
+   "window": 0,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 8.267576217651367,
+   "meanade": 9.809646606445312,
+   "minfde": 20.001901626586914,
+   "cv_ade": 3.940639019012451,
+   "v0": 6.486624240875244
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1121_Weather3",
+   "window": 1,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 4.275336742401123,
+   "meanade": 6.942270755767822,
+   "minfde": 14.069668769836426,
+   "cv_ade": 6.74405574798584,
+   "v0": 8.003735542297363
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1121_Weather3",
+   "window": 2,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 7.104521751403809,
+   "meanade": 8.57778263092041,
+   "minfde": 20.157129287719727,
+   "cv_ade": 11.082971572875977,
+   "v0": 7.341976642608643
+  },
+  {
+   "clip": "AccidentTwoWays_Town12_Route1121_Weather3",
+   "window": 3,
+   "scenario": "AccidentTwoWays",
+   "braked": true,
+   "minade": 17.901987075805664,
+   "meanade": 18.819677352905273,
+   "minfde": 32.36312484741211,
+   "cv_ade": 21.34292984008789,
+   "v0": 6.94879674911499
+  }
+ ]
+}

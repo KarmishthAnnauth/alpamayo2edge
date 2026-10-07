@@ -1,0 +1,8 @@
+{
+ "accel_mean": 0.10862279224118765,
+ "accel_std": 3.025160606950046,
+ "curvature_mean": 0.002418002025659807,
+ "curvature_std": 0.03580134653805723,
+ "n_windows": 8040,
+ "source": "b2d_cache train split, physical units, 2026-09-29"
+}

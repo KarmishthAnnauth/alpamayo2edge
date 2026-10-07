@@ -1,0 +1,311 @@
+{
+  "n": 863,
+  "consistent": 0.7393364928909952,
+  "false_clear": 0.14634146341463414,
+  "braked_slow": 0.1910569105691057,
+  "n_braked": 246,
+  "direction_ok": 0.4782608695652174,
+  "by_scenario": {
+    "AccidentTwoWays": {
+      "n": 49,
+      "braked": 15,
+      "slow": 2,
+      "fc": 1,
+      "fc_n": 15
+    },
+    "Accident": {
+      "n": 23,
+      "braked": 10,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 10
+    },
+    "BlockedIntersection": {
+      "n": 18,
+      "braked": 7,
+      "slow": 0,
+      "fc": 3,
+      "fc_n": 7
+    },
+    "ConstructionObstacleTwoWays": {
+      "n": 44,
+      "braked": 10,
+      "slow": 4,
+      "fc": 1,
+      "fc_n": 10
+    },
+    "ConstructionObstacle": {
+      "n": 23,
+      "braked": 9,
+      "slow": 1,
+      "fc": 1,
+      "fc_n": 9
+    },
+    "ControlLoss": {
+      "n": 5,
+      "braked": 0,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 0
+    },
+    "CrossingBicycleFlow": {
+      "n": 51,
+      "braked": 7,
+      "slow": 4,
+      "fc": 0,
+      "fc_n": 7
+    },
+    "DynamicObjectCrossing": {
+      "n": 19,
+      "braked": 9,
+      "slow": 1,
+      "fc": 2,
+      "fc_n": 9
+    },
+    "EnterActorFlow": {
+      "n": 4,
+      "braked": 0,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 0
+    },
+    "HardBreakRoute": {
+      "n": 45,
+      "braked": 11,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 11
+    },
+    "HazardAtSideLaneTwoWays": {
+      "n": 26,
+      "braked": 10,
+      "slow": 2,
+      "fc": 0,
+      "fc_n": 10
+    },
+    "HazardAtSideLane": {
+      "n": 44,
+      "braked": 16,
+      "slow": 0,
+      "fc": 1,
+      "fc_n": 16
+    },
+    "HighwayCutIn": {
+      "n": 8,
+      "braked": 2,
+      "slow": 0,
+      "fc": 1,
+      "fc_n": 2
+    },
+    "HighwayExit": {
+      "n": 13,
+      "braked": 1,
+      "slow": 0,
+      "fc": 1,
+      "fc_n": 1
+    },
+    "InterurbanActorFlow": {
+      "n": 4,
+      "braked": 1,
+      "slow": 0,
+      "fc": 1,
+      "fc_n": 1
+    },
+    "InterurbanAdvancedActorFlow": {
+      "n": 7,
+      "braked": 1,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 1
+    },
+    "InvadingTurn": {
+      "n": 6,
+      "braked": 3,
+      "slow": 2,
+      "fc": 0,
+      "fc_n": 3
+    },
+    "LaneChange": {
+      "n": 12,
+      "braked": 4,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 4
+    },
+    "MergerIntoSlowTrafficV2": {
+      "n": 8,
+      "braked": 3,
+      "slow": 0,
+      "fc": 2,
+      "fc_n": 3
+    },
+    "MergerIntoSlowTraffic": {
+      "n": 5,
+      "braked": 1,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 1
+    },
+    "NonSignalizedJunctionLeftTurnEnterFlow": {
+      "n": 9,
+      "braked": 5,
+      "slow": 1,
+      "fc": 1,
+      "fc_n": 5
+    },
+    "NonSignalizedJunctionLeftTurn": {
+      "n": 16,
+      "braked": 7,
+      "slow": 2,
+      "fc": 3,
+      "fc_n": 7
+    },
+    "NonSignalizedJunctionRightTurn": {
+      "n": 4,
+      "braked": 2,
+      "slow": 1,
+      "fc": 0,
+      "fc_n": 2
+    },
+    "OppositeVehicleRunningRedLight": {
+      "n": 7,
+      "braked": 3,
+      "slow": 2,
+      "fc": 1,
+      "fc_n": 3
+    },
+    "OppositeVehicleTakingPriority": {
+      "n": 7,
+      "braked": 4,
+      "slow": 4,
+      "fc": 0,
+      "fc_n": 4
+    },
+    "ParkedObstacleTwoWays": {
+      "n": 39,
+      "braked": 11,
+      "slow": 3,
+      "fc": 1,
+      "fc_n": 11
+    },
+    "ParkedObstacle": {
+      "n": 58,
+      "braked": 16,
+      "slow": 1,
+      "fc": 2,
+      "fc_n": 16
+    },
+    "ParkingCrossingPedestrian": {
+      "n": 14,
+      "braked": 6,
+      "slow": 1,
+      "fc": 0,
+      "fc_n": 6
+    },
+    "ParkingCutIn": {
+      "n": 30,
+      "braked": 12,
+      "slow": 1,
+      "fc": 1,
+      "fc_n": 12
+    },
+    "ParkingExit": {
+      "n": 21,
+      "braked": 0,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 0
+    },
+    "PedestrianCrossing": {
+      "n": 30,
+      "braked": 4,
+      "slow": 4,
+      "fc": 0,
+      "fc_n": 4
+    },
+    "SignalizedJunctionLeftTurnEnterFlow": {
+      "n": 14,
+      "braked": 6,
+      "slow": 3,
+      "fc": 0,
+      "fc_n": 6
+    },
+    "SignalizedJunctionLeftTurn": {
+      "n": 7,
+      "braked": 3,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 3
+    },
+    "SignalizedJunctionRightTurn": {
+      "n": 7,
+      "braked": 3,
+      "slow": 1,
+      "fc": 0,
+      "fc_n": 3
+    },
+    "StaticCutIn": {
+      "n": 13,
+      "braked": 6,
+      "slow": 0,
+      "fc": 1,
+      "fc_n": 6
+    },
+    "TJunction": {
+      "n": 40,
+      "braked": 9,
+      "slow": 3,
+      "fc": 1,
+      "fc_n": 9
+    },
+    "VanillaNonSignalizedTurnEncounterStopsign": {
+      "n": 10,
+      "braked": 3,
+      "slow": 0,
+      "fc": 3,
+      "fc_n": 3
+    },
+    "VanillaSignalizedTurnEncounterGreenLight": {
+      "n": 26,
+      "braked": 0,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 0
+    },
+    "VanillaSignalizedTurnEncounterRedLight": {
+      "n": 11,
+      "braked": 2,
+      "slow": 1,
+      "fc": 0,
+      "fc_n": 2
+    },
+    "VehicleOpensDoorTwoWays": {
+      "n": 10,
+      "braked": 3,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 3
+    },
+    "VehicleTurningRoutePedestrian": {
+      "n": 27,
+      "braked": 6,
+      "slow": 1,
+      "fc": 4,
+      "fc_n": 6
+    },
+    "VehicleTurningRoute": {
+      "n": 29,
+      "braked": 11,
+      "slow": 2,
+      "fc": 4,
+      "fc_n": 11
+    },
+    "YieldToEmergencyVehicle": {
+      "n": 20,
+      "braked": 4,
+      "slow": 0,
+      "fc": 0,
+      "fc_n": 4
+    }
+  }
+}

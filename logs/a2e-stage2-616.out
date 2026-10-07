@@ -1,0 +1,257 @@
+Job 616 on ProArt, started 2026-10-07T04:07:58+02:00
+Commit:         84c82d1
+   device 0 = NVIDIA RTX PRO 6000 Blackwell Workstation Edition  95.0 GiB total, 94.4 GiB free
+wandb: [wandb.login()] Loaded credentials for https://api.wandb.ai from /home/vla/.netrc.
+wandb: Currently logged in as: karmishthannauth27 (karmishthannauth27-technical-university-of-munich) to https://api.wandb.ai. Use `wandb login --relogin` to force relogin
+wandb: setting up run sft-run-5-b2d-tbeta-t0gate-job616
+wandb: Tracking run with wandb version 0.25.0
+wandb: Run data is saved locally in /home/vla/projects/alpamayo2edge/wandb/run-20261007_040801-sft-run-5-b2d-tbeta-t0gate-job616
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run sft-run-5-b2d-tbeta-t0gate-job616
+wandb: ⭐️ View project at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge
+wandb: 🚀 View run at https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/sft-run-5-b2d-tbeta-t0gate-job616
+2026-10-07 04:08:02,924 INFO wandb: https://wandb.ai/karmishthannauth27-technical-university-of-munich/alpamayo2edge/runs/sft-run-5-b2d-tbeta-t0gate-job616
+2026-10-07 04:08:02,935 INFO checkpoints -> /bulk/users/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate (4140 GiB free, ~64 needed)
+2026-10-07 04:08:06,088 INFO The multistorageclient package is available.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/distributed/fsdp/src/megatron_fsdp/utils.py:108: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+2026-10-07 04:08:06,705 INFO Detected Megatron Core, using Megatron-FSDP with Megatron.
+2026-10-07 04:08:06,706 INFO Detected Megatron Core, using Megatron-FSDP with Megatron.
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/__init__.py:24: UserWarning: Transformer Engine and Apex are not installed. Falling back to Torch optimizers.
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/optimizer.py:28: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier and multi_tensor_scale
+  warnings.warn(
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/megatron/core/optimizer/clip_grads.py:29: UserWarning: Transformer Engine and Apex are not installed. Falling back to local implementations of multi_tensor_applier, multi_tensor_l2norm, and multi_tensor_scale
+  warnings.warn(
+[10-07 04:08:08|INFO|cosmos_framework/model/generator/omni_mot_model.py:124:__init__] OmniMoTModel: config {'tokenizer': {'bucket_name': 'bucket', 'object_store_credential_path_pretrained': 'credentials/gcp_training.secret', 'vae_path': 'pretrained/tokenizers/video/wan2pt2/Wan2.2_VAE.pth', 'chunk_duration': 93, 'keep_decoder_cache': False, 'use_streaming_encode': False, 'encode_chunk_frames': {'256': 68, '480': 24, '720': 8, '768': 8}, 'encode_exact_durations': [17, 61, 73], 'spatial_compression_factor': 16, 'temporal_compression_factor': 4, 'temporal_window': None, 'encode_bucket_multiple': None, 'causal': True, '_target_': 'cosmos_framework.model.generator.tokenizers.wan2pt2_vae_4x16x16.Wan2pt2VAEInterface'}, 'load_vision_tokenizer': True, 'lidar_tokenizer': None, 'lidar_state_ch': None, 'lidar_fps': None, 'net': None, 'ema': {'enabled': False, 'rate': 0.1, 'iteration_shift': 0, '_type': 'cosmos_framework.configs.base.defaults.ema.EMAConfig'}, 'parallelism': {'data_parallel_shard_degree': -1, 'data_parallel_replicate_degree': 1, 'context_parallel_shard_degree': 1, 'cfg_parallel_shard_degree': 1, 'enable_inference_mode': True, 'fsdp_master_dtype': 'float32', 'fsdp_reduce_dtype': None, '_type': 'cosmos_framework.configs.base.defaults.parallelism.ParallelismConfig'}, 'attention_io_layout': 'sequence_sharded', 'compile': {'enabled': False, 'compiled_region': 'language', 'compile_dynamic': True, 'use_cuda_graphs': False, 'ar_post_saturation_mode': 'default', 'max_autotune_pointwise': False, 'coordinate_descent_tuning': False, '_type': 'cosmos_framework.configs.base.defaults.compile.CompileConfig'}, 'quantization': {'method': None, 'fp8_granularity': 'per_row', 'modelopt_fp8_checkpoint_path': None, 'mixed_precision_first_steps': 0, 'mixed_precision_last_steps': 0, 'mixed_precision_reasoner_policy': 'high_precision', 'mixed_precision_w8a16_cache': 'none', 'include_regex': [], 'exclude_regex': [], 'modelopt_fp8_target_fqns': [], '_type': 'cosmos_framework.configs.base.defaults.quantization.QuantizationConfig'}, 'activation_checkpointing': {'mode': 'none', 'preserve_rng_state': True, 'determinism_check': 'default', 'save_ops_regex': ['fmha'], '_type': 'cosmos_framework.configs.base.defaults.activation_checkpointing.ActivationCheckpointingConfig'}, 'precision': 'bfloat16', 'lora_enabled': False, 'lora_rank': 16, 'lora_alpha': 32, 'lora_target_modules': 'q_proj_moe_gen,k_proj_moe_gen,v_proj_moe_gen,o_proj_moe_gen', 'rectified_flow_training_config': {'shift': {'256': 3, '480': 5, '720': 10}, 'shift_image': None, 'use_dynamic_shift': False, 'train_time_image_distribution': 'logitnormal', 'train_time_video_distribution': 'waver', 'train_time_action_distribution': 'logitnormal', 'train_time_sound_distribution': 'logitnormal', 'train_time_weight': 'uniform', 'loss_scale': 10.0, 'image_loss_scale': None, 'sound_loss_scale': 2.0, 'lidar_loss_scale': None, 'use_discrete_rf': False, 'action_loss_weight': 10.0, 'independent_action_schedule': False, 'shift_action': None, 'independent_sound_schedule': False, 'shift_sound': None, 'normalize_loss_by_active': False, 'sample_level_loss_averaging': False, 'high_sigma_ratio': 0.05, 'high_sigma_timesteps_max': 1000, 'high_sigma_timesteps_min': 995, 'use_high_sigma_strategy': False, 'use_high_sigma_strategy_action': False, 'use_high_sigma_strategy_sound': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowTrainingConfig'}, 'rectified_flow_inference_config': {'scheduler_type': 'unipc', 'num_train_timesteps': 1000, 'shift': 1, 'use_dynamic_shifting': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.RectifiedFlowInferenceConfig'}, 'fixed_step_sampler_config': None, 'vlm_config': {'model_name': 'nvidia/Cosmos3-Edge-Reasoner', 'safetensors_path': '', 'pretrained_weights': {'enabled': False, 'backbone_path': 's3://bucket/cosmos3/pretrained/huggingface/nvidia/Cosmos3-Edge-Reasoner-590c1c0/', 'credentials_path': 'credentials/gcp_checkpoint.secret', 'enable_gcs_patch_in_boto3': True, 'checkpoint_format': None, '_type': 'cosmos_framework.configs.base.defaults.reasoner.PretrainedWeightsConfig'}, 'model_instance': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLTextForCausalLM', 'config': {'_target_': 'cosmos_framework.configs.base.defaults.reasoner.create_vlm_config', 'base_config': {'_target_': 'cosmos_framework.model.generator.mot.unified_mot.Nemotron3DenseVLMoTConfig.from_json_file', 'json_file': 'cosmos_framework/model/generator/reasoner/nemotron_3_dense_vl/configs/Nemotron-2B-Dense-VL.json'}, 'include_visual': None, 'qk_norm_for_text': False, 'use_und_k_norm_for_gen': True}}, 'tokenizer': {'repository': None, 'revision': None, 'subdir': '', '_target_': 'cosmos_framework.data.generator.processors.build_processor_lazy', 'tokenizer_type': '/bulk/users/vla/alpamayo2edge/cosmos3-edge'}, 'layer_module': None, 'qk_norm': False, 'tie_word_embeddings': False, 'use_system_prompt': False, '_type': 'cosmos_framework.configs.base.defaults.reasoner.VLMConfig'}, 'diffusion_expert_config': {'timestep_range': 1.0, 'load_weights_from_pretrained': False, 'enable_vision_modality_embeddings': False, 'enable_media_modality_embedding': False, 'enable_sound_modality_embedding': True, 'patch_spatial': 2, 'max_vae_latent_side_after_patchify': 20, 'enable_fps_modulation': True, 'base_fps': 24, 'sound_base_temporal_compression_factor': None, 'vision_temporal_position_mode': 'latent_index', 'unified_3d_mrope_reset_spatial_ids': True, 'unified_3d_mrope_temporal_modality_margin': 15000, '_type': 'cosmos_framework.configs.base.defaults.model_config.DiffusionExpertConfig'}, 'input_video_key': 'video', 'input_image_key': 'images', 'input_caption_key': 'ai_caption', 'state_ch': 48, 'state_t': 300, 'latent_downsample_factor': 16, 'resolution': '480', 'max_num_tokens_after_packing': 74000, 'joint_attn_implementation': 'two_way', 'flex_attention': {'enabled': False, 'backend': 'auto', 'mask': {'attention_scope': 'all_views'}}, 'natten_parameter_list': None, 'video_temporal_causal': False, 'causal_training_strategy': 'none', 'lbl': {'method': 'local', 'coeff_und': None, 'coeff_gen': None, '_type': 'cosmos_framework.configs.base.defaults.model_config.LBLConfig'}, 'vision_gen': True, 'action_gen': True, 'max_action_dim': 64, 'num_embodiment_domains': 32, 'sound_gen': False, 'sound_tokenizer': None, 'sound_dim': None, 'sound_latent_fps': 25, 'enable_input_bias': True, 'log_enc_time_every_n': 100, 'exclude_reasoner_weights_from_checkpoint': False, '_type': 'cosmos_framework.configs.base.defaults.model_config.OmniMoTModelConfig'}
+[10-07 04:08:08|WARNING|cosmos_framework/model/generator/omni_mot_model.py:150:set_precision] OmniMoTModel: precision torch.bfloat16
+This processor does not use the `size` parameter. It will be ignored.
+[10-07 04:08:08|INFO|cosmos_framework/data/generator/processors/base.py:131:__init__] Successfully loaded processor from local cache
+[10-07 04:08:08|INFO|cosmos_framework/utils/checkpoint_db.py:338:download] Downloading checkpoint Wan2.2/vae(b083ec612e274aad8ef60b2da7e93047)
+[10-07 04:08:08|INFO|cosmos_framework/utils/checkpoint_db.py:171:_hf_download] uv run --isolated --project /home/vla/projects/cosmos-framework/cosmos_framework/utils/hf_cli --locked --no-default-groups hf download --format=json Wan-AI/Wan2.2-TI2V-5B --repo-type model --revision 921dbaf3f1674a56f47e83fb80a34bac8a8f203e Wan2.2_VAE.pth
+Installed 16 packages in 7ms
+Hint: A new version of huggingface_hub (2.1.1) is available! You are using version 1.25.1.
+[10-07 04:08:11|INFO|cosmos_framework/model/generator/tokenizers/wan2pt2_vae_4x16x16.py:1056:_video_vae] loading /bulk/users/vla/alpamayo2edge/hf-cache/models--Wan-AI--Wan2.2-TI2V-5B/snapshots/921dbaf3f1674a56f47e83fb80a34bac8a8f203e/Wan2.2_VAE.pth
+[10-07 04:08:11|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_tokenizers: 3.08 s
+[10-07 04:08:11|INFO|cosmos_framework/utils/generator/parallelism.py:110:_validate] dp_shard auto-inferred to world_size = 1
+[10-07 04:08:11|INFO|cosmos_framework/utils/generator/parallelism.py:124:_validate] dp_replicate is set to -1, will be automatically determined based on world_size 1 // dp_shard 1.
+[10-07 04:08:11|INFO|cosmos_framework/utils/generator/parallelism.py:129:_validate] dp_replicate is set to 1.
+`torch_dtype` is deprecated! Use `dtype` instead!
+[10-07 04:08:11|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on meta to cuda and broadcast model states: 0.06 s
+[10-07 04:08:11|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on Creating PyTorch model and ema if enabled: 0.16 s
+[10-07 04:08:11|INFO|cosmos_framework/utils/timer.py:138:_log] Time spent on OmniMoTModel: set_up_model: 0.16 s
+/home/vla/envs/alpamayo2edge/lib/python3.13/site-packages/torch/distributed/checkpoint/utils.py:483: UserWarning: torch.distributed is disabled, unavailable or uninitialized, assuming the intent is to load in a single process.
+  return func(*args, **kwargs)
+[10-07 04:08:14|INFO|../cosmos-framework/cosmos_framework/model/generator/mot/unified_mot.py:2656:_ensure_vision_tower] Edge vision tower: loading from checkpoint-local bundle /bulk/users/vla/alpamayo2edge/cosmos3-edge/vision_encoder
+2026-10-07 04:08:17,090 INFO stage-1 checkpoint: /data/vla/alpamayo2edge/runs/stage1/run-351/best -> /bulk/users/vla/alpamayo2edge/runs/stage1/run-351/best
+2026-10-07 04:08:20,794 INFO loaded merged student <- /data/vla/alpamayo2edge/runs/stage1/run-351/best
+[10-07 04:08:20|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[10-07 04:08:21|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+2026-10-07 04:08:21,055 INFO loaded 224 adapter tensors + 6 stage-1 row tensors <- /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025
+2026-10-07 04:08:21,109 INFO folded 112 adapter modules from /data/vla/alpamayo2edge/runs/stage1_rl/rl-run-7-coc-grounded/step-0025 (step=25) into the AR tower
+2026-10-07 04:08:21,362 INFO image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+2026-10-07 04:08:21,541 INFO bench2drive train: 8040 windows, CoC cache /bulk/users/vla/alpamayo2edge/b2d_cache/coc_rl7s25.jsonl
+[10-07 04:08:21|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:164:inject_lora_pre_fsdp] Injecting LoRA on meta device: rank=48, alpha=96, targets=['q_proj', 'k_proj', 'v_proj', 'o_proj']
+[10-07 04:08:21|INFO|../cosmos-framework/cosmos_framework/utils/generator/lora.py:184:inject_lora_pre_fsdp] LoRA injection successful: 112 modules wrapped, 19,267,584 trainable LoRA params, 2,818,812,416 frozen base params (0.679% trainable)
+2026-10-07 04:08:21,574 INFO LoRA: {'wrapped': 112, 'by_leaf': {'q_proj': 28, 'k_proj': 28, 'v_proj': 28, 'o_proj': 28}, 'lora_params': 19267584, 'example': ['0.self_attn.q_proj', '0.self_attn.k_proj', '0.self_attn.v_proj'], 'full_ft': True, 'fp32_master': True}
+2026-10-07 04:08:21,574 INFO trainable 1437.1M [group0(x1.0): 1409.4M, group1(x8.0): 8.5M, group2(x2.0): 19.3M]
+2026-10-07 04:08:21,811 INFO image processor: Siglip2ImageProcessorCustom (native Cosmos3-Edge port)
+2026-10-07 04:08:21,857 INFO gate: 863 val windows, k=6
+/home/vla/projects/alpamayo2edge/src/distill/train_stage2.py:264: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:836.)
+  total, parts = fm_gt, {"fm_gt": float(fm_gt)}
+2026-10-07 04:13:59,654 INFO epoch 0 step 20/2016 loss 1.8211 {'fm_gt': 1.288788914680481, 'traj_m': 5.220870018005371, 'coc_ce': 0.010226992890238762}  peak 50.1 GiB
+2026-10-07 04:19:38,716 INFO epoch 0 step 40/2016 loss 1.1277 {'fm_gt': 0.8628946542739868, 'traj_m': 1.2818975448608398, 'coc_ce': 0.13664428889751434}  peak 50.1 GiB
+2026-10-07 04:25:19,925 INFO epoch 0 step 60/2016 loss 0.7873 {'fm_gt': 0.43505051732063293, 'traj_m': 2.6947360038757324, 'coc_ce': 0.08281674236059189}  peak 50.1 GiB
+2026-10-07 04:31:00,934 INFO epoch 0 step 80/2016 loss 1.3393 {'fm_gt': 1.0957067012786865, 'traj_m': 2.312941074371338, 'coc_ce': 0.012263472191989422}  peak 50.1 GiB
+2026-10-07 04:36:40,204 INFO epoch 0 step 100/2016 loss 1.0599 {'fm_gt': 0.6989622116088867, 'traj_m': 3.5877864360809326, 'coc_ce': 0.002137667266651988}  peak 50.1 GiB
+2026-10-07 04:42:18,959 INFO epoch 0 step 120/2016 loss 0.3419 {'fm_gt': 0.13357295095920563, 'traj_m': 1.5427587032318115, 'coc_ce': 0.054025955498218536}  peak 50.1 GiB
+2026-10-07 04:47:57,970 INFO epoch 0 step 140/2016 loss 1.2578 {'fm_gt': 0.8672854900360107, 'traj_m': 3.7425339221954346, 'coc_ce': 0.01626666635274887}  peak 50.1 GiB
+2026-10-07 04:53:38,774 INFO epoch 0 step 160/2016 loss 1.2250 {'fm_gt': 0.8652759790420532, 'traj_m': 2.193387031555176, 'coc_ce': 0.14034925401210785}  peak 50.1 GiB
+2026-10-07 04:59:17,871 INFO epoch 0 step 180/2016 loss 1.4926 {'fm_gt': 1.1887691020965576, 'traj_m': 2.0275471210479736, 'coc_ce': 0.10109122842550278}  peak 50.1 GiB
+2026-10-07 05:04:56,555 INFO epoch 0 step 200/2016 loss 1.6852 {'fm_gt': 1.2112411260604858, 'traj_m': 3.700368642807007, 'coc_ce': 0.1039077490568161}  peak 50.1 GiB
+2026-10-07 05:10:35,690 INFO epoch 0 step 220/2016 loss 0.2599 {'fm_gt': 0.07664674520492554, 'traj_m': 1.0397247076034546, 'coc_ce': 0.07931694388389587}  peak 50.1 GiB
+2026-10-07 05:16:14,659 INFO epoch 0 step 240/2016 loss 0.9005 {'fm_gt': 0.6773396730422974, 'traj_m': 1.6316046714782715, 'coc_ce': 0.059975430369377136}  peak 50.1 GiB
+2026-10-07 05:28:58,118 INFO epoch 0 gate  n=863 k=6: T0 ADE 5.785 m  minADE_6 3.567  meanADE 7.002  minFDE 7.773  p90 8.505 | CV 6.151 (573 s)
+2026-10-07 05:28:58,118 INFO   braked (687): minADE 3.978 vs CV 6.861 | others (176): 1.961 vs 3.377
+2026-10-07 05:28:58,119 INFO   by horizon: 1s 0.22 (CV 0.40)  2s 0.62 (CV 1.11)  3s 1.13 (CV 2.01)  4s 1.75 (CV 3.07)
+2026-10-07 05:28:58,119 INFO      ParkedObstacle                           n= 58  minADE 2.66  CV 4.17
+2026-10-07 05:28:58,119 INFO      CrossingBicycleFlow                      n= 51  minADE 2.16  CV 3.96
+2026-10-07 05:28:58,119 INFO      AccidentTwoWays                          n= 49  minADE 2.96  CV 6.09
+2026-10-07 05:28:58,119 INFO      HardBreakRoute                           n= 45  minADE 3.69  CV 5.53
+2026-10-07 05:28:58,119 INFO      ConstructionObstacleTwoWays              n= 44  minADE 3.02  CV 5.17
+2026-10-07 05:28:58,119 INFO      HazardAtSideLane                         n= 44  minADE 3.90  CV 7.31
+2026-10-07 05:28:58,119 INFO      TJunction                                n= 40  minADE 2.58  CV 4.16
+2026-10-07 05:28:58,119 INFO      ParkedObstacleTwoWays                    n= 39  minADE 2.35  CV 4.60
+2026-10-07 05:28:58,119 INFO      ParkingCutIn                             n= 30  minADE 3.41  CV 6.15
+2026-10-07 05:28:58,119 INFO      PedestrianCrossing                       n= 30  minADE 2.15  CV 4.41
+2026-10-07 05:28:58,119 INFO      VehicleTurningRoute                      n= 29  minADE 3.49  CV 5.79
+2026-10-07 05:28:58,119 INFO      VehicleTurningRoutePedestrian            n= 27  minADE 3.43  CV 3.82
+2026-10-07 05:29:03,853 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch0 (992 tensors)
+2026-10-07 05:29:04,190 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch0
+2026-10-07 05:29:04,190 INFO best -> epoch0 (val t0_ade 5.785)
+2026-10-07 05:31:37,441 INFO epoch 1 step 260/2016 loss 0.6393 {'fm_gt': 0.3978285789489746, 'traj_m': 1.1697860956192017, 'coc_ce': 0.12448520213365555}  peak 50.1 GiB
+2026-10-07 05:37:17,030 INFO epoch 1 step 280/2016 loss 0.7125 {'fm_gt': 0.522640585899353, 'traj_m': 1.658448576927185, 'coc_ce': 0.024061348289251328}  peak 50.1 GiB
+2026-10-07 05:42:56,580 INFO epoch 1 step 300/2016 loss 1.2210 {'fm_gt': 0.8580479025840759, 'traj_m': 2.8191847801208496, 'coc_ce': 0.08104939758777618}  peak 50.1 GiB
+2026-10-07 05:48:35,761 INFO epoch 1 step 320/2016 loss 0.8595 {'fm_gt': 0.6232428550720215, 'traj_m': 1.9005632400512695, 'coc_ce': 0.04619082435965538}  peak 50.1 GiB
+2026-10-07 05:54:14,705 INFO epoch 1 step 340/2016 loss 1.0150 {'fm_gt': 0.6600198149681091, 'traj_m': 1.1228216886520386, 'coc_ce': 0.24268189072608948}  peak 50.1 GiB
+2026-10-07 05:59:54,106 INFO epoch 1 step 360/2016 loss 1.1953 {'fm_gt': 1.0082695484161377, 'traj_m': 1.711944341659546, 'coc_ce': 0.015868501737713814}  peak 50.1 GiB
+2026-10-07 06:05:33,212 INFO epoch 1 step 380/2016 loss 0.9206 {'fm_gt': 0.5955636501312256, 'traj_m': 1.3274062871932983, 'coc_ce': 0.19225886464118958}  peak 50.1 GiB
+2026-10-07 06:11:12,135 INFO epoch 1 step 400/2016 loss 0.4730 {'fm_gt': 0.22296880185604095, 'traj_m': 0.8104960918426514, 'coc_ce': 0.16895270347595215}  peak 50.1 GiB
+2026-10-07 06:16:51,256 INFO epoch 1 step 420/2016 loss 0.8884 {'fm_gt': 0.7427951097488403, 'traj_m': 1.3363187313079834, 'coc_ce': 0.011946314014494419}  peak 50.1 GiB
+2026-10-07 06:22:30,614 INFO epoch 1 step 440/2016 loss 0.4269 {'fm_gt': 0.26602861285209656, 'traj_m': 1.423683524131775, 'coc_ce': 0.018499109894037247}  peak 50.1 GiB
+2026-10-07 06:28:09,542 INFO epoch 1 step 460/2016 loss 1.2202 {'fm_gt': 0.9044439792633057, 'traj_m': 2.568099021911621, 'coc_ce': 0.0589410699903965}  peak 50.1 GiB
+2026-10-07 06:33:49,023 INFO epoch 1 step 480/2016 loss 1.1860 {'fm_gt': 0.9273232221603394, 'traj_m': 2.082617998123169, 'coc_ce': 0.050371378660202026}  peak 50.1 GiB
+2026-10-07 06:39:28,127 INFO epoch 1 step 500/2016 loss 0.4214 {'fm_gt': 0.24106524884700775, 'traj_m': 1.537200689315796, 'coc_ce': 0.026662202551960945}  peak 50.1 GiB
+2026-10-07 06:49:30,583 INFO epoch 1 gate  n=863 k=6: T0 ADE 5.187 m  minADE_6 3.155  meanADE 6.615  minFDE 6.677  p90 6.762 | CV 6.151 (564 s)
+2026-10-07 06:49:30,584 INFO   braked (687): minADE 3.540 vs CV 6.861 | others (176): 1.654 vs 3.377
+2026-10-07 06:49:30,584 INFO   by horizon: 1s 0.19 (CV 0.40)  2s 0.54 (CV 1.11)  3s 0.99 (CV 2.01)  4s 1.53 (CV 3.07)
+2026-10-07 06:49:30,584 INFO      ParkedObstacle                           n= 58  minADE 1.94  CV 4.17
+2026-10-07 06:49:30,584 INFO      CrossingBicycleFlow                      n= 51  minADE 1.60  CV 3.96
+2026-10-07 06:49:30,584 INFO      AccidentTwoWays                          n= 49  minADE 2.58  CV 6.09
+2026-10-07 06:49:30,584 INFO      HardBreakRoute                           n= 45  minADE 3.86  CV 5.53
+2026-10-07 06:49:30,584 INFO      ConstructionObstacleTwoWays              n= 44  minADE 1.93  CV 5.17
+2026-10-07 06:49:30,584 INFO      HazardAtSideLane                         n= 44  minADE 3.26  CV 7.31
+2026-10-07 06:49:30,584 INFO      TJunction                                n= 40  minADE 3.03  CV 4.16
+2026-10-07 06:49:30,584 INFO      ParkedObstacleTwoWays                    n= 39  minADE 2.24  CV 4.60
+2026-10-07 06:49:30,584 INFO      ParkingCutIn                             n= 30  minADE 2.78  CV 6.15
+2026-10-07 06:49:30,584 INFO      PedestrianCrossing                       n= 30  minADE 2.20  CV 4.41
+2026-10-07 06:49:30,584 INFO      VehicleTurningRoute                      n= 29  minADE 4.42  CV 5.79
+2026-10-07 06:49:30,584 INFO      VehicleTurningRoutePedestrian            n= 27  minADE 3.73  CV 3.82
+2026-10-07 06:49:35,245 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch1 (992 tensors)
+2026-10-07 06:49:35,520 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch1
+2026-10-07 06:49:35,521 INFO best -> epoch1 (val t0_ade 5.187)
+2026-10-07 06:54:38,605 INFO epoch 2 step 520/2016 loss 1.2140 {'fm_gt': 0.7187328338623047, 'traj_m': 3.4216647148132324, 'coc_ce': 0.15305836498737335}  peak 50.1 GiB
+2026-10-07 07:00:14,420 INFO epoch 2 step 540/2016 loss 1.4141 {'fm_gt': 0.9866667985916138, 'traj_m': 2.8602867126464844, 'coc_ce': 0.14141911268234253}  peak 50.1 GiB
+2026-10-07 07:05:49,676 INFO epoch 2 step 560/2016 loss 0.6372 {'fm_gt': 0.2873550057411194, 'traj_m': 3.0409154891967773, 'coc_ce': 0.04574942588806152}  peak 50.1 GiB
+2026-10-07 07:11:25,422 INFO epoch 2 step 580/2016 loss 0.8110 {'fm_gt': 0.6444516181945801, 'traj_m': 1.4128044843673706, 'coc_ce': 0.025298915803432465}  peak 50.1 GiB
+2026-10-07 07:17:00,986 INFO epoch 2 step 600/2016 loss 0.9226 {'fm_gt': 0.6893753409385681, 'traj_m': 2.0435662269592285, 'coc_ce': 0.028914911672472954}  peak 50.1 GiB
+2026-10-07 07:22:36,298 INFO epoch 2 step 620/2016 loss 1.0884 {'fm_gt': 0.7616461515426636, 'traj_m': 2.2976953983306885, 'coc_ce': 0.09699241071939468}  peak 50.1 GiB
+2026-10-07 07:28:11,933 INFO epoch 2 step 640/2016 loss 0.9823 {'fm_gt': 0.6147658228874207, 'traj_m': 1.2290329933166504, 'coc_ce': 0.24458734691143036}  peak 50.1 GiB
+2026-10-07 07:33:47,512 INFO epoch 2 step 660/2016 loss 0.7911 {'fm_gt': 0.46639585494995117, 'traj_m': 2.2114617824554443, 'coc_ce': 0.10353443026542664}  peak 50.1 GiB
+2026-10-07 07:39:22,995 INFO epoch 2 step 680/2016 loss 0.4509 {'fm_gt': 0.3040769100189209, 'traj_m': 1.2449250221252441, 'coc_ce': 0.022299660369753838}  peak 50.1 GiB
+2026-10-07 07:44:58,391 INFO epoch 2 step 700/2016 loss 0.8298 {'fm_gt': 0.6474789381027222, 'traj_m': 1.675084114074707, 'coc_ce': 0.014763387851417065}  peak 50.1 GiB
+2026-10-07 07:50:33,515 INFO epoch 2 step 720/2016 loss 0.4126 {'fm_gt': 0.29984593391418457, 'traj_m': 1.114740014076233, 'coc_ce': 0.0012485074112191796}  peak 50.1 GiB
+2026-10-07 07:56:09,152 INFO epoch 2 step 740/2016 loss 0.1043 {'fm_gt': 0.022928865626454353, 'traj_m': 0.4760093092918396, 'coc_ce': 0.033754441887140274}  peak 50.1 GiB
+2026-10-07 08:08:55,183 INFO epoch 2 gate  n=863 k=6: T0 ADE 4.529 m  minADE_6 2.407  meanADE 5.093  minFDE 5.018  p90 5.219 | CV 6.151 (544 s)
+2026-10-07 08:08:55,183 INFO   braked (687): minADE 2.792 vs CV 6.861 | others (176): 0.905 vs 3.377
+2026-10-07 08:08:55,183 INFO   by horizon: 1s 0.17 (CV 0.40)  2s 0.44 (CV 1.11)  3s 0.81 (CV 2.01)  4s 1.22 (CV 3.07)
+2026-10-07 08:08:55,183 INFO      ParkedObstacle                           n= 58  minADE 1.77  CV 4.17
+2026-10-07 08:08:55,183 INFO      CrossingBicycleFlow                      n= 51  minADE 0.89  CV 3.96
+2026-10-07 08:08:55,183 INFO      AccidentTwoWays                          n= 49  minADE 1.84  CV 6.09
+2026-10-07 08:08:55,183 INFO      HardBreakRoute                           n= 45  minADE 2.89  CV 5.53
+2026-10-07 08:08:55,183 INFO      ConstructionObstacleTwoWays              n= 44  minADE 1.48  CV 5.17
+2026-10-07 08:08:55,183 INFO      HazardAtSideLane                         n= 44  minADE 2.97  CV 7.31
+2026-10-07 08:08:55,183 INFO      TJunction                                n= 40  minADE 2.26  CV 4.16
+2026-10-07 08:08:55,183 INFO      ParkedObstacleTwoWays                    n= 39  minADE 1.92  CV 4.60
+2026-10-07 08:08:55,183 INFO      ParkingCutIn                             n= 30  minADE 2.81  CV 6.15
+2026-10-07 08:08:55,183 INFO      PedestrianCrossing                       n= 30  minADE 1.76  CV 4.41
+2026-10-07 08:08:55,183 INFO      VehicleTurningRoute                      n= 29  minADE 3.31  CV 5.79
+2026-10-07 08:08:55,183 INFO      VehicleTurningRoutePedestrian            n= 27  minADE 1.85  CV 3.82
+2026-10-07 08:08:59,456 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch2 (992 tensors)
+2026-10-07 08:08:59,667 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch2
+2026-10-07 08:08:59,667 INFO best -> epoch2 (val t0_ade 4.529)
+2026-10-07 08:10:57,370 INFO epoch 3 step 760/2016 loss 0.1284 {'fm_gt': 0.007485699839890003, 'traj_m': 0.4317907392978668, 'coc_ce': 0.0777554139494896}  peak 50.1 GiB
+2026-10-07 08:16:32,810 INFO epoch 3 step 780/2016 loss 0.7411 {'fm_gt': 0.5860308408737183, 'traj_m': 1.5349880456924438, 'coc_ce': 0.0016097360057756305}  peak 50.1 GiB
+2026-10-07 08:22:08,147 INFO epoch 3 step 800/2016 loss 0.9884 {'fm_gt': 0.6881968379020691, 'traj_m': 2.662463665008545, 'coc_ce': 0.0339294895529747}  peak 50.1 GiB
+2026-10-07 08:27:44,262 INFO epoch 3 step 820/2016 loss 0.3972 {'fm_gt': 0.2239525467157364, 'traj_m': 1.2193560600280762, 'coc_ce': 0.05133720114827156}  peak 50.1 GiB
+2026-10-07 08:33:19,880 INFO epoch 3 step 840/2016 loss 0.6678 {'fm_gt': 0.5360437631607056, 'traj_m': 1.3018416166305542, 'coc_ce': 0.0016020787879824638}  peak 50.1 GiB
+2026-10-07 08:38:55,363 INFO epoch 3 step 860/2016 loss 0.6202 {'fm_gt': 0.5401702523231506, 'traj_m': 0.6217294931411743, 'coc_ce': 0.017847487702965736}  peak 50.1 GiB
+2026-10-07 08:44:30,602 INFO epoch 3 step 880/2016 loss 0.6512 {'fm_gt': 0.5261701345443726, 'traj_m': 1.1686149835586548, 'coc_ce': 0.008207611739635468}  peak 50.1 GiB
+2026-10-07 08:50:05,902 INFO epoch 3 step 900/2016 loss 0.5787 {'fm_gt': 0.4574753940105438, 'traj_m': 0.9631798267364502, 'coc_ce': 0.0249265618622303}  peak 50.1 GiB
+2026-10-07 08:55:41,226 INFO epoch 3 step 920/2016 loss 0.8472 {'fm_gt': 0.6486518383026123, 'traj_m': 1.970970630645752, 'coc_ce': 0.0014494467759504914}  peak 50.1 GiB
+2026-10-07 09:01:16,488 INFO epoch 3 step 940/2016 loss 1.4008 {'fm_gt': 1.2804834842681885, 'traj_m': 1.1795222759246826, 'coc_ce': 0.0023346387315541506}  peak 50.1 GiB
+2026-10-07 09:06:51,591 INFO epoch 3 step 960/2016 loss 0.1516 {'fm_gt': 0.020588470622897148, 'traj_m': 0.558996856212616, 'coc_ce': 0.07508014887571335}  peak 50.1 GiB
+2026-10-07 09:12:27,220 INFO epoch 3 step 980/2016 loss 1.1287 {'fm_gt': 0.8805884122848511, 'traj_m': 1.9645332098007202, 'coc_ce': 0.051706746220588684}  peak 50.1 GiB
+2026-10-07 09:18:02,530 INFO epoch 3 step 1000/2016 loss 0.5215 {'fm_gt': 0.32925474643707275, 'traj_m': 1.343213438987732, 'coc_ce': 0.057879738509655}  peak 50.1 GiB
+2026-10-07 09:28:17,873 INFO epoch 3 gate  n=863 k=6: T0 ADE 3.881 m  minADE_6 2.177  meanADE 4.336  minFDE 4.431  p90 4.911 | CV 6.151 (544 s)
+2026-10-07 09:28:17,874 INFO   braked (687): minADE 2.457 vs CV 6.861 | others (176): 1.085 vs 3.377
+2026-10-07 09:28:17,874 INFO   by horizon: 1s 0.16 (CV 0.40)  2s 0.43 (CV 1.11)  3s 0.77 (CV 2.01)  4s 1.13 (CV 3.07)
+2026-10-07 09:28:17,874 INFO      ParkedObstacle                           n= 58  minADE 1.32  CV 4.17
+2026-10-07 09:28:17,874 INFO      CrossingBicycleFlow                      n= 51  minADE 1.17  CV 3.96
+2026-10-07 09:28:17,874 INFO      AccidentTwoWays                          n= 49  minADE 1.54  CV 6.09
+2026-10-07 09:28:17,874 INFO      HardBreakRoute                           n= 45  minADE 3.23  CV 5.53
+2026-10-07 09:28:17,874 INFO      ConstructionObstacleTwoWays              n= 44  minADE 1.21  CV 5.17
+2026-10-07 09:28:17,874 INFO      HazardAtSideLane                         n= 44  minADE 2.57  CV 7.31
+2026-10-07 09:28:17,874 INFO      TJunction                                n= 40  minADE 2.00  CV 4.16
+2026-10-07 09:28:17,874 INFO      ParkedObstacleTwoWays                    n= 39  minADE 1.70  CV 4.60
+2026-10-07 09:28:17,874 INFO      ParkingCutIn                             n= 30  minADE 2.35  CV 6.15
+2026-10-07 09:28:17,874 INFO      PedestrianCrossing                       n= 30  minADE 1.66  CV 4.41
+2026-10-07 09:28:17,874 INFO      VehicleTurningRoute                      n= 29  minADE 2.37  CV 5.79
+2026-10-07 09:28:17,874 INFO      VehicleTurningRoutePedestrian            n= 27  minADE 2.45  CV 3.82
+2026-10-07 09:28:22,323 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch3 (992 tensors)
+2026-10-07 09:28:22,494 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch3
+2026-10-07 09:28:22,495 INFO best -> epoch3 (val t0_ade 3.881)
+2026-10-07 09:32:51,333 INFO epoch 4 step 1020/2016 loss 0.9699 {'fm_gt': 0.8128243684768677, 'traj_m': 1.1478193998336792, 'coc_ce': 0.04233681783080101}  peak 50.1 GiB
+2026-10-07 09:38:26,766 INFO epoch 4 step 1040/2016 loss 0.6223 {'fm_gt': 0.4748714864253998, 'traj_m': 0.5774832963943481, 'coc_ce': 0.0896361693739891}  peak 50.1 GiB
+2026-10-07 09:44:02,136 INFO epoch 4 step 1060/2016 loss 0.6744 {'fm_gt': 0.5422619581222534, 'traj_m': 1.2541098594665527, 'coc_ce': 0.006706657819449902}  peak 50.1 GiB
+2026-10-07 09:49:37,582 INFO epoch 4 step 1080/2016 loss 0.8095 {'fm_gt': 0.6257533431053162, 'traj_m': 1.6178722381591797, 'coc_ce': 0.02199682779610157}  peak 50.1 GiB
+2026-10-07 09:55:13,019 INFO epoch 4 step 1100/2016 loss 0.6210 {'fm_gt': 0.4913398027420044, 'traj_m': 1.1073839664459229, 'coc_ce': 0.0188915953040123}  peak 50.1 GiB
+2026-10-07 10:00:48,531 INFO epoch 4 step 1120/2016 loss 1.6307 {'fm_gt': 1.2994937896728516, 'traj_m': 2.438539505004883, 'coc_ce': 0.08733438700437546}  peak 50.1 GiB
+2026-10-07 10:06:24,231 INFO epoch 4 step 1140/2016 loss 0.0595 {'fm_gt': 0.007024997379630804, 'traj_m': 0.3427216410636902, 'coc_ce': 0.018185902386903763}  peak 50.1 GiB
+2026-10-07 10:12:39,826 INFO epoch 4 step 1160/2016 loss 1.2321 {'fm_gt': 1.0183379650115967, 'traj_m': 1.8822215795516968, 'coc_ce': 0.025560960173606873}  peak 50.1 GiB
+2026-10-07 10:19:54,132 INFO epoch 4 step 1180/2016 loss 0.2930 {'fm_gt': 0.11969980597496033, 'traj_m': 1.1031394004821777, 'coc_ce': 0.06294120848178864}  peak 50.1 GiB
+2026-10-07 10:25:32,801 INFO epoch 4 step 1200/2016 loss 0.4221 {'fm_gt': 0.30617082118988037, 'traj_m': 0.5675694346427917, 'coc_ce': 0.0591263622045517}  peak 50.1 GiB
+2026-10-07 10:31:40,408 INFO epoch 4 step 1220/2016 loss 0.4249 {'fm_gt': 0.23331820964813232, 'traj_m': 1.0498708486557007, 'coc_ce': 0.08663186430931091}  peak 50.1 GiB
+2026-10-07 10:37:17,255 INFO epoch 4 step 1240/2016 loss 0.0764 {'fm_gt': 0.006653444841504097, 'traj_m': 0.23489992320537567, 'coc_ce': 0.04620688036084175}  peak 50.1 GiB
+2026-10-07 10:51:00,703 INFO epoch 4 gate  n=863 k=6: T0 ADE 3.870 m  minADE_6 2.040  meanADE 4.180  minFDE 4.104  p90 4.735 | CV 6.151 (554 s)
+2026-10-07 10:51:00,703 INFO   braked (687): minADE 2.334 vs CV 6.861 | others (176): 0.891 vs 3.377
+2026-10-07 10:51:00,703 INFO   by horizon: 1s 0.15 (CV 0.40)  2s 0.40 (CV 1.11)  3s 0.71 (CV 2.01)  4s 1.05 (CV 3.07)
+2026-10-07 10:51:00,703 INFO      ParkedObstacle                           n= 58  minADE 1.34  CV 4.17
+2026-10-07 10:51:00,703 INFO      CrossingBicycleFlow                      n= 51  minADE 0.83  CV 3.96
+2026-10-07 10:51:00,703 INFO      AccidentTwoWays                          n= 49  minADE 1.33  CV 6.09
+2026-10-07 10:51:00,704 INFO      HardBreakRoute                           n= 45  minADE 2.64  CV 5.53
+2026-10-07 10:51:00,704 INFO      ConstructionObstacleTwoWays              n= 44  minADE 1.41  CV 5.17
+2026-10-07 10:51:00,704 INFO      HazardAtSideLane                         n= 44  minADE 1.97  CV 7.31
+2026-10-07 10:51:00,704 INFO      TJunction                                n= 40  minADE 1.83  CV 4.16
+2026-10-07 10:51:00,704 INFO      ParkedObstacleTwoWays                    n= 39  minADE 1.46  CV 4.60
+2026-10-07 10:51:00,704 INFO      ParkingCutIn                             n= 30  minADE 1.72  CV 6.15
+2026-10-07 10:51:00,704 INFO      PedestrianCrossing                       n= 30  minADE 0.93  CV 4.41
+2026-10-07 10:51:00,704 INFO      VehicleTurningRoute                      n= 29  minADE 3.15  CV 5.79
+2026-10-07 10:51:00,704 INFO      VehicleTurningRoutePedestrian            n= 27  minADE 1.93  CV 3.82
+2026-10-07 10:51:05,540 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch4 (992 tensors)
+2026-10-07 10:51:05,764 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch4
+2026-10-07 10:51:05,765 INFO best -> epoch4 (val t0_ade 3.870)
+2026-10-07 10:52:36,204 INFO epoch 5 step 1260/2016 loss 0.2848 {'fm_gt': 0.23464369773864746, 'traj_m': 0.36480164527893066, 'coc_ce': 0.013626886531710625}  peak 50.1 GiB
+2026-10-07 10:58:12,966 INFO epoch 5 step 1280/2016 loss 0.9940 {'fm_gt': 0.8296576738357544, 'traj_m': 1.6377711296081543, 'coc_ce': 0.0005637125577777624}  peak 50.1 GiB
+2026-10-07 11:03:49,069 INFO epoch 5 step 1300/2016 loss 0.5828 {'fm_gt': 0.38878732919692993, 'traj_m': 0.9623275995254517, 'coc_ce': 0.09775937348604202}  peak 50.1 GiB
+2026-10-07 11:10:24,134 INFO epoch 5 step 1320/2016 loss 0.3493 {'fm_gt': 0.21582335233688354, 'traj_m': 0.7582379579544067, 'coc_ce': 0.05763750895857811}  peak 50.1 GiB
+2026-10-07 11:16:07,778 INFO epoch 5 step 1340/2016 loss 0.7302 {'fm_gt': 0.5933547616004944, 'traj_m': 1.2109001874923706, 'coc_ce': 0.015723079442977905}  peak 50.1 GiB
+2026-10-07 11:22:57,413 INFO epoch 5 step 1360/2016 loss 0.4030 {'fm_gt': 0.3329327404499054, 'traj_m': 0.6382455825805664, 'coc_ce': 0.006254937499761581}  peak 50.1 GiB
+2026-10-07 11:31:22,392 INFO epoch 5 step 1380/2016 loss 0.9529 {'fm_gt': 0.7733034491539001, 'traj_m': 0.8235131502151489, 'coc_ce': 0.0972914844751358}  peak 50.1 GiB
+2026-10-07 11:37:31,230 INFO epoch 5 step 1400/2016 loss 0.4510 {'fm_gt': 0.33014827966690063, 'traj_m': 1.1858817338943481, 'coc_ce': 0.0022947783581912518}  peak 50.1 GiB
+2026-10-07 11:43:57,477 INFO epoch 5 step 1420/2016 loss 0.8404 {'fm_gt': 0.6996629238128662, 'traj_m': 1.3898049592971802, 'coc_ce': 0.0017535830847918987}  peak 50.1 GiB
+2026-10-07 11:50:06,492 INFO epoch 5 step 1440/2016 loss 0.1383 {'fm_gt': 0.02673681452870369, 'traj_m': 0.3580322861671448, 'coc_ce': 0.0757388100028038}  peak 50.1 GiB
+2026-10-07 11:56:08,389 INFO epoch 5 step 1460/2016 loss 0.0585 {'fm_gt': 0.01657899096608162, 'traj_m': 0.10790763050317764, 'coc_ce': 0.031155413016676903}  peak 50.1 GiB
+2026-10-07 12:02:01,361 INFO epoch 5 step 1480/2016 loss 0.1677 {'fm_gt': 0.009255066514015198, 'traj_m': 0.2173425555229187, 'coc_ce': 0.1367112100124359}  peak 50.1 GiB
+2026-10-07 12:08:13,225 INFO epoch 5 step 1500/2016 loss 0.8881 {'fm_gt': 0.6898193359375, 'traj_m': 0.8487277626991272, 'coc_ce': 0.11342665553092957}  peak 50.1 GiB
+2026-10-07 12:20:40,293 INFO epoch 5 gate  n=863 k=6: T0 ADE 3.591 m  minADE_6 2.036  meanADE 4.105  minFDE 4.234  p90 4.708 | CV 6.151 (635 s)
+2026-10-07 12:20:40,293 INFO   braked (687): minADE 2.333 vs CV 6.861 | others (176): 0.877 vs 3.377
+2026-10-07 12:20:40,293 INFO   by horizon: 1s 0.15 (CV 0.40)  2s 0.40 (CV 1.11)  3s 0.70 (CV 2.01)  4s 1.04 (CV 3.07)
+2026-10-07 12:20:40,294 INFO      ParkedObstacle                           n= 58  minADE 1.22  CV 4.17
+2026-10-07 12:20:40,294 INFO      CrossingBicycleFlow                      n= 51  minADE 0.84  CV 3.96
+2026-10-07 12:20:40,294 INFO      AccidentTwoWays                          n= 49  minADE 1.21  CV 6.09
+2026-10-07 12:20:40,294 INFO      HardBreakRoute                           n= 45  minADE 2.84  CV 5.53
+2026-10-07 12:20:40,294 INFO      ConstructionObstacleTwoWays              n= 44  minADE 1.07  CV 5.17
+2026-10-07 12:20:40,294 INFO      HazardAtSideLane                         n= 44  minADE 2.14  CV 7.31
+2026-10-07 12:20:40,294 INFO      TJunction                                n= 40  minADE 2.04  CV 4.16
+2026-10-07 12:20:40,294 INFO      ParkedObstacleTwoWays                    n= 39  minADE 1.78  CV 4.60
+2026-10-07 12:20:40,294 INFO      ParkingCutIn                             n= 30  minADE 1.92  CV 6.15
+2026-10-07 12:20:40,294 INFO      PedestrianCrossing                       n= 30  minADE 1.38  CV 4.41
+2026-10-07 12:20:40,294 INFO      VehicleTurningRoute                      n= 29  minADE 3.22  CV 5.79
+2026-10-07 12:20:40,294 INFO      VehicleTurningRoutePedestrian            n= 27  minADE 2.48  CV 3.82
+2026-10-07 12:20:45,997 INFO saved merged student -> /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch5 (992 tensors)
+2026-10-07 12:20:46,256 INFO saved /data/vla/alpamayo2edge/runs/stage2/sft-run-5-b2d-tbeta-t0gate/epoch5
+2026-10-07 12:20:46,257 INFO best -> epoch5 (val t0_ade 3.591)
+2026-10-07 12:25:01,139 INFO epoch 6 step 1520/2016 loss 0.7057 {'fm_gt': 0.5025256872177124, 'traj_m': 1.6133705377578735, 'coc_ce': 0.041886575520038605}  peak 50.1 GiB
+2026-10-07 12:31:05,555 INFO epoch 6 step 1540/2016 loss 0.8633 {'fm_gt': 0.7501367926597595, 'traj_m': 0.6650534272193909, 'coc_ce': 0.04664195701479912}  peak 50.1 GiB
+2026-10-07 12:36:59,755 INFO epoch 6 step 1560/2016 loss 0.1202 {'fm_gt': 0.011861791834235191, 'traj_m': 0.2784647047519684, 'coc_ce': 0.08052627742290497}  peak 50.1 GiB
+2026-10-07 12:43:09,433 INFO epoch 6 step 1580/2016 loss 0.7949 {'fm_gt': 0.6923390626907349, 'traj_m': 0.9353880286216736, 'coc_ce': 0.009060366079211235}  peak 50.1 GiB
+2026-10-07 12:49:15,793 INFO epoch 6 step 1600/2016 loss 0.0416 {'fm_gt': 0.004106324166059494, 'traj_m': 0.08359390497207642, 'coc_ce': 0.029137253761291504}  peak 50.1 GiB
+2026-10-07 12:55:23,027 INFO epoch 6 step 1620/2016 loss 0.3477 {'fm_gt': 0.226192906498909, 'traj_m': 1.1007667779922485, 'coc_ce': 0.011414136737585068}  peak 50.1 GiB
+2026-10-07 13:01:41,787 INFO epoch 6 step 1640/2016 loss 0.9350 {'fm_gt': 0.8016326427459717, 'traj_m': 1.3295018672943115, 'coc_ce': 0.00039926599129103124}  peak 50.1 GiB
+2026-10-07 13:07:45,379 INFO epoch 6 step 1660/2016 loss 0.9113 {'fm_gt': 0.7790369391441345, 'traj_m': 1.1367443799972534, 'coc_ce': 0.01860525645315647}  peak 50.1 GiB
+2026-10-07 13:13:23,459 INFO epoch 6 step 1680/2016 loss 0.4346 {'fm_gt': 0.2521468997001648, 'traj_m': 1.091692328453064, 'coc_ce': 0.07330339401960373}  peak 50.1 GiB
+2026-10-07 13:19:01,255 INFO epoch 6 step 1700/2016 loss 0.1728 {'fm_gt': 0.14092296361923218, 'traj_m': 0.29953518509864807, 'coc_ce': 0.0019466488156467676}  peak 50.1 GiB
+2026-10-07 13:24:39,280 INFO epoch 6 step 1720/2016 loss 0.5185 {'fm_gt': 0.44441866874694824, 'traj_m': 0.5892723798751831, 'coc_ce': 0.015124529600143433}  peak 50.1 GiB
+2026-10-07 13:30:17,416 INFO epoch 6 step 1740/2016 loss 0.5470 {'fm_gt': 0.4488532245159149, 'traj_m': 0.7079591155052185, 'coc_ce': 0.0273846834897995}  peak 50.1 GiB
